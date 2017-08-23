@@ -15,6 +15,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -pedantic -pthread")
 include(CTest)
 enable_testing()
 find_package(GTest REQUIRED)
+include_directories(${GTEST_INCLUDE_DIRS})
 
 find_package(Thrift REQUIRED)
 include_directories(${THRIFT_INCLUDE_DIR})
