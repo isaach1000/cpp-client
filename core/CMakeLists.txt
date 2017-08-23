@@ -2,3 +2,5 @@ include_directories("include")
 
 file(GLOB SRC "src/uber/jaeger/metrics/*.cpp")
 add_library(jaegercore ${SRC})
+
+add_subdirectory("test")
