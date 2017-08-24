@@ -7,4 +7,10 @@ add_library(jaegercore ${SRC})
 file(GLOB TEST_SRC "src/uber/jaeger/metrics/*Test.cpp")
 add_executable(MetricsTest ${TEST_SRC})
 target_link_libraries(MetricsTest ${GTEST_BOTH_LIBRARIES} jaegercore)
-add_test(MetricsTest MetricsTest)
+add_test(NAME MetricsTest
+         COMMAND MetricsTest)
+if(CMAKE_BUILD_TYPE MATCHES Debug)
+    setup_target_for_coverage(NAME MetricsTestCoverage
+                              EXECUTABLE MetricsTest
+                              DEPENDENCIES MetricsTest)
+endif()

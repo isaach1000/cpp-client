@@ -23,6 +23,7 @@
 #ifndef UBER_JAEGER_METRICS_STATSFACTORY_H
 #define UBER_JAEGER_METRICS_STATSFACTORY_H
 
+#include <memory>
 #include <string>
 #include <unordered_map>
 

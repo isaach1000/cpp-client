@@ -34,6 +34,8 @@ namespace metrics {
 
 class InMemoryStatsReporter : public StatsReporter {
   public:
+    using ValueMap = std::unordered_map<std::string, int64_t>;
+
     virtual ~InMemoryStatsReporter() = default;
 
     void incCounter(
@@ -53,9 +55,13 @@ class InMemoryStatsReporter : public StatsReporter {
 
     void reset();
 
-  private:
-    using ValueMap = std::unordered_map<std::string, int64_t>;
+    const ValueMap& counters() const { return _counters; }
 
+    const ValueMap& gauges() const { return _gauges; }
+
+    const ValueMap& timers() const { return _timers; }
+
+  private:
     ValueMap _counters;
     ValueMap _gauges;
     ValueMap _timers;

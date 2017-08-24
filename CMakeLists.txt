@@ -26,4 +26,19 @@ file(GLOB THRIFT_GEN_SRC thrift_gen/*.cpp)
 list(FILTER THRIFT_GEN_SRC EXCLUDE REGEX ".*\\.skeleton\\.cpp")
 add_library(jaeger ${THRIFT_GEN_SRC})
 
-add_subdirectory(core)
+if(CMAKE_BUILD_TYPE MATCHES Debug)
+    include(CodeCoverage)
+    APPEND_COVERAGE_COMPILER_FLAGS()
+    set(COVERAGE_EXCLUDES "thrift_gen/*"
+                          "${THRIFT_INCLUDE_DIR}/*"
+                          "/usr/include/c++/6/*"
+                          "/usr/include/c++/6/bits/*"
+                          "/usr/include/c++/6/ext/*")
+    foreach(inc_dir IN LISTS GTEST_INCLUDE_DIRS)
+        list(APPEND COVERAGE_EXCLUDES "${inc_dir}/gtest/*"
+                                      "${inc_dir}/gtest/internal/*")
+    endforeach()
+    message(STATUS "COVERAGE_EXCLUDES=${COVERAGE_EXCLUDES}")
+endif()
+
+ add_subdirectory(core)

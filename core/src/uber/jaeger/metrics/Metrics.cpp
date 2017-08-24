@@ -25,6 +25,9 @@
 #include <map>
 #include <sstream>
 
+#include "uber/jaeger/metrics/Counter.h"
+#include "uber/jaeger/metrics/Gauge.h"
+
 namespace uber {
 namespace jaeger {
 namespace metrics {
@@ -42,6 +45,8 @@ std::string Metrics::addTagsToMetricName(
     }
     return buffer.str();
 }
+
+Metrics::~Metrics() = default;
 
 }  // namespace metrics
 }  // namespace jaeger
