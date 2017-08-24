@@ -38,19 +38,16 @@ class InMemoryStatsReporter : public StatsReporter {
 
     virtual ~InMemoryStatsReporter() = default;
 
-    void incCounter(
-        const std::string& name,
-        int64_t delta,
+    void
+    incCounter(const std::string& name, int64_t delta,
         const std::unordered_map<std::string, std::string>& tags) override;
 
     void recordTimer(
-        const std::string& name,
-        int64_t time,
+        const std::string& name, int64_t time,
         const std::unordered_map<std::string, std::string>& tags) override;
 
     void updateGauge(
-        const std::string& name,
-        int64_t time,
+        const std::string& name, int64_t time,
         const std::unordered_map<std::string, std::string>& tags) override;
 
     void reset();

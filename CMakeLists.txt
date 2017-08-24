@@ -38,7 +38,6 @@ if(CMAKE_BUILD_TYPE MATCHES Debug)
         list(APPEND COVERAGE_EXCLUDES "${inc_dir}/gtest/*"
                                       "${inc_dir}/gtest/internal/*")
     endforeach()
-    message(STATUS "COVERAGE_EXCLUDES=${COVERAGE_EXCLUDES}")
 endif()
 
  add_subdirectory(core)

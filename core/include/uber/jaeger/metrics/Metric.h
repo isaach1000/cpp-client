@@ -34,8 +34,7 @@ class Metric {
   public:
     using TagMap = std::unordered_map<std::string, std::string>;
 
-    Metric(const std::string& name,
-           const TagMap& tags)
+    Metric(const std::string& name, const TagMap& tags)
         : _name(name)
         , _tags(tags)
     {

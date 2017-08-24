@@ -44,62 +44,52 @@ class Metrics {
         return std::unique_ptr<Metrics>(new Metrics(factory));
     }
 
-    static std::string addTagsToMetricName(
-        const std::string& name,
+    static std::string
+    addTagsToMetricName(const std::string& name,
         const std::unordered_map<std::string, std::string>& tags);
 
     explicit Metrics(StatsFactory& factory)
-        : _traceStartedSampled(
-            factory.createCounter("jaeger.traces", {{"state", "started"},
-                                                    {"sampled", "y"}}))
-        , _traceStartedNotSampled(
-            factory.createCounter("jaeger.traces", {{"state", "started"},
-                                                    {"sampled", "n"}}))
-        , _tracesJoinedSampled(
-            factory.createCounter("jaeger.traces", {{"state", "joined"},
-                                                    {"sampled", "y"}}))
-        , _tracesJoinedNotSampled(
-            factory.createCounter("jaeger.traces", {{"state", "joined"},
-                                                    {"sampled", "n"}}))
-        , _spansStarted(
-            factory.createCounter("jaeger.spans", {{"state", "started"},
-                                                   {"group", "lifecycle"}}))
-        , _spansFinished(
-            factory.createCounter("jaeger.spans", {{"state", "finished"},
-                                                   {"group", "lifecycle"}}))
-        , _spansSampled(
-            factory.createCounter("jaeger.spans", {{"group", "sampling"},
-                                                   {"sampled", "y"}}))
-        , _spansNotSampled(
-            factory.createCounter("jaeger.spans", {{"group", "sampling"},
-                                                   {"sampled", "n"}}))
+        : _traceStartedSampled(factory.createCounter(
+              "jaeger.traces", { { "state", "started" }, { "sampled", "y" } }))
+        , _traceStartedNotSampled(factory.createCounter(
+              "jaeger.traces", { { "state", "started" }, { "sampled", "n" } }))
+        , _tracesJoinedSampled(factory.createCounter(
+              "jaeger.traces", { { "state", "joined" }, { "sampled", "y" } }))
+        , _tracesJoinedNotSampled(factory.createCounter(
+              "jaeger.traces", { { "state", "joined" }, { "sampled", "n" } }))
+        , _spansStarted(factory.createCounter(
+              "jaeger.spans", { { "state", "started" }, { "group", "lifecycle" } }))
+        , _spansFinished(factory.createCounter(
+              "jaeger.spans", { { "state", "finished" }, { "group", "lifecycle" } }))
+        , _spansSampled(factory.createCounter(
+              "jaeger.spans", { { "group", "sampling" }, { "sampled", "y" } }))
+        , _spansNotSampled(factory.createCounter(
+              "jaeger.spans", { { "group", "sampling" }, { "sampled", "n" } }))
         , _decodingErrors(factory.createCounter("jaeger.decoding-errors", {}))
-        , _reporterSuccess(
-            factory.createCounter("jaeger.reporter-spans", {{"state", "success"}}))
-        , _reporterFailure(
-            factory.createCounter("jaeger.reporter-spans", {{"state", "failure"}}))
-        , _reporterDropped(
-            factory.createCounter("jaeger.reporter-spans", {{"state", "dropped"}}))
+        , _reporterSuccess(factory.createCounter("jaeger.reporter-spans",
+              { { "state", "success" } }))
+        , _reporterFailure(factory.createCounter("jaeger.reporter-spans",
+              { { "state", "failure" } }))
+        , _reporterDropped(factory.createCounter("jaeger.reporter-spans",
+              { { "state", "dropped" } }))
         , _reporterQueueLength(factory.createGauge("jaeger.reporter-queue", {}))
         , _samplerRetrieved(
-            factory.createCounter("jaeger.sampler", {{"state", "retrieved"}}))
+              factory.createCounter("jaeger.sampler", { { "state", "retrieved" } }))
         , _samplerUpdated(
-            factory.createCounter("jaeger.sampler", {{"state", "updated"}}))
-        , _samplerQueryFailure(
-            factory.createCounter("jaeger.sampler", {{"state", "failure"},
-                                                     {"phase", "query"}}))
-        , _samplerParsingFailure(
-            factory.createCounter("jaeger.sampler", {{"state", "failure"},
-                                                     {"phase", "parsing"}}))
+              factory.createCounter("jaeger.sampler", { { "state", "updated" } }))
+        , _samplerQueryFailure(factory.createCounter(
+              "jaeger.sampler", { { "state", "failure" }, { "phase", "query" } }))
+        , _samplerParsingFailure(factory.createCounter(
+              "jaeger.sampler", { { "state", "failure" }, { "phase", "parsing" } }))
         , _baggageUpdateSuccess(
-            factory.createCounter("jaeger.baggage-update", {{"result", "ok"}}))
-        , _baggageUpdateFailure(
-            factory.createCounter("jaeger.baggage-update", {{"result", "err"}}))
+              factory.createCounter("jaeger.baggage-update", { { "result", "ok" } }))
+        , _baggageUpdateFailure(factory.createCounter("jaeger.baggage-update",
+              { { "result", "err" } }))
         , _baggageTruncate(factory.createCounter("jaeger.baggage-truncate", {}))
-        , _baggageRestrictionsUpdateSuccess(
-            factory.createCounter("jaeger.baggage-restrictions-update", {{"result", "ok"}}))
-        , _baggageRestrictionsUpdateFailure(
-            factory.createCounter("jaeger.baggage-restrictions-update", {{"result", "err"}}))
+        , _baggageRestrictionsUpdateSuccess(factory.createCounter(
+              "jaeger.baggage-restrictions-update", { { "result", "ok" } }))
+        , _baggageRestrictionsUpdateFailure(factory.createCounter(
+              "jaeger.baggage-restrictions-update", { { "result", "err" } }))
     {
     }
 
@@ -107,11 +97,17 @@ class Metrics {
 
     const Counter& traceStartedSampled() const { return *_traceStartedSampled; }
     Counter& traceStartedSampled() { return *_traceStartedSampled; }
-    const Counter& traceStartedNotSampled() const { return *_traceStartedNotSampled; }
+    const Counter& traceStartedNotSampled() const
+    {
+        return *_traceStartedNotSampled;
+    }
     Counter& traceStartedNotSampled() { return *_traceStartedNotSampled; }
     const Counter& tracesJoinedSampled() const { return *_tracesJoinedSampled; }
     Counter& tracesJoinedSampled() { return *_tracesJoinedSampled; }
-    const Counter& tracesJoinedNotSampled() const { return *_tracesJoinedNotSampled; }
+    const Counter& tracesJoinedNotSampled() const
+    {
+        return *_tracesJoinedNotSampled;
+    }
     Counter& tracesJoinedNotSampled() { return *_tracesJoinedNotSampled; }
     const Counter& spansStarted() const { return *_spansStarted; }
     Counter& spansStarted() { return *_spansStarted; }
@@ -137,7 +133,10 @@ class Metrics {
     Counter& samplerUpdated() { return *_samplerUpdated; }
     const Counter& samplerQueryFailure() const { return *_samplerQueryFailure; }
     Counter& samplerQueryFailure() { return *_samplerQueryFailure; }
-    const Counter& samplerParsingFailure() const { return *_samplerParsingFailure; }
+    const Counter& samplerParsingFailure() const
+    {
+        return *_samplerParsingFailure;
+    }
     Counter& samplerParsingFailure() { return *_samplerParsingFailure; }
     const Counter& baggageUpdateSuccess() const { return *_baggageUpdateSuccess; }
     Counter& baggageUpdateSuccess() { return *_baggageUpdateSuccess; }

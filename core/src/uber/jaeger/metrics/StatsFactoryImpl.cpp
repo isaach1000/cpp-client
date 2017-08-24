@@ -34,9 +34,8 @@ namespace {
 
 class ReportedMetric : public Metric {
   public:
-    ReportedMetric(StatsReporter& reporter,
-                   const std::string& name,
-                   const TagMap& tags)
+    ReportedMetric(StatsReporter& reporter, const std::string& name,
+        const TagMap& tags)
         : Metric(name, tags)
         , _reporter(reporter)
     {
@@ -53,9 +52,8 @@ class ReportedMetric : public Metric {
 
 class CounterImpl : public ReportedMetric, public Counter {
   public:
-    CounterImpl(StatsReporter& reporter,
-                const std::string& name,
-                const std::unordered_map<std::string, std::string>& tags)
+    CounterImpl(StatsReporter& reporter, const std::string& name,
+        const std::unordered_map<std::string, std::string>& tags)
         : ReportedMetric(reporter, name, tags)
     {
     }
@@ -68,9 +66,8 @@ class CounterImpl : public ReportedMetric, public Counter {
 
 class TimerImpl : public ReportedMetric, public Timer {
   public:
-    TimerImpl(StatsReporter& reporter,
-                const std::string& name,
-                const std::unordered_map<std::string, std::string>& tags)
+    TimerImpl(StatsReporter& reporter, const std::string& name,
+        const std::unordered_map<std::string, std::string>& tags)
         : ReportedMetric(reporter, name, tags)
     {
     }
@@ -83,9 +80,8 @@ class TimerImpl : public ReportedMetric, public Timer {
 
 class GaugeImpl : public ReportedMetric, public Gauge {
   public:
-    GaugeImpl(StatsReporter& reporter,
-              const std::string& name,
-              const std::unordered_map<std::string, std::string>& tags)
+    GaugeImpl(StatsReporter& reporter, const std::string& name,
+        const std::unordered_map<std::string, std::string>& tags)
         : ReportedMetric(reporter, name, tags)
     {
     }

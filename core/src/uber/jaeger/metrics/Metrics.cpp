@@ -38,8 +38,8 @@ std::string Metrics::addTagsToMetricName(
 {
     std::ostringstream buffer;
     buffer << name;
-    const std::map<std::string, std::string> orderedMap(
-        std::begin(tags), std::end(tags));
+    const std::map<std::string, std::string> orderedMap(std::begin(tags),
+        std::end(tags));
     for (auto&& pair : orderedMap) {
         buffer << '.' << pair.first << '=' << pair.second;
     }

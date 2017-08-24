@@ -39,17 +39,20 @@ class StatsFactory {
   public:
     virtual ~StatsFactory() = default;
 
-    virtual std::unique_ptr<Counter> createCounter(
-        const std::string& name,
-        const std::unordered_map<std::string, std::string>& tags) = 0;
+    virtual std::unique_ptr<Counter>
+    createCounter(const std::string& name,
+        const std::unordered_map<std::string, std::string>& tags)
+        = 0;
 
-    virtual std::unique_ptr<Timer> createTimer(
-        const std::string& name,
-        const std::unordered_map<std::string, std::string>& tags) = 0;
+    virtual std::unique_ptr<Timer>
+    createTimer(const std::string& name,
+        const std::unordered_map<std::string, std::string>& tags)
+        = 0;
 
-    virtual std::unique_ptr<Gauge> createGauge(
-        const std::string& name,
-        const std::unordered_map<std::string, std::string>& tags) = 0;
+    virtual std::unique_ptr<Gauge>
+    createGauge(const std::string& name,
+        const std::unordered_map<std::string, std::string>& tags)
+        = 0;
 };
 
 }  // namespace metrics
