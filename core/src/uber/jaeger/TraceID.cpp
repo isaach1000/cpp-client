@@ -20,42 +20,36 @@
  * THE SOFTWARE.
  */
 
-#ifndef UBER_JAEGER_SPAN_H
-#define UBER_JAEGER_SPAN_H
+#include "uber/jaeger/TraceID.h"
 
-#include <chrono>
-#include <memory>
-#include <mutex>
-
-#include "uber/jaeger/LogRecord.h"
-#include "uber/jaeger/Reference.h"
-#include "uber/jaeger/SpanContext.h"
-#include "uber/jaeger/Tag.h"
+#include "uber/jaeger/utils/HexParsing.h"
 
 namespace uber {
 namespace jaeger {
 
-class Tracer;
+TraceID TraceID::fromStream(std::istream& in)
+{
+    TraceID traceID;
+    constexpr auto kMaxChars = static_cast<size_t>(32);
+    auto buffer = utils::HexParsing::readSegment(in, kMaxChars, ':');
 
-class Span {
-  public:
-    using Clock = std::chrono::steady_clock;
+    if (buffer.empty()) {
+        return TraceID();
+    }
 
-    ~Span();
+    if (buffer.size() < kMaxChars / 2) {
+        traceID._low = utils::HexParsing::decodeHex<uint64_t>(buffer);
+    }
+    else {
+        auto beginLowStr = std::end(buffer) - kMaxChars / 2;
+        const std::string highStr(std::begin(buffer), beginLowStr);
+        traceID._high = utils::HexParsing::decodeHex<uint64_t>(highStr);
+        const std::string lowStr(beginLowStr, std::end(buffer));
+        traceID._low = utils::HexParsing::decodeHex<uint64_t>(lowStr);
+    }
 
-  private:
-    // TODO: Tracer& _tracer;
-    SpanContext _context;
-    std::string _operationName;
-    Clock::time_point _startTime;
-    Clock::duration _duration;
-    std::vector<Tag> _tags;
-    std::vector<LogRecord> _logs;
-    std::vector<Reference> _references;
-    std::mutex _mutex;
-};
+    return traceID;
+}
 
 }  // namespace jaeger
 }  // namespace uber
-
-#endif  // UBER_JAEGER_SPAN_H

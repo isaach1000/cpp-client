@@ -20,42 +20,4 @@
  * THE SOFTWARE.
  */
 
-#ifndef UBER_JAEGER_SPAN_H
-#define UBER_JAEGER_SPAN_H
-
-#include <chrono>
-#include <memory>
-#include <mutex>
-
-#include "uber/jaeger/LogRecord.h"
-#include "uber/jaeger/Reference.h"
-#include "uber/jaeger/SpanContext.h"
-#include "uber/jaeger/Tag.h"
-
-namespace uber {
-namespace jaeger {
-
-class Tracer;
-
-class Span {
-  public:
-    using Clock = std::chrono::steady_clock;
-
-    ~Span();
-
-  private:
-    // TODO: Tracer& _tracer;
-    SpanContext _context;
-    std::string _operationName;
-    Clock::time_point _startTime;
-    Clock::duration _duration;
-    std::vector<Tag> _tags;
-    std::vector<LogRecord> _logs;
-    std::vector<Reference> _references;
-    std::mutex _mutex;
-};
-
-}  // namespace jaeger
-}  // namespace uber
-
-#endif  // UBER_JAEGER_SPAN_H
+#include "uber/jaeger/Tracer.h"

@@ -20,42 +20,61 @@
  * THE SOFTWARE.
  */
 
-#ifndef UBER_JAEGER_SPAN_H
-#define UBER_JAEGER_SPAN_H
+#ifndef UBER_JAEGER_TRACEID_H
+#define UBER_JAEGER_TRACEID_H
 
-#include <chrono>
-#include <memory>
-#include <mutex>
-
-#include "uber/jaeger/LogRecord.h"
-#include "uber/jaeger/Reference.h"
-#include "uber/jaeger/SpanContext.h"
-#include "uber/jaeger/Tag.h"
+#include <iomanip>
+#include <iostream>
 
 namespace uber {
 namespace jaeger {
 
-class Tracer;
-
-class Span {
+class TraceID {
   public:
-    using Clock = std::chrono::steady_clock;
+    static TraceID fromStream(std::istream& in);
 
-    ~Span();
+    TraceID()
+        : TraceID(0, 0)
+    {
+    }
+
+    TraceID(uint64_t high, uint64_t low)
+        : _high(high)
+        , _low(low)
+    {
+    }
+
+    bool isValid() const { return _high != 0 || _low != 0; }
+
+    void print(std::ostream& out) const
+    {
+        if (_high == 0) {
+            out << std::hex << _low;
+        }
+        else {
+            out << std::hex << _high
+                << std::setw(16) << std::setfill('0')
+                << std::hex << _low;
+        }
+    }
+
+    uint64_t high() const { return _high; }
+
+    uint64_t low() const { return _low; }
 
   private:
-    // TODO: Tracer& _tracer;
-    SpanContext _context;
-    std::string _operationName;
-    Clock::time_point _startTime;
-    Clock::duration _duration;
-    std::vector<Tag> _tags;
-    std::vector<LogRecord> _logs;
-    std::vector<Reference> _references;
-    std::mutex _mutex;
+    uint64_t _high;
+    uint64_t _low;
 };
 
 }  // namespace jaeger
 }  // namespace uber
 
-#endif  // UBER_JAEGER_SPAN_H
+inline std::ostream& operator<<(std::ostream& out,
+                                const uber::jaeger::TraceID& traceID)
+{
+    traceID.print(out);
+    return out;
+}
+
+#endif  // UBER_JAEGER_TRACEID_H

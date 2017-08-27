@@ -28,38 +28,13 @@
 #include <string>
 #include <unordered_map>
 
+#include "uber/jaeger/TraceID.h"
+
 namespace uber {
 namespace jaeger {
 
 class SpanContext {
   public:
-    class TraceID {
-      public:
-        static TraceID fromStream(std::istream& in);
-
-        bool isValid() const { return _high != 0 || _low != 0; }
-
-        void print(std::ostream& out) const
-        {
-            if (_high == 0) {
-                out << std::hex << _low;
-            }
-            else {
-                out << std::hex << _high
-                    << std::setw(16) << std::setfill('0')
-                    << std::hex << _low;
-            }
-        }
-
-        uint64_t high() const { return _high; }
-
-        uint64_t low() const { return _low; }
-
-      private:
-        uint64_t _high;
-        uint64_t _low;
-    };
-
     static SpanContext fromStream(std::istream& in);
 
     SpanContext() = default;
@@ -72,7 +47,7 @@ class SpanContext {
         : _traceID(traceID)
         , _spanID(spanID)
         , _parentID(parentID)
-        , _flags(sampled ? static_cast<unsigned char>(Flags::kSampled)
+        , _flags(sampled ? static_cast<unsigned char>(Flag::kSampled)
                          : 0)
         , _baggage(baggage)
         , _debugID()
@@ -122,7 +97,7 @@ class SpanContext {
         _traceID.print(out);
         out << ':' << std::hex << _spanID
             << ':' << std::hex << _parentID
-            << ':' << std::hex << _flags;
+            << ':' << std::hex << static_cast<size_t>(_flags);
     }
 
   private:

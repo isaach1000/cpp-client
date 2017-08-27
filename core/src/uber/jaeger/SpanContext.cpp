@@ -22,26 +22,16 @@
 
 #include "uber/jaeger/SpanContext.h"
 
+#include "uber/jaeger/utils/HexParsing.h"
+
 namespace uber {
 namespace jaeger {
-
-SpanContext::TraceID SpanContext::TraceID::fromStream(std::istream& in)
-{
-    TraceID traceID;
-    if (!(in >> std::hex >> traceID._high)) {
-        return TraceID();
-    }
-    if (!(in >> std::hex >> traceID._low)) {
-        return TraceID();
-    }
-    return traceID;
-}
 
 SpanContext SpanContext::fromStream(std::istream& in)
 {
     SpanContext spanContext;
     spanContext._traceID = TraceID::fromStream(in);
-    if (!in || !spanContext._traceID.isValid()) {
+    if (!spanContext._traceID.isValid()) {
         return SpanContext();
     }
 
@@ -50,25 +40,33 @@ SpanContext SpanContext::fromStream(std::istream& in)
         return SpanContext();
     }
 
-    if (!(in >> std::hex >> spanContext._spanID)) {
+    constexpr auto kMaxUInt64Chars = static_cast<size_t>(16);
+    auto buffer = utils::HexParsing::readSegment(in, kMaxUInt64Chars, ':');
+    if (buffer.empty()) {
         return SpanContext();
     }
+    spanContext._spanID = utils::HexParsing::decodeHex<uint64_t>(buffer);
 
     if (!in.get(ch) || ch != ':') {
         return SpanContext();
     }
 
-    if (!(in >> std::hex >> spanContext._parentID)) {
+    buffer = utils::HexParsing::readSegment(in, kMaxUInt64Chars, ':');
+    if (buffer.empty()) {
         return SpanContext();
     }
+    spanContext._parentID = utils::HexParsing::decodeHex<uint64_t>(buffer);
 
     if (!in.get(ch) || ch != ':') {
         return SpanContext();
     }
 
-    if (!(in >> std::hex >> spanContext._flags)) {
+    constexpr auto kMaxByteChars = static_cast<size_t>(2);
+    buffer = utils::HexParsing::readSegment(in, kMaxByteChars, ':');
+    if (buffer.empty()) {
         return SpanContext();
     }
+    spanContext._flags = utils::HexParsing::decodeHex<unsigned char>(buffer);
 
     return spanContext;
 }
