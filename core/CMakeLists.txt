@@ -1,14 +1,17 @@
 include_directories("include")
 
-file(GLOB SRC "src/uber/jaeger/*.cpp"
-              "src/uber/jaeger/metrics/*.cpp"
-              "src/uber/jaeger/utils/*.cpp")
+file(GLOB SRC "src/uber/jaeger/*.cpp")
+file(GLOB TEST_SRC "src/uber/jaeger/*Test.cpp")
+foreach(SUBDIR "metrics" "propagation" "reporters" "samplers" "utils")
+    file(GLOB SUBDIR_SRC "src/uber/jaeger/${SUBDIR}/*.cpp")
+    list(APPEND SRC ${SUBDIR_SRC})
+    file(GLOB SUBDIR_TEST_SRC "src/uber/jaeger/${SUBDIR}/*Test.cpp")
+    list(APPEND TEST_SRC ${SUBDIR_TEST_SRC})
+endforeach(SUBDIR)
 list(FILTER SRC EXCLUDE REGEX ".*Test\\.cpp")
+
 add_library(jaegercore ${SRC})
 
-file(GLOB TEST_SRC "src/uber/jaeger/*Test.cpp"
-                   "src/uber/jaeger/metrics/*Test.cpp"
-                   "src/uber/jaeger/utils/*Test.cpp")
 add_executable(CoreTest ${TEST_SRC})
 target_link_libraries(CoreTest ${GTEST_BOTH_LIBRARIES} jaegercore)
 add_test(NAME CoreTest

@@ -27,7 +27,7 @@ include_directories(thrift_gen)
 
 file(GLOB THRIFT_GEN_SRC thrift_gen/*.cpp)
 list(FILTER THRIFT_GEN_SRC EXCLUDE REGEX ".*\\.skeleton\\.cpp")
-add_library(jaeger ${THRIFT_GEN_SRC})
+add_library(jaegeridl ${THRIFT_GEN_SRC})
 
 if(CMAKE_BUILD_TYPE MATCHES Debug)
     include(CodeCoverage)
