@@ -32,10 +32,7 @@ namespace jaeger {
 
 class Reference {
   public:
-    enum class Type {
-        kChildOfRef,
-        kFollowsFromRef
-    };
+    enum class Type { kChildOfRef, kFollowsFromRef };
 
     Reference(const SpanContext& spanContext, Type type)
         : _spanContext(spanContext)

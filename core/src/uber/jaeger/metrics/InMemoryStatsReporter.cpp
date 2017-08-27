@@ -34,10 +34,11 @@ namespace metrics {
 namespace {
 
 template <typename Function>
-void updateMap(InMemoryStatsReporter::ValueMap& map, const std::string& name,
-    int64_t newValue,
-    const std::unordered_map<std::string, std::string>& tags,
-    Function f)
+void updateMap(InMemoryStatsReporter::ValueMap& map,
+               const std::string& name,
+               int64_t newValue,
+               const std::unordered_map<std::string, std::string>& tags,
+               Function f)
 {
     const auto metricName = Metrics::addTagsToMetricName(name, tags);
     auto& initialValue = map[metricName];
@@ -47,31 +48,38 @@ void updateMap(InMemoryStatsReporter::ValueMap& map, const std::string& name,
 }  // anonymous namespace
 
 void InMemoryStatsReporter::incCounter(
-    const std::string& name, int64_t delta,
+    const std::string& name,
+    int64_t delta,
     const std::unordered_map<std::string, std::string>& tags)
 {
-    updateMap(_counters, name, delta, tags,
-        [](int64_t initialValue, int64_t newValue) {
-            return initialValue + newValue;
-        });
+    updateMap(_counters,
+              name,
+              delta,
+              tags,
+              [](int64_t initialValue, int64_t newValue) {
+                  return initialValue + newValue;
+              });
 }
 
 void InMemoryStatsReporter::recordTimer(
-    const std::string& name, int64_t time,
+    const std::string& name,
+    int64_t time,
     const std::unordered_map<std::string, std::string>& tags)
 {
-    updateMap(_timers, name, time, tags,
-        [](int64_t initialValue, int64_t newValue) {
+    updateMap(
+        _timers, name, time, tags, [](int64_t initialValue, int64_t newValue) {
             return initialValue + newValue;
         });
 }
 
 void InMemoryStatsReporter::updateGauge(
-    const std::string& name, int64_t amount,
+    const std::string& name,
+    int64_t amount,
     const std::unordered_map<std::string, std::string>& tags)
 {
-    updateMap(_gauges, name, amount, tags,
-        [](int64_t, int64_t newValue) { return newValue; });
+    updateMap(_gauges, name, amount, tags, [](int64_t, int64_t newValue) {
+        return newValue;
+    });
 }
 
 void InMemoryStatsReporter::reset()

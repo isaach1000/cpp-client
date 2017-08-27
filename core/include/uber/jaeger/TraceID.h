@@ -52,8 +52,7 @@ class TraceID {
             out << std::hex << _low;
         }
         else {
-            out << std::hex << _high
-                << std::setw(16) << std::setfill('0')
+            out << std::hex << _high << std::setw(16) << std::setfill('0')
                 << std::hex << _low;
         }
     }

@@ -47,8 +47,7 @@ class SpanContext {
         : _traceID(traceID)
         , _spanID(spanID)
         , _parentID(parentID)
-        , _flags(sampled ? static_cast<unsigned char>(Flag::kSampled)
-                         : 0)
+        , _flags(sampled ? static_cast<unsigned char>(Flag::kSampled) : 0)
         , _baggage(baggage)
         , _debugID()
     {
@@ -95,16 +94,12 @@ class SpanContext {
     void print(std::ostream& out) const
     {
         _traceID.print(out);
-        out << ':' << std::hex << _spanID
-            << ':' << std::hex << _parentID
-            << ':' << std::hex << static_cast<size_t>(_flags);
+        out << ':' << std::hex << _spanID << ':' << std::hex << _parentID << ':'
+            << std::hex << static_cast<size_t>(_flags);
     }
 
   private:
-    enum class Flag : unsigned char {
-        kSampled = 1,
-        kDebug = 2
-    };
+    enum class Flag : unsigned char { kSampled = 1, kDebug = 2 };
 
     using StrMap = std::unordered_map<std::string, std::string>;
 
@@ -119,8 +114,8 @@ class SpanContext {
 }  // namespace jaeger
 }  // namespace uber
 
-inline std::ostream& operator<<(
-    std::ostream& out, const uber::jaeger::SpanContext& spanContext)
+inline std::ostream& operator<<(std::ostream& out,
+                                const uber::jaeger::SpanContext& spanContext)
 {
     spanContext.print(out);
     return out;

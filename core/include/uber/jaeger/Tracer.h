@@ -51,9 +51,7 @@ class Tracer {
       public:
         Options() = default;
 
-        Options(bool poolSpans,
-                bool gen128Bit,
-                bool zipkinSharedRPCSpan)
+        Options(bool poolSpans, bool gen128Bit, bool zipkinSharedRPCSpan)
             : _poolSpans(poolSpans)
             , _gen128Bit(gen128Bit)
             , _zipkinSharedRPCSpan(zipkinSharedRPCSpan)

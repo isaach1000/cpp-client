@@ -44,8 +44,8 @@ class Metrics {
         return std::unique_ptr<Metrics>(new Metrics(factory));
     }
 
-    static std::string
-    addTagsToMetricName(const std::string& name,
+    static std::string addTagsToMetricName(
+        const std::string& name,
         const std::unordered_map<std::string, std::string>& tags);
 
     explicit Metrics(StatsFactory& factory)
@@ -58,33 +58,37 @@ class Metrics {
         , _tracesJoinedNotSampled(factory.createCounter(
               "jaeger.traces", { { "state", "joined" }, { "sampled", "n" } }))
         , _spansStarted(factory.createCounter(
-              "jaeger.spans", { { "state", "started" }, { "group", "lifecycle" } }))
+              "jaeger.spans",
+              { { "state", "started" }, { "group", "lifecycle" } }))
         , _spansFinished(factory.createCounter(
-              "jaeger.spans", { { "state", "finished" }, { "group", "lifecycle" } }))
+              "jaeger.spans",
+              { { "state", "finished" }, { "group", "lifecycle" } }))
         , _spansSampled(factory.createCounter(
               "jaeger.spans", { { "group", "sampling" }, { "sampled", "y" } }))
         , _spansNotSampled(factory.createCounter(
               "jaeger.spans", { { "group", "sampling" }, { "sampled", "n" } }))
         , _decodingErrors(factory.createCounter("jaeger.decoding-errors", {}))
         , _reporterSuccess(factory.createCounter("jaeger.reporter-spans",
-              { { "state", "success" } }))
+                                                 { { "state", "success" } }))
         , _reporterFailure(factory.createCounter("jaeger.reporter-spans",
-              { { "state", "failure" } }))
+                                                 { { "state", "failure" } }))
         , _reporterDropped(factory.createCounter("jaeger.reporter-spans",
-              { { "state", "dropped" } }))
+                                                 { { "state", "dropped" } }))
         , _reporterQueueLength(factory.createGauge("jaeger.reporter-queue", {}))
-        , _samplerRetrieved(
-              factory.createCounter("jaeger.sampler", { { "state", "retrieved" } }))
-        , _samplerUpdated(
-              factory.createCounter("jaeger.sampler", { { "state", "updated" } }))
+        , _samplerRetrieved(factory.createCounter("jaeger.sampler",
+                                                  { { "state", "retrieved" } }))
+        , _samplerUpdated(factory.createCounter("jaeger.sampler",
+                                                { { "state", "updated" } }))
         , _samplerQueryFailure(factory.createCounter(
-              "jaeger.sampler", { { "state", "failure" }, { "phase", "query" } }))
+              "jaeger.sampler",
+              { { "state", "failure" }, { "phase", "query" } }))
         , _samplerParsingFailure(factory.createCounter(
-              "jaeger.sampler", { { "state", "failure" }, { "phase", "parsing" } }))
-        , _baggageUpdateSuccess(
-              factory.createCounter("jaeger.baggage-update", { { "result", "ok" } }))
+              "jaeger.sampler",
+              { { "state", "failure" }, { "phase", "parsing" } }))
+        , _baggageUpdateSuccess(factory.createCounter("jaeger.baggage-update",
+                                                      { { "result", "ok" } }))
         , _baggageUpdateFailure(factory.createCounter("jaeger.baggage-update",
-              { { "result", "err" } }))
+                                                      { { "result", "err" } }))
         , _baggageTruncate(factory.createCounter("jaeger.baggage-truncate", {}))
         , _baggageRestrictionsUpdateSuccess(factory.createCounter(
               "jaeger.baggage-restrictions-update", { { "result", "ok" } }))
@@ -138,9 +142,15 @@ class Metrics {
         return *_samplerParsingFailure;
     }
     Counter& samplerParsingFailure() { return *_samplerParsingFailure; }
-    const Counter& baggageUpdateSuccess() const { return *_baggageUpdateSuccess; }
+    const Counter& baggageUpdateSuccess() const
+    {
+        return *_baggageUpdateSuccess;
+    }
     Counter& baggageUpdateSuccess() { return *_baggageUpdateSuccess; }
-    const Counter& baggageUpdateFailure() const { return *_baggageUpdateFailure; }
+    const Counter& baggageUpdateFailure() const
+    {
+        return *_baggageUpdateFailure;
+    }
     Counter& baggageUpdateFailure() { return *_baggageUpdateFailure; }
     const Counter& baggageTruncate() const { return *_baggageTruncate; }
     Counter& baggageTruncate() { return *_baggageTruncate; }

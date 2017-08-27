@@ -1,10 +1,10 @@
 Language:        Cpp
 AccessModifierOffset: -2
-AlignAfterOpenBracket: DontAlign
+AlignAfterOpenBracket: Align
 AlignConsecutiveAssignments: false
 AlignConsecutiveDeclarations: false
 AlignEscapedNewlinesLeft: false
-AlignOperands:   false
+AlignOperands: true
 AlignTrailingComments: false
 AllowAllParametersOfDeclarationOnNextLine: true
 AllowShortBlocksOnASingleLine: false
@@ -14,10 +14,10 @@ AllowShortIfStatementsOnASingleLine: false
 AllowShortLoopsOnASingleLine: false
 AlwaysBreakAfterDefinitionReturnType: None
 AlwaysBreakAfterReturnType: None
-AlwaysBreakBeforeMultilineStrings: false
-AlwaysBreakTemplateDeclarations: false
-BinPackArguments: true
-BinPackParameters: true
+AlwaysBreakBeforeMultilineStrings: true
+AlwaysBreakTemplateDeclarations: true
+BinPackArguments: false
+BinPackParameters: false
 BraceWrapping:
   AfterClass:      false
   AfterControlStatement: false
@@ -27,14 +27,14 @@ BraceWrapping:
   AfterStruct:     false
   AfterUnion:      false
   BeforeCatch:     false
-  BeforeElse:      false
+  BeforeElse:      true
   IndentBraces:    false
 BreakBeforeBinaryOperators: All
-BreakBeforeBraces: WebKit
+BreakBeforeBraces: Stroustrup
 BreakBeforeTernaryOperators: true
 BreakConstructorInitializersBeforeComma: true
 BreakStringLiterals: true
-ColumnLimit:     0
+ColumnLimit:     80
 CommentPragmas:  '^ IWYU pragma:'
 ConstructorInitializerAllOnOneLineOrOnePerLine: false
 ConstructorInitializerIndentWidth: 4
