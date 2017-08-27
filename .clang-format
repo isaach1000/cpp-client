@@ -30,7 +30,7 @@ BraceWrapping:
   BeforeElse:      true
   IndentBraces:    false
 BreakBeforeBinaryOperators: All
-BreakBeforeBraces: Stroustrup
+BreakBeforeBraces: Custom
 BreakBeforeTernaryOperators: true
 BreakConstructorInitializersBeforeComma: true
 BreakStringLiterals: true
