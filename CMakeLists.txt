@@ -23,15 +23,34 @@ include_directories(${GTEST_INCLUDE_DIRS})
 find_package(Thrift REQUIRED)
 include_directories(${THRIFT_INCLUDE_DIR})
 
-include_directories(thrift_gen)
-
-file(GLOB THRIFT_GEN_SRC thrift_gen/*.cpp)
-list(FILTER THRIFT_GEN_SRC EXCLUDE REGEX ".*\\.skeleton\\.cpp")
-add_library(jaegeridl ${THRIFT_GEN_SRC})
-
 if(CMAKE_BUILD_TYPE MATCHES Debug)
     include(CodeCoverage)
     APPEND_COVERAGE_COMPILER_FLAGS()
 endif()
 
-add_subdirectory(core)
+include_directories("include")
+
+file(GLOB SRC "src/uber/jaeger/*.cpp")
+file(GLOB TEST_SRC "src/uber/jaeger/*Test.cpp")
+foreach(SUBDIR "metrics" "propagation" "reporters" "samplers" "utils")
+    file(GLOB SUBDIR_SRC "src/uber/jaeger/${SUBDIR}/*.cpp")
+    list(APPEND SRC ${SUBDIR_SRC})
+    file(GLOB SUBDIR_TEST_SRC "src/uber/jaeger/${SUBDIR}/*Test.cpp")
+    list(APPEND TEST_SRC ${SUBDIR_TEST_SRC})
+endforeach(SUBDIR)
+list(FILTER SRC EXCLUDE REGEX ".*Test\\.cpp")
+
+file(GLOB THRIFT_GEN_SRC src/uber/jaeger/thrift_gen/*.cpp)
+list(FILTER THRIFT_GEN_SRC EXCLUDE REGEX ".*\\.skeleton\\.cpp")
+
+add_library(jaeger ${SRC})
+
+add_executable(UnitTest ${TEST_SRC})
+target_link_libraries(UnitTest ${GTEST_BOTH_LIBRARIES} jaeger)
+add_test(NAME UnitTest
+         COMMAND UnitTest)
+if(CMAKE_BUILD_TYPE MATCHES Debug)
+    setup_target_for_coverage(NAME UnitTestCoverage
+                              EXECUTABLE UnitTest
+                              DEPENDENCIES UnitTest)
+endif()
