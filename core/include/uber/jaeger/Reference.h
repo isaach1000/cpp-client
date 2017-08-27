@@ -20,24 +20,39 @@
  * THE SOFTWARE.
  */
 
-#ifndef UBER_JAEGER_METRICS_GAUGE_H
-#define UBER_JAEGER_METRICS_GAUGE_H
+#ifndef UBER_JAEGER_REFERENCE_H
+#define UBER_JAEGER_REFERENCE_H
 
-#include <stdint.h>
+#include <string>
+
+#include "uber/jaeger/SpanContext.h"
 
 namespace uber {
 namespace jaeger {
-namespace metrics {
 
-class Gauge {
+class Reference {
   public:
-    virtual ~Gauge() = default;
+    enum class Type {
+        kChildOfRef,
+        kFollowsFromRef
+    };
 
-    virtual void update(int64_t amount) = 0;
+    Reference(const SpanContext& spanContext, Type type)
+        : _spanContext(spanContext)
+        , _type(type)
+    {
+    }
+
+    const SpanContext& spanContext() const { return _spanContext; }
+
+    Type type() const { return _type; }
+
+  private:
+    SpanContext _spanContext;
+    Type _type;
 };
 
-}  // namespace metrics
 }  // namespace jaeger
 }  // namespace uber
 
-#endif  // UBER_JAEGER_METRICS_GAUGE_H
+#endif  // UBER_JAEGER_REFERENCE_H

@@ -20,24 +20,4 @@
  * THE SOFTWARE.
  */
 
-#ifndef UBER_JAEGER_METRICS_GAUGE_H
-#define UBER_JAEGER_METRICS_GAUGE_H
-
-#include <stdint.h>
-
-namespace uber {
-namespace jaeger {
-namespace metrics {
-
-class Gauge {
-  public:
-    virtual ~Gauge() = default;
-
-    virtual void update(int64_t amount) = 0;
-};
-
-}  // namespace metrics
-}  // namespace jaeger
-}  // namespace uber
-
-#endif  // UBER_JAEGER_METRICS_GAUGE_H
+#include "uber/jaeger/metrics/StatsFactory.h"

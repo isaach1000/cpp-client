@@ -20,24 +20,42 @@
  * THE SOFTWARE.
  */
 
-#ifndef UBER_JAEGER_METRICS_GAUGE_H
-#define UBER_JAEGER_METRICS_GAUGE_H
+#ifndef UBER_JAEGER_SPAN_H
+#define UBER_JAEGER_SPAN_H
 
-#include <stdint.h>
+#include <chrono>
+#include <memory>
+#include <mutex>
+
+#include "uber/jaeger/LogRecord.h"
+#include "uber/jaeger/Reference.h"
+#include "uber/jaeger/SpanContext.h"
+#include "uber/jaeger/Tag.h"
 
 namespace uber {
 namespace jaeger {
-namespace metrics {
 
-class Gauge {
+class Tracer;
+
+class Span {
   public:
-    virtual ~Gauge() = default;
+    using Clock = std::chrono::steady_clock;
 
-    virtual void update(int64_t amount) = 0;
+    ~Span();
+
+  private:
+    Tracer& _tracer;
+    SpanContext _context;
+    std::string _operationName;
+    Clock::time_point _startTime;
+    Clock::duration _duration;
+    std::vector<Tag> _tags;
+    std::vector<LogRecord> _logs;
+    std::vector<Reference> _references;
+    std::mutex _mutex;
 };
 
-}  // namespace metrics
 }  // namespace jaeger
 }  // namespace uber
 
-#endif  // UBER_JAEGER_METRICS_GAUGE_H
+#endif  // UBER_JAEGER_SPAN_H

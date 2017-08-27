@@ -20,24 +20,33 @@
  * THE SOFTWARE.
  */
 
-#ifndef UBER_JAEGER_METRICS_GAUGE_H
-#define UBER_JAEGER_METRICS_GAUGE_H
+#ifndef UBER_JAEGER_TAG_H
+#define UBER_JAEGER_TAG_H
 
-#include <stdint.h>
+#include <string>
+
+#include <boost/variant/variant.hpp>
 
 namespace uber {
 namespace jaeger {
-namespace metrics {
 
-class Gauge {
+class Tag {
   public:
-    virtual ~Gauge() = default;
+    using ValueType = boost::variant<bool, int64_t, double, std::string>;
 
-    virtual void update(int64_t amount) = 0;
+    template <typename ValueArg>
+    Tag(const std::string& key, ValueArg&& value)
+        : _key(key)
+        , _value(std::forward<ValueArg>(value))
+    {
+    }
+
+  private:
+    std::string _key;
+    ValueType _value;
 };
 
-}  // namespace metrics
 }  // namespace jaeger
 }  // namespace uber
 
-#endif  // UBER_JAEGER_METRICS_GAUGE_H
+#endif  // UBER_JAEGER_TAG_H

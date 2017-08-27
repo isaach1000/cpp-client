@@ -23,6 +23,8 @@
 #ifndef UBER_JAEGER_METRICS_COUNTER_H
 #define UBER_JAEGER_METRICS_COUNTER_H
 
+#include <stdint.h>
+
 namespace uber {
 namespace jaeger {
 namespace metrics {

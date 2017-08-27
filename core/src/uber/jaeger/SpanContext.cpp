@@ -20,24 +20,58 @@
  * THE SOFTWARE.
  */
 
-#ifndef UBER_JAEGER_METRICS_GAUGE_H
-#define UBER_JAEGER_METRICS_GAUGE_H
-
-#include <stdint.h>
+#include "uber/jaeger/SpanContext.h"
 
 namespace uber {
 namespace jaeger {
-namespace metrics {
 
-class Gauge {
-  public:
-    virtual ~Gauge() = default;
+SpanContext::TraceID SpanContext::TraceID::fromStream(std::istream& in)
+{
+    TraceID traceID;
+    if (!(in >> std::hex >> traceID._high)) {
+        return TraceID();
+    }
+    if (!(in >> std::hex >> traceID._low)) {
+        return TraceID();
+    }
+    return traceID;
+}
 
-    virtual void update(int64_t amount) = 0;
-};
+SpanContext SpanContext::fromStream(std::istream& in)
+{
+    SpanContext spanContext;
+    spanContext._traceID = TraceID::fromStream(in);
+    if (!in || !spanContext._traceID.isValid()) {
+        return SpanContext();
+    }
 
-}  // namespace metrics
+    char ch = '\0';
+    if (!in.get(ch) || ch != ':') {
+        return SpanContext();
+    }
+
+    if (!(in >> std::hex >> spanContext._spanID)) {
+        return SpanContext();
+    }
+
+    if (!in.get(ch) || ch != ':') {
+        return SpanContext();
+    }
+
+    if (!(in >> std::hex >> spanContext._parentID)) {
+        return SpanContext();
+    }
+
+    if (!in.get(ch) || ch != ':') {
+        return SpanContext();
+    }
+
+    if (!(in >> std::hex >> spanContext._flags)) {
+        return SpanContext();
+    }
+
+    return spanContext;
+}
+
 }  // namespace jaeger
 }  // namespace uber
-
-#endif  // UBER_JAEGER_METRICS_GAUGE_H

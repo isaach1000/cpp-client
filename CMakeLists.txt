@@ -12,6 +12,9 @@ endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -pedantic -pthread")
 
+find_package(Boost 1.54 REQUIRED)
+include_directories(${Boost_INCLUDE_DIRS})
+
 include(CTest)
 enable_testing()
 find_package(GTest REQUIRED)
@@ -29,15 +32,6 @@ add_library(jaeger ${THRIFT_GEN_SRC})
 if(CMAKE_BUILD_TYPE MATCHES Debug)
     include(CodeCoverage)
     APPEND_COVERAGE_COMPILER_FLAGS()
-    set(COVERAGE_EXCLUDES "thrift_gen/*"
-                          "${THRIFT_INCLUDE_DIR}/*"
-                          "/usr/include/c++/6/*"
-                          "/usr/include/c++/6/bits/*"
-                          "/usr/include/c++/6/ext/*")
-    foreach(inc_dir IN LISTS GTEST_INCLUDE_DIRS)
-        list(APPEND COVERAGE_EXCLUDES "${inc_dir}/gtest/*"
-                                      "${inc_dir}/gtest/internal/*")
-    endforeach()
 endif()
 
- add_subdirectory(core)
+add_subdirectory(core)
