@@ -32,8 +32,8 @@ AdaptiveSampler::SamplerMap samplersFromStrategies(
 {
     AdaptiveSampler::SamplerMap samplers;
     for (auto&& strategy : strategies.perOperationStrategies) {
-        samplers[strategy.operation] =
-            std::make_shared<GuaranteedThroughputProbabilisticSampler>(
+        samplers[strategy.operation]
+            = std::make_shared<GuaranteedThroughputProbabilisticSampler>(
                 strategies.defaultLowerBoundTracesPerSecond,
                 strategy.probabilisticSampling.samplingRate);
     }
@@ -53,8 +53,8 @@ AdaptiveSampler::AdaptiveSampler(
 {
 }
 
-SamplingStatus AdaptiveSampler::isSampled(
-    const TraceID& id, const std::string& operation)
+SamplingStatus AdaptiveSampler::isSampled(const TraceID& id,
+                                          const std::string& operation)
 {
     boost::upgrade_lock<boost::upgrade_mutex> readLock(_rwMutex);
     auto samplerItr = _samplers.find(operation);
@@ -72,8 +72,8 @@ SamplingStatus AdaptiveSampler::isSampled(
         return _defaultSampler.isSampled(id, operation);
     }
 
-    auto newSampler =
-        std::make_shared<GuaranteedThroughputProbabilisticSampler>(
+    auto newSampler
+        = std::make_shared<GuaranteedThroughputProbabilisticSampler>(
             _lowerBound, _defaultSampler.samplingRate());
     _samplers[operation] = newSampler;
     return newSampler->isSampled(id, operation);

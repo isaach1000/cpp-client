@@ -34,8 +34,9 @@ class Sampler {
   public:
     virtual ~Sampler() = default;
 
-    virtual SamplingStatus isSampled(
-        const TraceID& id, const std::string& operation) = 0;
+    virtual SamplingStatus isSampled(const TraceID& id,
+                                     const std::string& operation)
+        = 0;
 
     virtual void close() = 0;
 };

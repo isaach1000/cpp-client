@@ -44,8 +44,8 @@ class Metrics {
         return std::unique_ptr<Metrics>(new Metrics(factory));
     }
 
-    static std::string
-    addTagsToMetricName(const std::string& name,
+    static std::string addTagsToMetricName(
+        const std::string& name,
         const std::unordered_map<std::string, std::string>& tags);
 
     explicit Metrics(StatsFactory& factory)
@@ -58,20 +58,22 @@ class Metrics {
         , _tracesJoinedNotSampled(factory.createCounter(
               "jaeger.traces", { { "state", "joined" }, { "sampled", "n" } }))
         , _spansStarted(factory.createCounter(
-              "jaeger.spans", { { "state", "started" }, { "group", "lifecycle" } }))
+              "jaeger.spans",
+              { { "state", "started" }, { "group", "lifecycle" } }))
         , _spansFinished(factory.createCounter(
-              "jaeger.spans", { { "state", "finished" }, { "group", "lifecycle" } }))
+              "jaeger.spans",
+              { { "state", "finished" }, { "group", "lifecycle" } }))
         , _spansSampled(factory.createCounter(
               "jaeger.spans", { { "group", "sampling" }, { "sampled", "y" } }))
         , _spansNotSampled(factory.createCounter(
               "jaeger.spans", { { "group", "sampling" }, { "sampled", "n" } }))
         , _decodingErrors(factory.createCounter("jaeger.decoding-errors", {}))
         , _reporterSuccess(factory.createCounter("jaeger.reporter-spans",
-              { { "state", "success" } }))
+                                                 { { "state", "success" } }))
         , _reporterFailure(factory.createCounter("jaeger.reporter-spans",
-              { { "state", "failure" } }))
+                                                 { { "state", "failure" } }))
         , _reporterDropped(factory.createCounter("jaeger.reporter-spans",
-              { { "state", "dropped" } }))
+                                                 { { "state", "dropped" } }))
         , _reporterQueueLength(factory.createGauge("jaeger.reporter-queue", {}))
         , _samplerRetrieved(factory.createCounter("jaeger.sampler",
                                                   { { "state", "retrieved" } }))

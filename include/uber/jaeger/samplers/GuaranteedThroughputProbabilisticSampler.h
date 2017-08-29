@@ -34,28 +34,28 @@ namespace samplers {
 
 class GuaranteedThroughputProbabilisticSampler : public Sampler {
   public:
-    GuaranteedThroughputProbabilisticSampler(
-        double lowerBound, double samplingRate)
+    GuaranteedThroughputProbabilisticSampler(double lowerBound,
+                                             double samplingRate)
         : _probabilisticSampler(samplingRate)
         , _samplingRate(_probabilisticSampler.samplingRate())
         , _lowerBoundSampler(lowerBound)
         , _lowerBound(lowerBound)
-        , _tags({{kSamplerTypeTagKey, kSamplerTypeLowerBound},
-                 {kSamplerParamTagKey, _samplingRate}})
+        , _tags({ { kSamplerTypeTagKey, kSamplerTypeLowerBound },
+                  { kSamplerParamTagKey, _samplingRate } })
     {
     }
 
-    SamplingStatus isSampled(
-        const TraceID& id, const std::string& operation) override
+    SamplingStatus isSampled(const TraceID& id,
+                             const std::string& operation) override
     {
-        const auto samplingStatus =
-            _probabilisticSampler.isSampled(id, operation);
+        const auto samplingStatus
+            = _probabilisticSampler.isSampled(id, operation);
         if (samplingStatus.isSampled()) {
             _lowerBoundSampler.isSampled(id, operation);
             return samplingStatus;
         }
-        const auto sampled =
-            _lowerBoundSampler.isSampled(id, operation).isSampled();
+        const auto sampled
+            = _lowerBoundSampler.isSampled(id, operation).isSampled();
         return SamplingStatus(sampled, samplingStatus.tags());
     }
 

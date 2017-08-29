@@ -40,18 +40,18 @@ namespace samplers {
 
 class AdaptiveSampler : public Sampler {
   public:
-    using PerOperationSamplingStrategies =
-        thrift::sampling_manager::PerOperationSamplingStrategies;
-    using SamplerMap =
-        std::unordered_map<
-            std::string,
-            std::shared_ptr<GuaranteedThroughputProbabilisticSampler>>;
+    using PerOperationSamplingStrategies
+        = thrift::sampling_manager::PerOperationSamplingStrategies;
+    using SamplerMap = std::
+        unordered_map<std::string,
+                      std::
+                          shared_ptr<GuaranteedThroughputProbabilisticSampler>>;
 
     AdaptiveSampler(const PerOperationSamplingStrategies& strategies,
                     size_t maxOperations);
 
-    SamplingStatus isSampled(
-        const TraceID& id, const std::string& operation) override;
+    SamplingStatus isSampled(const TraceID& id,
+                             const std::string& operation) override;
 
     void close() override;
 

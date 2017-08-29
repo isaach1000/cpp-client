@@ -53,8 +53,7 @@ class SamplerOptions {
         return _metrics;
     }
 
-    void setMetrics(
-        const std::shared_ptr<metrics::Metrics>& metrics)
+    void setMetrics(const std::shared_ptr<metrics::Metrics>& metrics)
     {
         _metrics = metrics;
     }
@@ -97,8 +96,8 @@ class SamplerOptions {
         return _samplingRefreshInterval;
     }
 
-    void setSamplingRefreshInterval(
-        const Clock::duration& samplingRefreshInterval)
+    void
+    setSamplingRefreshInterval(const Clock::duration& samplingRefreshInterval)
     {
         _samplingRefreshInterval = samplingRefreshInterval;
     }

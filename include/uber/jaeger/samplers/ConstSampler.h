@@ -34,20 +34,18 @@ class ConstSampler : public Sampler {
   public:
     explicit ConstSampler(bool sample)
         : _decision(sample)
-        , _tags({{kSamplerTypeTagKey, kSamplerTypeConst},
-                 {kSamplerParamTagKey, _decision}})
+        , _tags({ { kSamplerTypeTagKey, kSamplerTypeConst },
+                  { kSamplerParamTagKey, _decision } })
     {
     }
 
-    SamplingStatus isSampled(
-        const TraceID& id, const std::string& operation) override
+    SamplingStatus isSampled(const TraceID& id,
+                             const std::string& operation) override
     {
         return SamplingStatus(_decision, _tags);
     }
 
-    void close() override
-    {
-    }
+    void close() override {}
 
   private:
     bool _decision;

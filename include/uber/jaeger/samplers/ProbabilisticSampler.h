@@ -35,23 +35,21 @@ class ProbabilisticSampler : public Sampler {
     explicit ProbabilisticSampler(double samplingRate)
         : _samplingRate(std::max(0.0, std::min(samplingRate, 1.0)))
         , _samplingBoundary(
-            static_cast<uint64_t>(kMaxRandomNumber * _samplingRate))
-        , _tags({{kSamplerTypeTagKey, kSamplerTypeProbabilistic},
-                 {kSamplerParamTagKey, _samplingRate}})
+              static_cast<uint64_t>(kMaxRandomNumber * _samplingRate))
+        , _tags({ { kSamplerTypeTagKey, kSamplerTypeProbabilistic },
+                  { kSamplerParamTagKey, _samplingRate } })
     {
     }
 
     double samplingRate() const { return _samplingRate; }
 
-    SamplingStatus isSampled(
-        const TraceID& id, const std::string& operation) override
+    SamplingStatus isSampled(const TraceID& id,
+                             const std::string& operation) override
     {
         return SamplingStatus(_samplingBoundary >= id.low(), _tags);
     }
 
-    void close() override
-    {
-    }
+    void close() override {}
 
   private:
     static constexpr auto kMaxRandomNumber = static_cast<uint64_t>(1) << 63;

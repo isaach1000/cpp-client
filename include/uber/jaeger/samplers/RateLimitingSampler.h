@@ -36,20 +36,18 @@ class RateLimitingSampler : public Sampler {
     explicit RateLimitingSampler(double maxTracesPerSecond)
         : _maxTracesPerSecond(maxTracesPerSecond)
         , _rateLimiter(_maxTracesPerSecond, std::max(_maxTracesPerSecond, 1.0))
-        , _tags({{kSamplerTypeTagKey, kSamplerTypeRateLimiting},
-                 {kSamplerParamTagKey, maxTracesPerSecond}})
+        , _tags({ { kSamplerTypeTagKey, kSamplerTypeRateLimiting },
+                  { kSamplerParamTagKey, maxTracesPerSecond } })
     {
     }
 
-    SamplingStatus isSampled(
-        const TraceID& id, const std::string& operation) override
+    SamplingStatus isSampled(const TraceID& id,
+                             const std::string& operation) override
     {
         return SamplingStatus(_rateLimiter.checkCredit(1), _tags);
     }
 
-    void close() override
-    {
-    }
+    void close() override {}
 
   private:
     double _maxTracesPerSecond;

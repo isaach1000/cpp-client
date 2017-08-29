@@ -30,8 +30,7 @@ namespace jaeger {
 namespace samplers {
 
 RemotelyControlledSampler::RemotelyControlledSampler(
-    const std::string& serviceName,
-    const SamplerOptions& options)
+    const std::string& serviceName, const SamplerOptions& options)
     : _serviceName(serviceName)
     , _options(options)
     , _running(true)
