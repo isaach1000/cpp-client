@@ -45,7 +45,6 @@ template <typename ClockType = std::chrono::steady_clock>
 class Tracer {
   public:
     using Clock = ClockType;
-    using TimePoint = typename Clock::time_point;
 
     class Options {
       public:

@@ -20,60 +20,49 @@
  * THE SOFTWARE.
  */
 
-#ifndef UBER_JAEGER_UTILS_RATELIMITER_H
-#define UBER_JAEGER_UTILS_RATELIMITER_H
+#ifndef UBER_JAEGER_SAMPLERS_REMOTELYCONTROLLEDSAMPLER_H
+#define UBER_JAEGER_SAMPLERS_REMOTELYCONTROLLEDSAMPLER_H
 
 #include <chrono>
+#include <condition_variable>
 #include <mutex>
+#include <thread>
+
+#include "uber/jaeger/Constants.h"
+#include "uber/jaeger/samplers/Sampler.h"
+#include "uber/jaeger/samplers/SamplerOptions.h"
 
 namespace uber {
 namespace jaeger {
-namespace utils {
+namespace samplers {
 
-template <typename ClockType = std::chrono::steady_clock>
-class RateLimiter {
+class RemotelyControlledSampler : public Sampler {
   public:
-    using Clock = ClockType;
+    using Clock = std::chrono::steady_clock;
 
-    RateLimiter(double creditsPerSecond, double maxBalance)
-        : _creditsPerSecond(creditsPerSecond)
-        , _maxBalance(maxBalance)
-        , _balance(_maxBalance)
-        , _lastTick(Clock::now())
+    explicit RemotelyControlledSampler(const std::string& serviceName)
+        : RemotelyControlledSampler(serviceName, SamplerOptions())
     {
     }
 
-    bool checkCredit(double itemCost)
-    {
-        std::lock_guard<std::mutex> lock(_mutex);
-        const auto currentTime = Clock::now();
-        const auto elapsedTime
-            = std::chrono::duration<double>(currentTime - _lastTick);
-        _lastTick = currentTime;
-
-        _balance += elapsedTime.count() * _creditsPerSecond;
-        if (_balance > _maxBalance) {
-            _balance = _maxBalance;
-        }
-
-        if (_balance >= itemCost) {
-            _balance -= itemCost;
-            return true;
-        }
-
-        return false;
-    }
+    RemotelyControlledSampler(const std::string& serviceName,
+                              const SamplerOptions& options);
 
   private:
-    double _creditsPerSecond;
-    double _maxBalance;
-    double _balance;
-    typename Clock::time_point _lastTick;
+    void pollController();
+
+    void updateSampler();
+
+    std::string _serviceName;
+    SamplerOptions _options;
+    bool _running;
     std::mutex _mutex;
+    std::condition_variable _shutdownCV;
+    std::thread _thread;
 };
 
-}  // namespace utils
+}  // namespace samplers
 }  // namespace jaeger
 }  // namespace uber
 
-#endif  // UBER_JAEGER_UTILS_RATELIMITER_H
+#endif  // UBER_JAEGER_SAMPLERS_REMOTELYCONTROLLEDSAMPLER_H
