@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.0)
 
+include("cmake/HunterGate.cmake")
+HunterGate(URL "https://github.com/ruslo/hunter/archive/v0.19.89.tar.gz"
+           SHA1 "98bf8e401fff1394e8df0a757772265511dd9084")
+
 project(jaeger-client-cpp)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
@@ -12,12 +16,17 @@ endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -pedantic -pthread")
 
-find_package(Boost 1.54 REQUIRED COMPONENTS system thread)
+hunter_add_package(Boost COMPONENTS system thread)
+find_package(Boost CONFIG REQUIRED COMPONENTS system thread)
 include_directories(${Boost_INCLUDE_DIRS})
+
+hunter_add_package(nlohmann_json)
+find_package(nlohmann_json CONFIG REQUIRED)
 
 include(CTest)
 enable_testing()
-find_package(GTest REQUIRED)
+hunter_add_package(GTest)
+find_package(GTest CONFIG REQUIRED)
 include_directories(${GTEST_INCLUDE_DIRS})
 
 find_package(Thrift REQUIRED)
@@ -44,10 +53,10 @@ file(GLOB THRIFT_GEN_SRC src/uber/jaeger/thrift_gen/*.cpp)
 list(FILTER THRIFT_GEN_SRC EXCLUDE REGEX ".*\\.skeleton\\.cpp")
 
 add_library(jaeger ${SRC})
-target_link_libraries(jaeger ${Boost_SYSTEM_LIBRARY} ${Boost_THREAD_LIBRARY})
+target_link_libraries(jaeger Boost::system Boost::thread nlohmann_json)
 
 add_executable(UnitTest ${TEST_SRC})
-target_link_libraries(UnitTest ${GTEST_BOTH_LIBRARIES} jaeger)
+target_link_libraries(UnitTest GTest::main jaeger)
 add_test(NAME UnitTest
          COMMAND UnitTest)
 if(CMAKE_BUILD_TYPE MATCHES Debug)
