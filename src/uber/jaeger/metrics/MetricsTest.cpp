@@ -79,7 +79,7 @@ TEST_F(MetricsTest, testTimer)
     constexpr auto metricName = "jaeger.test-timer";
     StatsFactoryImpl factory(_metricsReporter);
     auto timer = factory.createTimer(metricName, {});
-    timer->durationMicros(timeValue);
+    timer->record(timeValue);
     const auto& timers = _metricsReporter.timers();
     ASSERT_EQ(1, timers.size());
     auto itr = timers.find(metricName);

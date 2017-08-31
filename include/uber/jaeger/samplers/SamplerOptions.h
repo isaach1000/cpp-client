@@ -28,6 +28,7 @@
 #include "uber/jaeger/samplers/Sampler.h"
 #include "uber/jaeger/utils/RateLimiter.h"
 
+#include <cassert>
 #include <chrono>
 #include <memory>
 #include <string>
@@ -46,6 +47,8 @@ class SamplerOptions {
   public:
     using Clock = std::chrono::steady_clock;
 
+    SamplerOptions();
+
     ~SamplerOptions();
 
     const std::shared_ptr<metrics::Metrics>& metrics() const
@@ -55,6 +58,7 @@ class SamplerOptions {
 
     void setMetrics(const std::shared_ptr<metrics::Metrics>& metrics)
     {
+        assert(metrics);
         _metrics = metrics;
     }
 
@@ -65,14 +69,15 @@ class SamplerOptions {
         _maxOperations = maxOperations;
     }
 
-    const std::shared_ptr<Sampler>& initialSampler() const
+    const std::shared_ptr<Sampler>& sampler() const
     {
-        return _initialSampler;
+        return _sampler;
     }
 
-    void setInitialSampler(const std::shared_ptr<Sampler>& initialSampler)
+    void setSampler(const std::shared_ptr<Sampler>& sampler)
     {
-        _initialSampler = initialSampler;
+        assert(sampler);
+        _sampler = sampler;
     }
 
     /* TODO
@@ -80,6 +85,7 @@ class SamplerOptions {
 
     void setLogger(const std::shared_ptr<Logger>& logger)
     {
+        assert(logger);
         _logger = logger;
     }
     */
@@ -105,7 +111,7 @@ class SamplerOptions {
   private:
     std::shared_ptr<metrics::Metrics> _metrics;
     size_t _maxOperations;
-    std::shared_ptr<Sampler> _initialSampler;
+    std::shared_ptr<Sampler> _sampler;
     std::string _samplingServerURL;
     Clock::duration _samplingRefreshInterval;
 };

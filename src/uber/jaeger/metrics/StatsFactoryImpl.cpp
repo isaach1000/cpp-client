@@ -75,7 +75,7 @@ class TimerImpl : public ReportedMetric, public Timer {
     {
     }
 
-    void durationMicros(int64_t time) override
+    void record(int64_t time) override
     {
         reporter().recordTimer(name(), time, tags());
     }

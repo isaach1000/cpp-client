@@ -24,11 +24,31 @@
 
 #include "uber/jaeger/metrics/Counter.h"
 #include "uber/jaeger/metrics/Gauge.h"
-#include "uber/jaeger/metrics/Metrics.h"
+#include "uber/jaeger/metrics/NullStatsFactory.h"
+#include "uber/jaeger/samplers/ProbabilisticSampler.h"
 
 namespace uber {
 namespace jaeger {
 namespace samplers {
+namespace {
+
+constexpr auto kDefaultMaxOperations = 2000;
+constexpr auto kDefaultSamplingRate = 0.001;
+constexpr auto kDefaultSamplingServerURL = "http://localhost:5778/sampling";
+const auto kDefaultSamplingRefreshInterval = std::chrono::minutes(1);
+
+}  // anonymous namespace
+
+SamplerOptions::SamplerOptions()
+    : _metrics()
+    , _maxOperations(kDefaultMaxOperations)
+    , _sampler(std::make_shared<ProbabilisticSampler>(kDefaultSamplingRate))
+    , _samplingServerURL(kDefaultSamplingServerURL)
+    , _samplingRefreshInterval(kDefaultSamplingRefreshInterval)
+{
+    metrics::NullStatsFactory factory;
+    _metrics = std::make_shared<metrics::Metrics>(factory);
+}
 
 SamplerOptions::~SamplerOptions() = default;
 

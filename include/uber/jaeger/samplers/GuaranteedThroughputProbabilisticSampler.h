@@ -23,6 +23,8 @@
 #ifndef UBER_JAEGER_SAMPLERS_GUARANTEEDTHROUGHPUTPROBABILISTICSAMPLER_H
 #define UBER_JAEGER_SAMPLERS_GUARANTEEDTHROUGHPUTPROBABILISTICSAMPLER_H
 
+#include <memory>
+
 #include "uber/jaeger/Constants.h"
 #include "uber/jaeger/samplers/ProbabilisticSampler.h"
 #include "uber/jaeger/samplers/RateLimitingSampler.h"
@@ -38,7 +40,7 @@ class GuaranteedThroughputProbabilisticSampler : public Sampler {
                                              double samplingRate)
         : _probabilisticSampler(samplingRate)
         , _samplingRate(_probabilisticSampler.samplingRate())
-        , _lowerBoundSampler(lowerBound)
+        , _lowerBoundSampler(new RateLimitingSampler(lowerBound))
         , _lowerBound(lowerBound)
         , _tags({ { kSamplerTypeTagKey, kSamplerTypeLowerBound },
                   { kSamplerParamTagKey, _samplingRate } })
@@ -51,24 +53,26 @@ class GuaranteedThroughputProbabilisticSampler : public Sampler {
         const auto samplingStatus
             = _probabilisticSampler.isSampled(id, operation);
         if (samplingStatus.isSampled()) {
-            _lowerBoundSampler.isSampled(id, operation);
+            _lowerBoundSampler->isSampled(id, operation);
             return samplingStatus;
         }
         const auto sampled
-            = _lowerBoundSampler.isSampled(id, operation).isSampled();
+            = _lowerBoundSampler->isSampled(id, operation).isSampled();
         return SamplingStatus(sampled, samplingStatus.tags());
     }
 
     void close() override
     {
         _probabilisticSampler.close();
-        _lowerBoundSampler.close();
+        _lowerBoundSampler->close();
     }
+
+    void update(double lowerBound, double samplingRate);
 
   private:
     ProbabilisticSampler _probabilisticSampler;
     double _samplingRate;
-    RateLimitingSampler _lowerBoundSampler;
+    std::unique_ptr<RateLimitingSampler> _lowerBoundSampler;
     double _lowerBound;
     std::vector<Tag> _tags;
 };

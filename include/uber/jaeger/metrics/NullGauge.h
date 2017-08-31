@@ -20,24 +20,22 @@
  * THE SOFTWARE.
  */
 
-#ifndef UBER_JAEGER_METRICS_TIMER_H
-#define UBER_JAEGER_METRICS_TIMER_H
+#ifndef UBER_JAEGER_METRICS_NULLGAUGE_H
+#define UBER_JAEGER_METRICS_NULLGAUGE_H
 
-#include <stdint.h>
+#include "uber/jaeger/metrics/Gauge.h"
 
 namespace uber {
 namespace jaeger {
 namespace metrics {
 
-class Timer {
+class NullGauge : public Gauge {
   public:
-    virtual ~Timer() = default;
-
-    virtual void record(int64_t time) = 0;
+    void update(int64_t) override {}
 };
 
 }  // namespace metrics
 }  // namespace jaeger
 }  // namespace uber
 
-#endif  // UBER_JAEGER_METRICS_TIMER_H
+#endif  // UBER_JAEGER_METRICS_NULLGAUGE_H

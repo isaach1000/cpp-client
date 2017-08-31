@@ -21,3 +21,29 @@
  */
 
 #include "uber/jaeger/samplers/GuaranteedThroughputProbabilisticSampler.h"
+
+namespace uber {
+namespace jaeger {
+namespace samplers {
+
+void GuaranteedThroughputProbabilisticSampler::update(
+    double lowerBound, double samplingRate)
+{
+    if (_samplingRate != samplingRate) {
+        _probabilisticSampler = ProbabilisticSampler(samplingRate);
+        _samplingRate = _probabilisticSampler.samplingRate();
+        _tags = {
+            { kSamplerTypeTagKey, kSamplerTypeLowerBound },
+            { kSamplerParamTagKey, _samplingRate }
+        };
+    }
+
+    if (_lowerBound != lowerBound) {
+        _lowerBoundSampler.reset(new RateLimitingSampler(lowerBound));
+        _lowerBound = lowerBound;
+    }
+}
+
+}  // namespace samplers
+}  // namespace jaeger
+}  // namespace uber

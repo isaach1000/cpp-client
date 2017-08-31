@@ -22,22 +22,147 @@
 
 #include "uber/jaeger/samplers/RemotelyControlledSampler.h"
 
+#include <cassert>
+
+#include <nlohmann/json.hpp>
+
 #include "uber/jaeger/metrics/Counter.h"
 #include "uber/jaeger/metrics/Gauge.h"
+#include "uber/jaeger/samplers/AdaptiveSampler.h"
+#include "uber/jaeger/utils/HTTP.h"
 
 namespace uber {
 namespace jaeger {
+
+namespace thrift {
+namespace sampling_manager {
+
+#define DECODE_FIELD(field) \
+    { \
+        result.__set_##field( \
+            jsonValue.at(#field).get<decltype(result.field)>()); \
+    }
+
+void from_json(const nlohmann::json& jsonValue,
+               ProbabilisticSamplingStrategy& result)
+{
+    DECODE_FIELD(samplingRate);
+}
+
+void from_json(const nlohmann::json& jsonValue,
+               RateLimitingSamplingStrategy& result)
+{
+    DECODE_FIELD(maxTracesPerSecond);
+}
+
+void from_json(const nlohmann::json& jsonValue,
+               OperationSamplingStrategy& result)
+{
+    DECODE_FIELD(operation);
+    DECODE_FIELD(probabilisticSampling);
+}
+
+void from_json(const nlohmann::json& jsonValue,
+               PerOperationSamplingStrategies& result)
+{
+    DECODE_FIELD(defaultSamplingProbability);
+    DECODE_FIELD(defaultLowerBoundTracesPerSecond);
+    DECODE_FIELD(perOperationStrategies);
+    DECODE_FIELD(defaultUpperBoundTracesPerSecond);
+}
+
+void from_json(const nlohmann::json& jsonValue,
+               SamplingStrategyResponse& result)
+{
+    auto operationSamplingItr = jsonValue.find("operationSampling");
+    if (operationSamplingItr != std::end(jsonValue)) {
+        result.operationSampling =
+            operationSamplingItr->get<PerOperationSamplingStrategies>();
+    }
+
+    result.strategyType =
+        static_cast<SamplingStrategyType::type>(
+            jsonValue.at("strategyType").get<int>());
+    switch (result.strategyType) {
+    case SamplingStrategyType::PROBABILISTIC: {
+        DECODE_FIELD(probabilisticSampling);
+    } break;
+    case SamplingStrategyType::RATE_LIMITING: {
+        DECODE_FIELD(rateLimitingSampling);
+    } break;
+    default: {
+        std::ostringstream oss;
+        oss << "Invalid strategy type" << result.strategyType;
+        throw std::runtime_error(oss.str());
+    } break;
+    }
+}
+
+#undef DECODE_FIELD
+
+}  // namespace sampling_manager
+}  // namespace thrift
+
 namespace samplers {
+namespace {
+
+class HTTPSamplingManager : public thrift::sampling_manager::SamplingManagerIf {
+  public:
+    using SamplingStrategyResponse =
+        thrift::sampling_manager::SamplingStrategyResponse;
+
+    explicit HTTPSamplingManager(const std::string& serverURL)
+        : _serverURL(serverURL)
+    {
+    }
+
+    void getSamplingStrategy(
+        SamplingStrategyResponse& result,
+        const std::string& serviceName) override
+    {
+        const auto uriStr =
+            _serverURL + "?" +
+            utils::http::percentEncode("service=" + serviceName);
+        const auto uri = utils::http::parseURI(uriStr);
+        const auto response = utils::http::httpGetRequest(uri);
+        const auto jsonValue = nlohmann::json::parse(response);
+        result = jsonValue.get<SamplingStrategyResponse>();
+    }
+
+  private:
+    std::string _serverURL;
+};
+
+}  // anonymous namespace
 
 RemotelyControlledSampler::RemotelyControlledSampler(
     const std::string& serviceName, const SamplerOptions& options)
-    : _serviceName(serviceName)
-    , _options(options)
+    : _options(options)
+    , _serviceName(serviceName)
+    , _manager(std::make_shared<HTTPSamplingManager>(
+                _options.samplingServerURL()))
     , _running(true)
     , _mutex()
     , _shutdownCV()
     , _thread([this]() { pollController(); })
 {
+}
+
+SamplingStatus RemotelyControlledSampler::isSampled(
+    const TraceID& id, const std::string& operation)
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    assert(_options.sampler());
+    return _options.sampler()->isSampled(id, operation);
+}
+
+void RemotelyControlledSampler::close()
+{
+    std::unique_lock<std::mutex> lock(_mutex);
+    _running = false;
+    lock.unlock();
+    _shutdownCV.notify_one();
+    _thread.join();
 }
 
 void RemotelyControlledSampler::pollController()
@@ -53,7 +178,64 @@ void RemotelyControlledSampler::pollController()
 
 void RemotelyControlledSampler::updateSampler()
 {
-    // TODO
+    assert(_manager);
+    assert(_options.metrics());
+    thrift::sampling_manager::SamplingStrategyResponse response;
+    try {
+        assert(_manager);
+        _manager->getSamplingStrategy(response, _serviceName);
+    }
+    catch (const std::exception& ex) {
+        std::cerr << ex.what() << '\n';
+        _options.metrics()->samplerQueryFailure().inc(1);
+        return;
+    }
+    catch (...) {
+        _options.metrics()->samplerQueryFailure().inc(1);
+        return;
+    }
+
+    std::lock_guard<std::mutex> lock(_mutex);
+    _options.metrics()->samplerRetrieved().inc(1);
+
+    if (response.__isset.operationSampling) {
+        updateAdaptiveSampler(response.operationSampling);
+    }
+    else {
+        try {
+            updateRateLimitingOrProbabilisticSampler(response);
+        }
+        catch (const std::exception& ex) {
+            std::cerr << ex.what() << '\n';
+            _options.metrics()->samplerUpdateFailure().inc(1);
+            return;
+        }
+        catch (...) {
+            _options.metrics()->samplerUpdateFailure().inc(1);
+            return;
+        }
+    }
+    _options.metrics()->samplerUpdated().inc(1);
+}
+
+void RemotelyControlledSampler::updateAdaptiveSampler(
+    const PerOperationSamplingStrategies& strategies)
+{
+    auto sampler = std::dynamic_pointer_cast<AdaptiveSampler>(
+        _options.sampler());
+    if (sampler) {
+        sampler->update(strategies);
+    }
+    else {
+        sampler = std::make_shared<AdaptiveSampler>(
+            strategies, _options.maxOperations());
+        _options.setSampler(sampler);
+    }
+}
+
+void RemotelyControlledSampler::updateRateLimitingOrProbabilisticSampler(
+    const SamplingStrategyResponse& response)
+{
 }
 
 }  // namespace samplers

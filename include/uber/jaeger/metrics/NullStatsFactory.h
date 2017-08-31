@@ -20,24 +20,55 @@
  * THE SOFTWARE.
  */
 
-#ifndef UBER_JAEGER_METRICS_TIMER_H
-#define UBER_JAEGER_METRICS_TIMER_H
+#ifndef UBER_JAEGER_METRICS_NULLSTATSFACTORY_H
+#define UBER_JAEGER_METRICS_NULLSTATSFACTORY_H
 
-#include <stdint.h>
+#include <memory>
+#include <string>
+#include <unordered_map>
+
+#include "uber/jaeger/metrics/NullCounter.h"
+#include "uber/jaeger/metrics/NullGauge.h"
+#include "uber/jaeger/metrics/NullTimer.h"
+#include "uber/jaeger/metrics/StatsFactory.h"
 
 namespace uber {
 namespace jaeger {
 namespace metrics {
 
-class Timer {
-  public:
-    virtual ~Timer() = default;
+class Counter;
+class Gauge;
+class Timer;
 
-    virtual void record(int64_t time) = 0;
+class NullStatsFactory : public StatsFactory {
+  public:
+    std::unique_ptr<Counter>
+    createCounter(const std::string&,
+                  const std::unordered_map<std::string, std::string>&)
+    override
+    {
+        return std::unique_ptr<Counter>(new NullCounter());
+    }
+
+    std::unique_ptr<Timer>
+    createTimer(const std::string&,
+                const std::unordered_map<std::string, std::string>&)
+    override
+    {
+        return std::unique_ptr<Timer>(new NullTimer());
+    }
+
+    std::unique_ptr<Gauge>
+    createGauge(const std::string&,
+                const std::unordered_map<std::string, std::string>&)
+    override
+    {
+        return std::unique_ptr<Gauge>(new NullGauge());
+    }
 };
 
 }  // namespace metrics
 }  // namespace jaeger
 }  // namespace uber
 
-#endif  // UBER_JAEGER_METRICS_TIMER_H
+#endif  // UBER_JAEGER_METRICS_NULLSTATSFACTORY_H

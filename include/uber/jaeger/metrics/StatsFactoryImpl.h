@@ -42,19 +42,22 @@ class StatsFactoryImpl : public StatsFactory {
   public:
     explicit StatsFactoryImpl(StatsReporter& reporter);
 
-    virtual ~StatsFactoryImpl() = default;
+    ~StatsFactoryImpl() = default;
 
-    virtual std::unique_ptr<Counter>
+    std::unique_ptr<Counter>
     createCounter(const std::string& name,
-                  const std::unordered_map<std::string, std::string>& tags);
+                  const std::unordered_map<std::string, std::string>& tags)
+    override;
 
-    virtual std::unique_ptr<Timer>
+    std::unique_ptr<Timer>
     createTimer(const std::string& name,
-                const std::unordered_map<std::string, std::string>& tags);
+                const std::unordered_map<std::string, std::string>& tags)
+    override;
 
-    virtual std::unique_ptr<Gauge>
+    std::unique_ptr<Gauge>
     createGauge(const std::string& name,
-                const std::unordered_map<std::string, std::string>& tags);
+                const std::unordered_map<std::string, std::string>& tags)
+    override;
 
   private:
     StatsReporter& _reporter;

@@ -20,24 +20,4 @@
  * THE SOFTWARE.
  */
 
-#ifndef UBER_JAEGER_METRICS_TIMER_H
-#define UBER_JAEGER_METRICS_TIMER_H
-
-#include <stdint.h>
-
-namespace uber {
-namespace jaeger {
-namespace metrics {
-
-class Timer {
-  public:
-    virtual ~Timer() = default;
-
-    virtual void record(int64_t time) = 0;
-};
-
-}  // namespace metrics
-}  // namespace jaeger
-}  // namespace uber
-
-#endif  // UBER_JAEGER_METRICS_TIMER_H
+#include "uber/jaeger/metrics/NullTimer.h"

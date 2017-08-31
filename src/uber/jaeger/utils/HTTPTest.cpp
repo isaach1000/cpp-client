@@ -20,24 +20,22 @@
  * THE SOFTWARE.
  */
 
-#ifndef UBER_JAEGER_METRICS_TIMER_H
-#define UBER_JAEGER_METRICS_TIMER_H
+#include <gtest/gtest.h>
 
-#include <stdint.h>
+#include "uber/jaeger/utils/HTTP.h"
 
 namespace uber {
 namespace jaeger {
-namespace metrics {
+namespace utils {
 
-class Timer {
-  public:
-    virtual ~Timer() = default;
+TEST(HTTP, testParseURI)
+{
+    const auto uri = http::parseURI("http://example.com");
+    ASSERT_EQ("example.com", uri._host);
+    ASSERT_TRUE(uri._path.empty());
+    ASSERT_TRUE(uri._query.empty());
+}
 
-    virtual void record(int64_t time) = 0;
-};
-
-}  // namespace metrics
+}  // namespace utils
 }  // namespace jaeger
 }  // namespace uber
-
-#endif  // UBER_JAEGER_METRICS_TIMER_H

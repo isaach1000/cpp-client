@@ -20,24 +20,31 @@
  * THE SOFTWARE.
  */
 
-#ifndef UBER_JAEGER_METRICS_TIMER_H
-#define UBER_JAEGER_METRICS_TIMER_H
+#ifndef UBER_JAEGER_UTILS_HTTP_H
+#define UBER_JAEGER_UTILS_HTTP_H
 
-#include <stdint.h>
+#include <string>
 
 namespace uber {
 namespace jaeger {
-namespace metrics {
+namespace utils {
+namespace http {
 
-class Timer {
-  public:
-    virtual ~Timer() = default;
-
-    virtual void record(int64_t time) = 0;
+struct URI {
+    std::string _host;
+    std::string _path;
+    std::string _query;
 };
 
-}  // namespace metrics
+std::string percentEncode(const std::string& input);
+
+URI parseURI(const std::string& uriStr);
+
+std::string httpGetRequest(const URI& uri);
+
+}  // namespace http
+}  // namespace utils
 }  // namespace jaeger
 }  // namespace uber
 
-#endif  // UBER_JAEGER_METRICS_TIMER_H
+#endif  // UBER_JAEGER_UTILS_HTTP_H

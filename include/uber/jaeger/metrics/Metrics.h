@@ -79,6 +79,9 @@ class Metrics {
                                                   { { "state", "retrieved" } }))
         , _samplerUpdated(factory.createCounter("jaeger.sampler",
                                                 { { "state", "updated" } }))
+        , _samplerUpdateFailure(factory.createCounter(
+                "jaeger.sampler",
+                { { "state", "failure" }, { "phase", "updating" } }))
         , _samplerQueryFailure(factory.createCounter(
               "jaeger.sampler",
               { { "state", "failure" }, { "phase", "query" } }))
@@ -135,6 +138,11 @@ class Metrics {
     Counter& samplerRetrieved() { return *_samplerRetrieved; }
     const Counter& samplerUpdated() const { return *_samplerUpdated; }
     Counter& samplerUpdated() { return *_samplerUpdated; }
+    const Counter& samplerUpdateFailure() const
+    {
+        return *_samplerUpdateFailure;
+    }
+    Counter& samplerUpdateFailure() { return *_samplerUpdateFailure; }
     const Counter& samplerQueryFailure() const { return *_samplerQueryFailure; }
     Counter& samplerQueryFailure() { return *_samplerQueryFailure; }
     const Counter& samplerParsingFailure() const
@@ -161,6 +169,7 @@ class Metrics {
     std::unique_ptr<Gauge> _reporterQueueLength;
     std::unique_ptr<Counter> _samplerRetrieved;
     std::unique_ptr<Counter> _samplerUpdated;
+    std::unique_ptr<Counter> _samplerUpdateFailure;
     std::unique_ptr<Counter> _samplerQueryFailure;
     std::unique_ptr<Counter> _samplerParsingFailure;
     std::unique_ptr<Counter> _baggageUpdateSuccess;

@@ -34,23 +34,23 @@ namespace metrics {
 
 class NullStatsReporter : public StatsReporter {
   public:
-    virtual ~NullStatsReporter() = default;
+    ~NullStatsReporter() = default;
 
-    virtual void
+    void
     incCounter(const std::string&,
                int64_t,
                const std::unordered_map<std::string, std::string>&) override
     {
     }
 
-    virtual void
+    void
     recordTimer(const std::string&,
                 int64_t,
                 const std::unordered_map<std::string, std::string>&) override
     {
     }
 
-    virtual void
+    void
     updateGauge(const std::string&,
                 int64_t,
                 const std::unordered_map<std::string, std::string>&) override

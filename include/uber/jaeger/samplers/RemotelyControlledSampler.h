@@ -31,6 +31,7 @@
 #include "uber/jaeger/Constants.h"
 #include "uber/jaeger/samplers/Sampler.h"
 #include "uber/jaeger/samplers/SamplerOptions.h"
+#include "uber/jaeger/thrift_gen/SamplingManager.h"
 
 namespace uber {
 namespace jaeger {
@@ -48,13 +49,30 @@ class RemotelyControlledSampler : public Sampler {
     RemotelyControlledSampler(const std::string& serviceName,
                               const SamplerOptions& options);
 
+    SamplingStatus isSampled(
+        const TraceID& id, const std::string& operation) override;
+
+    void close() override;
+
   private:
+    using PerOperationSamplingStrategies =
+        thrift::sampling_manager::PerOperationSamplingStrategies;
+    using SamplingStrategyResponse =
+        thrift::sampling_manager::SamplingStrategyResponse;
+
     void pollController();
 
     void updateSampler();
 
-    std::string _serviceName;
+    void updateAdaptiveSampler(
+        const PerOperationSamplingStrategies& strategies);
+
+    void updateRateLimitingOrProbabilisticSampler(
+        const SamplingStrategyResponse& response);
+
     SamplerOptions _options;
+    std::string _serviceName;
+    std::shared_ptr<thrift::sampling_manager::SamplingManagerIf> _manager;
     bool _running;
     std::mutex _mutex;
     std::condition_variable _shutdownCV;

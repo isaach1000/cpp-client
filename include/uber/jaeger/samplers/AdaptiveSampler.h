@@ -55,6 +55,8 @@ class AdaptiveSampler : public Sampler {
 
     void close() override;
 
+    void update(const PerOperationSamplingStrategies& strategies);
+
   private:
     SamplerMap _samplers;
     ProbabilisticSampler _defaultSampler;

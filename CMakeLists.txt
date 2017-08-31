@@ -12,7 +12,7 @@ endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -pedantic -pthread")
 
-find_package(Boost 1.54 REQUIRED)
+find_package(Boost 1.54 REQUIRED COMPONENTS system thread)
 include_directories(${Boost_INCLUDE_DIRS})
 
 include(CTest)
@@ -44,6 +44,7 @@ file(GLOB THRIFT_GEN_SRC src/uber/jaeger/thrift_gen/*.cpp)
 list(FILTER THRIFT_GEN_SRC EXCLUDE REGEX ".*\\.skeleton\\.cpp")
 
 add_library(jaeger ${SRC})
+target_link_libraries(jaeger ${Boost_SYSTEM_LIBRARY} ${Boost_THREAD_LIBRARY})
 
 add_executable(UnitTest ${TEST_SRC})
 target_link_libraries(UnitTest ${GTEST_BOTH_LIBRARIES} jaeger)
