@@ -52,7 +52,8 @@ class ProbabilisticSampler : public Sampler {
     void close() override {}
 
   private:
-    static constexpr auto kMaxRandomNumber = static_cast<uint64_t>(1) << 63;
+    static constexpr auto kMaxRandomNumber =
+        std::numeric_limits<uint64_t>::max();
 
     double _samplingRate;
     uint64_t _samplingBoundary;

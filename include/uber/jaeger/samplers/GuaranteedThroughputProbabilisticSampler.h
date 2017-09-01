@@ -69,6 +69,10 @@ class GuaranteedThroughputProbabilisticSampler : public Sampler {
 
     void update(double lowerBound, double samplingRate);
 
+    double lowerBound() const { return _lowerBound; }
+
+    double samplingRate() const { return _samplingRate; }
+
   private:
     ProbabilisticSampler _probabilisticSampler;
     double _samplingRate;

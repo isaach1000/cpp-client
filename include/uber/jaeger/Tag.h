@@ -41,6 +41,11 @@ class Tag {
     {
     }
 
+    bool operator==(const Tag& rhs) const
+    {
+        return _key == rhs._key && _value == rhs._value;
+    }
+
     const std::string& key() const { return _key; }
 
     const ValueType& value() const { return _value; }
