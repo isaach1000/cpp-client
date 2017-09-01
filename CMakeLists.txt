@@ -41,6 +41,8 @@ include_directories(${THRIFT_INCLUDE_DIR})
 if(CMAKE_BUILD_TYPE MATCHES Debug)
     include(CodeCoverage)
     APPEND_COVERAGE_COMPILER_FLAGS()
+    set(COVERAGE_EXCLUDES "${CMAKE_SOURCE_DIR}/include/uber/jaeger/thrift_gen/*"
+                          "${CMAKE_SOURCE_DIR}/src/uber/jaeger/thrift_gen/*")
 endif()
 
 include_directories("include")
@@ -54,6 +56,7 @@ foreach(SUBDIR "metrics"
                "samplers"
                "utils")
     file(GLOB SUBDIR_SRC "src/uber/jaeger/${SUBDIR}/*.cpp")
+    list(FILTER SUBDIR_SRC EXCLUDE REGEX ".*Test\\.cpp")
     list(APPEND SRC ${SUBDIR_SRC})
     file(GLOB SUBDIR_TEST_SRC "src/uber/jaeger/${SUBDIR}/*Test.cpp")
     list(APPEND TEST_SRC ${SUBDIR_TEST_SRC})
