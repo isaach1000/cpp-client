@@ -49,6 +49,8 @@ class RemotelyControlledSampler : public Sampler {
     RemotelyControlledSampler(const std::string& serviceName,
                               const SamplerOptions& options);
 
+    ~RemotelyControlledSampler() { close(); }
+
     SamplingStatus isSampled(
         const TraceID& id, const std::string& operation) override;
 

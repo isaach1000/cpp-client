@@ -41,6 +41,10 @@ class Tag {
     {
     }
 
+    const std::string& key() const { return _key; }
+
+    const ValueType& value() const { return _value; }
+
   private:
     std::string _key;
     ValueType _value;

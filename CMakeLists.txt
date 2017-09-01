@@ -33,6 +33,7 @@ include(CTest)
 enable_testing()
 hunter_add_package(GTest)
 find_package(GTest CONFIG REQUIRED)
+add_definitions(-DGTEST_HAS_TR1_TUPLE=0 -DGTEST_USE_OWN_TR1_TUPLE=0)
 
 find_package(Thrift REQUIRED)
 include_directories(${THRIFT_INCLUDE_DIR})
@@ -43,25 +44,29 @@ if(CMAKE_BUILD_TYPE MATCHES Debug)
 endif()
 
 include_directories("include")
+include_directories("include/uber/jaeger/thrift_gen")
 
 file(GLOB SRC "src/uber/jaeger/*.cpp")
 file(GLOB TEST_SRC "src/uber/jaeger/*Test.cpp")
-foreach(SUBDIR "metrics" "propagation" "reporters" "samplers" "utils")
+foreach(SUBDIR "metrics"
+               "propagation"
+               "reporters"
+               "samplers"
+               "utils")
     file(GLOB SUBDIR_SRC "src/uber/jaeger/${SUBDIR}/*.cpp")
     list(APPEND SRC ${SUBDIR_SRC})
     file(GLOB SUBDIR_TEST_SRC "src/uber/jaeger/${SUBDIR}/*Test.cpp")
     list(APPEND TEST_SRC ${SUBDIR_TEST_SRC})
 endforeach(SUBDIR)
-list(FILTER SRC EXCLUDE REGEX ".*Test\\.cpp")
 
-file(GLOB THRIFT_GEN_SRC src/uber/jaeger/thrift_gen/*.cpp)
-list(FILTER THRIFT_GEN_SRC EXCLUDE REGEX ".*\\.skeleton\\.cpp")
+add_subdirectory("src/uber/jaeger/thrift_gen")
+list(APPEND LIBS jaegerthriftgen)
 
 add_library(jaeger ${SRC})
 target_link_libraries(jaeger ${LIBS})
 
 add_executable(UnitTest ${TEST_SRC})
-target_link_libraries(UnitTest GTest::main jaeger)
+target_link_libraries(UnitTest GTest::main jaeger ${LIBS})
 add_test(NAME UnitTest
          COMMAND UnitTest)
 if(CMAKE_BUILD_TYPE MATCHES Debug)

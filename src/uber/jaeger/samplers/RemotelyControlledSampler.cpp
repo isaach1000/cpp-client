@@ -188,7 +188,6 @@ void RemotelyControlledSampler::updateSampler()
         _manager->getSamplingStrategy(response, _serviceName);
     }
     catch (const std::exception& ex) {
-        std::cerr << ex.what() << '\n';
         _options.metrics()->samplerQueryFailure().inc(1);
         return;
     }
@@ -208,7 +207,6 @@ void RemotelyControlledSampler::updateSampler()
             updateRateLimitingOrProbabilisticSampler(response);
         }
         catch (const std::exception& ex) {
-            std::cerr << ex.what() << '\n';
             _options.metrics()->samplerUpdateFailure().inc(1);
             return;
         }

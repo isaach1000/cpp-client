@@ -26,6 +26,8 @@
 #include <string>
 #include <unordered_map>
 
+#include "uber/jaeger/metrics/Counter.h"
+#include "uber/jaeger/metrics/Gauge.h"
 #include "uber/jaeger/metrics/StatsFactory.h"
 #include "uber/jaeger/metrics/StatsFactoryImpl.h"
 #include "uber/jaeger/metrics/StatsReporter.h"
