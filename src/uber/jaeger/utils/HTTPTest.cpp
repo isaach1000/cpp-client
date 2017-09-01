@@ -24,6 +24,14 @@
 
 #include "uber/jaeger/utils/HTTP.h"
 
+#include <thread>
+
+#include <beast/core.hpp>
+#include <beast/http.hpp>
+#include <beast/version.hpp>
+#include <boost/asio/connect.hpp>
+#include <boost/asio/ip/tcp.hpp>
+
 namespace uber {
 namespace jaeger {
 namespace utils {
@@ -34,6 +42,59 @@ TEST(HTTP, testParseURI)
     ASSERT_EQ("example.com", uri._host);
     ASSERT_TRUE(uri._path.empty());
     ASSERT_TRUE(uri._query.empty());
+}
+
+TEST(HTTP, testHTTPGetRequest)
+{
+    using tcp = boost::asio::ip::tcp;
+    using string_body = beast::http::string_body;
+
+    constexpr auto kJSONContents = "{ \"test\": [] }";
+
+    boost::asio::io_service io;
+    const auto address = boost::asio::ip::address::from_string("0.0.0.0");
+    auto port = 0;
+
+    tcp::endpoint endpoint(address, 0);
+    tcp::acceptor acceptor(io, endpoint);
+    endpoint = acceptor.local_endpoint();
+    port = endpoint.port();
+    tcp::socket socket(io);
+    acceptor.async_accept(
+        socket,
+        [&socket](boost::system::error_code error) {
+            ASSERT_FALSE(static_cast<bool>(error));
+            beast::http::request<string_body> req;
+            beast::flat_buffer buffer;
+            beast::http::read(socket, buffer, req, error);
+            if (error) {
+                std::cerr << (error) << '\n';
+            }
+
+            beast::http::response<string_body> res;
+            res.set(beast::http::field::server, BEAST_VERSION_STRING);
+            res.set(beast::http::field::content_type, "application/json");
+            res.body = kJSONContents;
+            res.content_length(res.body.size());
+            res.prepare_payload();
+            beast::http::response_serializer<string_body> serializer(res);
+            beast::http::write(socket, serializer, error);
+            ASSERT_FALSE(static_cast<bool>(error));
+
+            socket.shutdown(tcp::socket::shutdown_both, error);
+            ASSERT_TRUE(!error || error == boost::system::errc::not_connected)
+                << "error: " << error;
+        });
+
+    std::thread clientThread([&io, port]() {
+        std::string uriStr("http://0.0.0.0:");
+        uriStr += std::to_string(port);
+        const auto uri = http::parseURI(uriStr);
+        const auto responseStr = http::httpGetRequest(io, uri);
+        ASSERT_EQ(kJSONContents, responseStr);
+    });
+    io.run();
+    clientThread.join();
 }
 
 }  // namespace utils

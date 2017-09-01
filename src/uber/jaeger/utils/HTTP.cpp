@@ -27,7 +27,11 @@
 #include <regex>
 #include <sstream>
 
-#include <boost/asio.hpp>
+#include <beast/core.hpp>
+#include <beast/http.hpp>
+#include <beast/version.hpp>
+#include <boost/asio/connect.hpp>
+#include <boost/asio/ip/tcp.hpp>
 
 namespace uber {
 namespace jaeger {
@@ -50,30 +54,6 @@ bool isUnreserved(char ch)
     default:
         return false;
     }
-}
-
-std::string makeRequestStr(const URI& uri)
-{
-    std::ostringstream oss;
-    oss
-        << "GET ";
-
-    if (uri._path.empty()) {
-        oss << '/';
-    }
-    else {
-        oss << uri._path;
-    }
-
-    if (!uri._query.empty()) {
-        oss << '?' << uri._query;
-    }
-
-    oss << " HTTP/1.1\r\n"
-        << "Host: " << uri._host << "\r\n"
-        << "Connection: close\r\n\r\n";
-
-    return oss.str();
 }
 
 }  // anonymous namespace
@@ -107,13 +87,27 @@ URI parseURI(const std::string& uriStr)
     constexpr auto kHostIndex = 4;
     constexpr auto kPathIndex = 5;
     constexpr auto kQueryIndex = 7;
+    constexpr auto kDefaultHTTPPort = 80;
 
     const auto numMatchingGroups = match.size();
 
     if (numMatchingGroups < kHostIndex) {
         return uri;
     }
-    uri._host = match[kHostIndex].str();
+    const auto authority = match[kHostIndex].str();
+    const auto colonPos = authority.find(':');
+    if (colonPos == std::string::npos) {
+        uri._host = authority;
+        uri._port = kDefaultHTTPPort;
+    }
+    else {
+        uri._host = authority.substr(0, colonPos);
+        const auto portStr = authority.substr(colonPos + 1);
+        std::istringstream iss(portStr);
+        if (!(iss >> uri._port)) {
+            uri._port = kDefaultHTTPPort;
+        }
+    }
 
     if (numMatchingGroups < kPathIndex) {
         return uri;
@@ -128,69 +122,46 @@ URI parseURI(const std::string& uriStr)
     return uri;
 }
 
-std::string httpGetRequest(const URI& uri)
+std::string httpGetRequest(boost::asio::io_service& io, const URI& uri)
 {
     using tcp = boost::asio::ip::tcp;
+    namespace http = beast::http;
 
-    boost::asio::io_service io;
     tcp::resolver resolver(io);
-    tcp::resolver::query query(uri._host, "http");
-    auto endpointItr = resolver.resolve(query);
+    const tcp::resolver::query query(uri._host, std::to_string(uri._port));
+    const auto lookup = resolver.resolve(query);
     tcp::socket socket(io);
-    boost::asio::connect(socket, endpointItr);
+    boost::asio::connect(socket, lookup);
 
-    const auto requestStr = makeRequestStr(uri);
-    boost::asio::streambuf request;
-    std::ostream requestStream(&request);
-    requestStream << requestStr;
-    boost::asio::write(socket, request);
-
-    boost::asio::streambuf response;
-    boost::asio::read_until(socket, response, "\r\n");
-
-    std::istream responseStream(&response);
-    std::string httpVersion;
-    responseStream >> httpVersion;
-    unsigned int statusCode = 0;
-    responseStream >> statusCode;
-    std::string statusMessage;
-    std::getline(responseStream, statusMessage);
-    if (httpVersion.substr(0, 5) != "HTTP/") {
-        std::ostringstream oss;
-        oss << "Invalid response: " << httpVersion;
-        throw std::runtime_error(oss.str());
+    auto target = uri._path + uri._query;
+    if (target.empty()) {
+        target = "/";
     }
-    if (!responseStream) {
-        throw std::runtime_error("Invalid response");
-    }
-    if (statusCode != 200) {
-        std::ostringstream oss;
-        oss << "Received unexpected status code"
-               ", expectedStatusCode=200"
-               ", actualStatusCode=" << statusCode;
-        throw std::runtime_error(oss.str());
-    }
+    http::request<http::string_body> req(http::verb::get, target, 11);
+    req.set(http::field::host, uri._host);
+    req.set(http::field::user_agent, BEAST_VERSION_STRING);
+    http::write(socket, req);
 
-    boost::asio::read_until(socket, response, "\r\n\r\n");
-    std::string header;
-    while (std::getline(responseStream, header) && header != "\r");
+    beast::flat_buffer buffer;
+    http::response<http::string_body> res;
+    http::read(socket, buffer, res);
 
-    std::ostringstream bodyStream;
-    if (response.size() > 0) {
-        bodyStream << &response;
-    }
     boost::system::error_code error;
-    while (boost::asio::read(socket,
-                             response,
-                             boost::asio::transfer_at_least(1),
-                             error)) {
-        bodyStream << &response;
-    }
-    if (error != boost::asio::error::eof) {
+    socket.shutdown(tcp::socket::shutdown_both, error);
+    if (error && error != boost::system::errc::not_connected) {
         throw boost::system::system_error(error);
     }
 
-    return bodyStream.str();
+    if (res.result() != http::status::ok) {
+        std::ostringstream oss;
+        oss << "Unexpected response status code"
+               ", host=" << uri._host
+            << ", target=" << target
+            << ", status=" << res.result();
+        throw std::runtime_error(oss.str());
+    }
+
+    return res.body;
 }
 
 }  // namespace http

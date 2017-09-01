@@ -113,6 +113,7 @@ class HTTPSamplingManager : public thrift::sampling_manager::SamplingManagerIf {
 
     explicit HTTPSamplingManager(const std::string& serverURL)
         : _serverURL(serverURL)
+        , _io()
     {
     }
 
@@ -124,13 +125,14 @@ class HTTPSamplingManager : public thrift::sampling_manager::SamplingManagerIf {
             _serverURL + "?" +
             utils::http::percentEncode("service=" + serviceName);
         const auto uri = utils::http::parseURI(uriStr);
-        const auto response = utils::http::httpGetRequest(uri);
+        const auto response = utils::http::httpGetRequest(_io, uri);
         const auto jsonValue = nlohmann::json::parse(response);
         result = jsonValue.get<SamplingStrategyResponse>();
     }
 
   private:
     std::string _serverURL;
+    boost::asio::io_service _io;
 };
 
 }  // anonymous namespace

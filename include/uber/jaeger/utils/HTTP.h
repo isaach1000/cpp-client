@@ -25,6 +25,8 @@
 
 #include <string>
 
+#include <boost/asio/io_service.hpp>
+
 namespace uber {
 namespace jaeger {
 namespace utils {
@@ -32,6 +34,7 @@ namespace http {
 
 struct URI {
     std::string _host;
+    int _port;
     std::string _path;
     std::string _query;
 };
@@ -40,7 +43,7 @@ std::string percentEncode(const std::string& input);
 
 URI parseURI(const std::string& uriStr);
 
-std::string httpGetRequest(const URI& uri);
+std::string httpGetRequest(boost::asio::io_service& io, const URI& uri);
 
 }  // namespace http
 }  // namespace utils

@@ -16,18 +16,23 @@ endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -pedantic -pthread")
 
+# Soon to be Boost component.
+hunter_add_package(Beast)
+find_package(Beast CONFIG REQUIRED)
+list(APPEND LIBS Beast::Beast)
+
 hunter_add_package(Boost COMPONENTS system thread)
 find_package(Boost CONFIG REQUIRED COMPONENTS system thread)
-include_directories(${Boost_INCLUDE_DIRS})
+list(APPEND LIBS Boost::system Boost::thread)
 
 hunter_add_package(nlohmann_json)
 find_package(nlohmann_json CONFIG REQUIRED)
+list(APPEND LIBS nlohmann_json)
 
 include(CTest)
 enable_testing()
 hunter_add_package(GTest)
 find_package(GTest CONFIG REQUIRED)
-include_directories(${GTEST_INCLUDE_DIRS})
 
 find_package(Thrift REQUIRED)
 include_directories(${THRIFT_INCLUDE_DIR})
@@ -53,7 +58,7 @@ file(GLOB THRIFT_GEN_SRC src/uber/jaeger/thrift_gen/*.cpp)
 list(FILTER THRIFT_GEN_SRC EXCLUDE REGEX ".*\\.skeleton\\.cpp")
 
 add_library(jaeger ${SRC})
-target_link_libraries(jaeger Boost::system Boost::thread nlohmann_json)
+target_link_libraries(jaeger ${LIBS})
 
 add_executable(UnitTest ${TEST_SRC})
 target_link_libraries(UnitTest GTest::main jaeger)
