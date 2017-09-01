@@ -33,6 +33,14 @@ namespace utils {
 namespace http {
 
 struct URI {
+    bool operator==(const URI& rhs) const
+    {
+        return _host == rhs._host &&
+               _port == rhs._port &&
+               _path == rhs._path &&
+               _query == rhs._query;
+    }
+
     std::string _host;
     int _port;
     std::string _path;

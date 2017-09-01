@@ -36,12 +36,40 @@ namespace uber {
 namespace jaeger {
 namespace utils {
 
+TEST(HTTP, testPercentEncode)
+{
+    struct TestCase {
+        std::string _input;
+        std::string _expected;
+    };
+
+    const TestCase testCases[] = {
+        { "example", "example" },
+        { "hello world-test", "hello%20world-test" }
+    };
+
+    for (auto&& testCase : testCases) {
+        const auto result = http::percentEncode(testCase._input);
+        ASSERT_EQ(testCase._expected, result);
+    }
+}
+
 TEST(HTTP, testParseURI)
 {
-    const auto uri = http::parseURI("http://example.com");
-    ASSERT_EQ("example.com", uri._host);
-    ASSERT_TRUE(uri._path.empty());
-    ASSERT_TRUE(uri._query.empty());
+    struct TestCase {
+        std::string _input;
+        http::URI _expected;
+    };
+
+    const TestCase testCases[] = {
+        { "http://example.com", {"example.com", 80, "", ""} },
+        { "http://example.com:abc", {"example.com", 80, "", ""} }
+    };
+
+    for (auto&& testCase : testCases) {
+        const auto uri = http::parseURI("http://example.com");
+        ASSERT_EQ(testCase._expected, uri);
+    }
 }
 
 TEST(HTTP, testHTTPGetRequest)
