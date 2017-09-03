@@ -43,9 +43,8 @@ include_directories(${THRIFT_INCLUDE_DIR})
 if(CMAKE_BUILD_TYPE MATCHES Debug)
     include(CodeCoverage)
     APPEND_COVERAGE_COMPILER_FLAGS()
-    set(COVERAGE_EXCLUDES "${CMAKE_SOURCE_DIR}/include/uber/jaeger/thrift_gen/*"
-                          "*Test.cpp"
-                          "${CMAKE_SOURCE_DIR}/src/uber/jaeger/thrift_gen/*")
+    set(COVERAGE_EXCLUDES "${CMAKE_SOURCE_DIR}/src/uber/jaeger/thrift_gen/*"
+                          "*Test.cpp")
 endif()
 
 include_directories("src")
@@ -65,13 +64,14 @@ foreach(SUBDIR "metrics"
 endforeach(SUBDIR)
 
 add_subdirectory("src/uber/jaeger/thrift_gen")
-list(APPEND LIBS jaegerthriftgen)
+list(APPEND LIBS thrift_gen)
 
 add_library(jaeger ${SRC})
 target_link_libraries(jaeger ${LIBS})
 
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/uber/jaeger/testutils")
 add_executable(UnitTest ${TEST_SRC})
-target_link_libraries(UnitTest GTest::main jaeger ${LIBS})
+target_link_libraries(UnitTest testutils GTest::main jaeger ${LIBS})
 add_test(NAME UnitTest
          COMMAND UnitTest)
 if(CMAKE_BUILD_TYPE MATCHES Debug)

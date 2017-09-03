@@ -35,6 +35,7 @@
 #include "uber/jaeger/samplers/Sampler.h"
 #include "uber/jaeger/samplers/SamplerOptions.h"
 #include "uber/jaeger/samplers/SamplingStatus.h"
+#include "uber/jaeger/testutils/TUDPTransport.h"
 
 namespace uber {
 namespace jaeger {
