@@ -43,7 +43,7 @@ include_directories(${THRIFT_INCLUDE_DIR})
 if(CMAKE_BUILD_TYPE MATCHES Debug)
     include(CodeCoverage)
     APPEND_COVERAGE_COMPILER_FLAGS()
-    set(COVERAGE_EXCLUDES "${CMAKE_SOURCE_DIR}/src/uber/jaeger/thrift_gen/*"
+    set(COVERAGE_EXCLUDES "${CMAKE_SOURCE_DIR}/src/uber/jaeger/thrift-gen/*"
                           "*Test.cpp")
 endif()
 
@@ -63,8 +63,8 @@ foreach(SUBDIR "metrics"
     list(APPEND TEST_SRC ${SUBDIR_TEST_SRC})
 endforeach(SUBDIR)
 
-add_subdirectory("src/uber/jaeger/thrift_gen")
-list(APPEND LIBS thrift_gen)
+add_subdirectory("src/uber/jaeger/thrift-gen")
+list(APPEND LIBS thriftgen)
 
 add_library(jaeger ${SRC})
 target_link_libraries(jaeger ${LIBS})

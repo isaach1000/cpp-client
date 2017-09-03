@@ -23,11 +23,13 @@
 #ifndef UBER_JAEGER_TESTUTILS_MOCKAGENT_H
 #define UBER_JAEGER_TESTUTILS_MOCKAGENT_H
 
+#include <atomic>
 #include <mutex>
 #include <vector>
 
+#include "uber/jaeger/testutils/SamplingManager.h"
 #include "uber/jaeger/testutils/TUDPTransport.h"
-#include "uber/jaeger/thrift_gen/jaeger_types.h"
+#include "uber/jaeger/thrift-gen/jaeger_types.h"
 
 namespace uber {
 namespace jaeger {
@@ -40,7 +42,8 @@ class MockAgent {
     TUDPTransport _transport;
     std::vector<thrift::Batch> _batches;
     std::mutex _mutex;
-    uint32_t _serving;
+    std::atomic<bool> _serving;
+    SamplingManager _samplingMgr;
 };
 
 }  // namespace testutils

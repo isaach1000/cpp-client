@@ -32,7 +32,7 @@
 #include "uber/jaeger/samplers/GuaranteedThroughputProbabilisticSampler.h"
 #include "uber/jaeger/samplers/ProbabilisticSampler.h"
 #include "uber/jaeger/samplers/Sampler.h"
-#include "uber/jaeger/thrift_gen/sampling_types.h"
+#include "uber/jaeger/thrift-gen/sampling_types.h"
 
 namespace uber {
 namespace jaeger {

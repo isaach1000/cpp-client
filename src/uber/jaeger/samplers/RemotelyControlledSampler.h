@@ -31,7 +31,7 @@
 #include "uber/jaeger/Constants.h"
 #include "uber/jaeger/samplers/Sampler.h"
 #include "uber/jaeger/samplers/SamplerOptions.h"
-#include "uber/jaeger/thrift_gen/SamplingManager.h"
+#include "uber/jaeger/thrift-gen/SamplingManager.h"
 
 namespace uber {
 namespace jaeger {
