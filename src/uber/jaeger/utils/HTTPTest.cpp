@@ -90,7 +90,7 @@ TEST(HTTP, testHTTPGetRequest)
     tcp::socket socket(io);
     acceptor.async_accept(
         socket,
-        [&socket](boost::system::error_code error) {
+        [&socket, kJSONContents](boost::system::error_code error) {
             ASSERT_FALSE(static_cast<bool>(error));
             beast::http::request<string_body> req;
             beast::flat_buffer buffer;
@@ -102,8 +102,9 @@ TEST(HTTP, testHTTPGetRequest)
             beast::http::response<string_body> res;
             res.set(beast::http::field::server, BEAST_VERSION_STRING);
             res.set(beast::http::field::content_type, "application/json");
+            res.version = 11;
+            res.result(beast::http::status::ok);
             res.body = kJSONContents;
-            res.content_length(res.body.size());
             res.prepare_payload();
             beast::http::response_serializer<string_body> serializer(res);
             beast::http::write(socket, serializer, error);
@@ -114,7 +115,7 @@ TEST(HTTP, testHTTPGetRequest)
                 << "error: " << error;
         });
 
-    std::thread clientThread([&io, port]() {
+    std::thread clientThread([&io, port, kJSONContents]() {
         std::string uriStr("http://0.0.0.0:");
         uriStr += std::to_string(port);
         const auto uri = http::parseURI(uriStr);

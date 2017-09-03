@@ -32,6 +32,15 @@ namespace samplers {
 
 class Sampler {
   public:
+    enum class Type {
+        kAdaptiveSampler,
+        kConstSampler,
+        kGuaranteedThroughputProbabilisticSampler,
+        kProbabilisticSampler,
+        kRateLimitingSampler,
+        kRemotelyControlledSampler
+    };
+
     virtual ~Sampler() = default;
 
     virtual SamplingStatus isSampled(const TraceID& id,
@@ -39,6 +48,8 @@ class Sampler {
         = 0;
 
     virtual void close() = 0;
+
+    virtual Type type() const = 0;
 };
 
 }  // namespace samplers

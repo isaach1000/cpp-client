@@ -73,6 +73,11 @@ class GuaranteedThroughputProbabilisticSampler : public Sampler {
 
     double samplingRate() const { return _samplingRate; }
 
+    Type type() const override
+    {
+        return Type::kGuaranteedThroughputProbabilisticSampler;
+    }
+
   private:
     ProbabilisticSampler _probabilisticSampler;
     double _samplingRate;

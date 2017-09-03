@@ -51,6 +51,8 @@ class ProbabilisticSampler : public Sampler {
 
     void close() override {}
 
+    Type type() const override { return Type::kProbabilisticSampler; }
+
   private:
     static constexpr auto kMaxRandomNumber =
         std::numeric_limits<uint64_t>::max();

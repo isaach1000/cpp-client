@@ -50,12 +50,16 @@ class AdaptiveSampler : public Sampler {
     AdaptiveSampler(const PerOperationSamplingStrategies& strategies,
                     size_t maxOperations);
 
+    ~AdaptiveSampler() { close(); }
+
     SamplingStatus isSampled(const TraceID& id,
                              const std::string& operation) override;
 
     void close() override;
 
     void update(const PerOperationSamplingStrategies& strategies);
+
+    Type type() const override { return Type::kAdaptiveSampler; }
 
   private:
     SamplerMap _samplers;

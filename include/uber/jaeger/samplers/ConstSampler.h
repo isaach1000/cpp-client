@@ -47,6 +47,8 @@ class ConstSampler : public Sampler {
 
     void close() override {}
 
+    Type type() const override { return Type::kConstSampler; }
+
   private:
     bool _decision;
     std::vector<Tag> _tags;

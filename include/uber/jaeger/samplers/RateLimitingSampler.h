@@ -49,6 +49,8 @@ class RateLimitingSampler : public Sampler {
 
     void close() override {}
 
+    Type type() const override { return Type::kRateLimitingSampler; }
+
   private:
     double _maxTracesPerSecond;
     utils::RateLimiter<> _rateLimiter;

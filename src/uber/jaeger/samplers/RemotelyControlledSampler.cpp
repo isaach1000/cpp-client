@@ -221,10 +221,10 @@ void RemotelyControlledSampler::updateSampler()
 void RemotelyControlledSampler::updateAdaptiveSampler(
     const PerOperationSamplingStrategies& strategies)
 {
-    auto sampler = std::dynamic_pointer_cast<AdaptiveSampler>(
-        _options.sampler());
-    if (sampler) {
-        sampler->update(strategies);
+    auto sampler = _options.sampler();
+    assert(sampler);
+    if (sampler->type() == Type::kAdaptiveSampler) {
+        static_cast<AdaptiveSampler&>(*sampler).update(strategies);
     }
     else {
         sampler = std::make_shared<AdaptiveSampler>(
@@ -236,6 +236,22 @@ void RemotelyControlledSampler::updateAdaptiveSampler(
 void RemotelyControlledSampler::updateRateLimitingOrProbabilisticSampler(
     const SamplingStrategyResponse& response)
 {
+    std::shared_ptr<Sampler> sampler;
+    if (response.__isset.probabilisticSampling) {
+        sampler = std::make_shared<ProbabilisticSampler>(
+            response.probabilisticSampling.samplingRate);
+    }
+    else if (response.__isset.rateLimitingSampling) {
+        sampler = std::make_shared<RateLimitingSampler>(
+            response.rateLimitingSampling.maxTracesPerSecond);
+    }
+    else {
+        std::ostringstream oss;
+        oss << "Unsupported sampling strategy type "
+            << response.strategyType;
+        throw std::runtime_error(oss.str());
+    }
+    _options.setSampler(sampler);
 }
 
 }  // namespace samplers

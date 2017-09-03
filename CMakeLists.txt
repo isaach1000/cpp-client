@@ -1,20 +1,22 @@
 cmake_minimum_required(VERSION 3.0)
 
-include("cmake/HunterGate.cmake")
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
+
+include(HunterGate)
 HunterGate(URL "https://github.com/ruslo/hunter/archive/v0.19.89.tar.gz"
            SHA1 "98bf8e401fff1394e8df0a757772265511dd9084")
 
 project(jaeger-client-cpp)
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
-
 if(NOT CMAKE_VERSION VERSION_LESS 3.1)
+    set(CMAKE_CXX_STANDARD_REQUIRED true)
     set(CMAKE_CXX_STANDARD 11)
 else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -pedantic -pthread")
+set(CMAKE_EXPORT_COMPILE_COMMANDS true)
 
 # Soon to be Boost component.
 hunter_add_package(Beast)
@@ -42,11 +44,12 @@ if(CMAKE_BUILD_TYPE MATCHES Debug)
     include(CodeCoverage)
     APPEND_COVERAGE_COMPILER_FLAGS()
     set(COVERAGE_EXCLUDES "${CMAKE_SOURCE_DIR}/include/uber/jaeger/thrift_gen/*"
+                          "*Test.cpp"
                           "${CMAKE_SOURCE_DIR}/src/uber/jaeger/thrift_gen/*")
 endif()
 
 include_directories("include")
-include_directories("include/uber/jaeger/thrift_gen")
+include_directories("src")
 
 file(GLOB SRC "src/uber/jaeger/*.cpp")
 file(GLOB TEST_SRC "src/uber/jaeger/*Test.cpp")

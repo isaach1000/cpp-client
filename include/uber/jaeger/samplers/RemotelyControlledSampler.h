@@ -56,6 +56,8 @@ class RemotelyControlledSampler : public Sampler {
 
     void close() override;
 
+    Type type() const override { return Type::kRemotelyControlledSampler; }
+
   private:
     using PerOperationSamplingStrategies =
         thrift::sampling_manager::PerOperationSamplingStrategies;

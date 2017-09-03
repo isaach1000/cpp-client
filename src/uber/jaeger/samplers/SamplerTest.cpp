@@ -46,7 +46,6 @@ constexpr auto kTestFirstTimeOperationName = "firstTimeOp";
 constexpr auto kTestDefaultSamplingProbability = 0.5;
 constexpr auto kTestMaxID = static_cast<uint64_t>(1) << 63;
 constexpr auto kTestDefaultMaxOperations = 10;
-constexpr auto kDefaultMaxOperations = 10;
 
 const Tag testProbablisticExpectedTags[] = {
     {"sampler.type", "probabilistic"},
@@ -111,9 +110,9 @@ TEST(Sampler, testSamplerTags)
 TEST(Sampler, testSamplerOptions)
 {
     SamplerOptions options;
+    ASSERT_EQ(Sampler::Type::kProbabilisticSampler, options.sampler()->type());
     auto sampler =
-        std::dynamic_pointer_cast<ProbabilisticSampler>(options.sampler());
-    ASSERT_TRUE(static_cast<bool>(sampler));
+        std::static_pointer_cast<ProbabilisticSampler>(options.sampler());
     ASSERT_EQ(0.001, sampler->samplingRate());
     ASSERT_NE(0, options.maxOperations());
     ASSERT_FALSE(options.samplingServerURL().empty());
@@ -206,31 +205,114 @@ TEST(Sampler, testGuaranteedThroughputProbabilisticSamplerUpdate)
 
 TEST(Sampler, testAdaptiveSampler)
 {
-    using OperationSamplingStrategy =
-        thrift::sampling_manager::OperationSamplingStrategy;
-    using PerOperationSamplingStrategies =
-        thrift::sampling_manager::PerOperationSamplingStrategies;
-    using ProbabilisticSamplingStrategy =
-        thrift::sampling_manager::ProbabilisticSamplingStrategy;
+    namespace thriftgen = thrift::sampling_manager;
 
-    OperationSamplingStrategy samplingRate;
-    samplingRate.__set_operation(kTestOperationName);
-    ProbabilisticSamplingStrategy probabilisticSampling;
+    thriftgen::OperationSamplingStrategy strategy;
+    strategy.__set_operation(kTestOperationName);
+    thriftgen::ProbabilisticSamplingStrategy probabilisticSampling;
     probabilisticSampling.__set_samplingRate(kTestDefaultSamplingProbability);
-    samplingRate.__set_probabilisticSampling(probabilisticSampling);
+    strategy.__set_probabilisticSampling(probabilisticSampling);
 
-    PerOperationSamplingStrategies strategy;
-    strategy.__set_defaultSamplingProbability(kTestDefaultSamplingProbability);
-    strategy.__set_defaultLowerBoundTracesPerSecond(1.0);
-    strategy.__set_perOperationStrategies({samplingRate});
+    thriftgen::PerOperationSamplingStrategies strategies;
+    strategies.__set_defaultSamplingProbability(
+        kTestDefaultSamplingProbability);
+    strategies.__set_defaultLowerBoundTracesPerSecond(1.0);
+    strategies.__set_perOperationStrategies({strategy});
 
-    AdaptiveSampler sampler(strategy, kTestDefaultMaxOperations);
+    AdaptiveSampler sampler(strategies, kTestDefaultMaxOperations);
     auto result =
         sampler.isSampled(TraceID(0, kTestMaxID + 10), kTestOperationName);
     ASSERT_TRUE(result.isSampled());
     CMP_TAGS(testLowerBoundExpectedTags, result.tags());
 
-    sampler.close();
+    result =
+        sampler.isSampled(TraceID(0, kTestMaxID - 20), kTestOperationName);
+    ASSERT_TRUE(result.isSampled());
+    CMP_TAGS(testProbablisticExpectedTags, result.tags());
+
+    result =
+        sampler.isSampled(TraceID(0, kTestMaxID + 10), kTestOperationName);
+    ASSERT_FALSE(result.isSampled());
+
+    result =
+        sampler.isSampled(TraceID(0, kTestMaxID), kTestFirstTimeOperationName);
+    ASSERT_TRUE(result.isSampled());
+    CMP_TAGS(testProbablisticExpectedTags, result.tags());
+}
+
+TEST(Sampler, testAdaptiveSamplerErrors)
+{
+    namespace thriftgen = thrift::sampling_manager;
+
+    thriftgen::OperationSamplingStrategy strategy;
+    strategy.__set_operation(kTestOperationName);
+    thriftgen::ProbabilisticSamplingStrategy probabilisticSampling;
+    probabilisticSampling.__set_samplingRate(-0.1);
+    strategy.__set_probabilisticSampling(probabilisticSampling);
+
+    thriftgen::PerOperationSamplingStrategies strategies;
+    strategies.__set_defaultSamplingProbability(
+        kTestDefaultSamplingProbability);
+    strategies.__set_defaultLowerBoundTracesPerSecond(2.0);
+    strategies.__set_perOperationStrategies({strategy});
+
+    {
+        AdaptiveSampler sampler(strategies, kTestDefaultMaxOperations);
+    }
+
+    {
+        strategies.perOperationStrategies.at(0).probabilisticSampling
+            .__set_samplingRate(1.1);
+        AdaptiveSampler sampler(strategies, kTestDefaultMaxOperations);
+    }
+}
+
+TEST(Sampler, testAdaptiveSamplerUpdate)
+{
+    namespace thriftgen = thrift::sampling_manager;
+
+    constexpr auto kSamplingRate = 0.1;
+    constexpr auto kLowerBound = 2.0;
+
+    thriftgen::OperationSamplingStrategy strategy;
+    strategy.__set_operation(kTestOperationName);
+    thriftgen::ProbabilisticSamplingStrategy probabilisticSampling;
+    probabilisticSampling.__set_samplingRate(kSamplingRate);
+    strategy.__set_probabilisticSampling(probabilisticSampling);
+
+    thriftgen::PerOperationSamplingStrategies strategies;
+    strategies.__set_defaultSamplingProbability(
+        kTestDefaultSamplingProbability);
+    strategies.__set_defaultLowerBoundTracesPerSecond(kLowerBound);
+    strategies.__set_perOperationStrategies({strategy});
+
+    AdaptiveSampler sampler(strategies, kTestDefaultMaxOperations);
+
+    constexpr auto kNewSamplingRate = 0.2;
+    constexpr auto kNewLowerBound = 3.0;
+    constexpr auto kNewDefaultSamplingProbability = 0.1;
+
+    // Updated kTestOperationName strategy.
+    thriftgen::OperationSamplingStrategy updatedStrategy;
+    updatedStrategy.__set_operation(kTestOperationName);
+    thriftgen::ProbabilisticSamplingStrategy updatedProbabilisticSampling;
+    updatedProbabilisticSampling.__set_samplingRate(kNewSamplingRate);
+    updatedStrategy.__set_probabilisticSampling(updatedProbabilisticSampling);
+
+    // New kTestFirstTimeOperationName strategy.
+    thriftgen::OperationSamplingStrategy newStrategy;
+    newStrategy.__set_operation(kTestFirstTimeOperationName);
+    thriftgen::ProbabilisticSamplingStrategy newProbabilisticSampling;
+    newProbabilisticSampling.__set_samplingRate(kNewSamplingRate);
+    newStrategy.__set_probabilisticSampling(newProbabilisticSampling);
+
+    thriftgen::PerOperationSamplingStrategies newStrategies;
+    newStrategies.__set_defaultSamplingProbability(
+        kNewDefaultSamplingProbability);
+    newStrategies.__set_defaultLowerBoundTracesPerSecond(kNewLowerBound);
+    newStrategies.__set_perOperationStrategies({updatedStrategy, newStrategy});
+
+    sampler.update(newStrategies);
 }
 
 }  // namespace samplers
