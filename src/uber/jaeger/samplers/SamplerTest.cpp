@@ -47,23 +47,19 @@ constexpr auto kTestDefaultSamplingProbability = 0.5;
 constexpr auto kTestMaxID = static_cast<uint64_t>(1) << 63;
 constexpr auto kTestDefaultMaxOperations = 10;
 
-const Tag testProbablisticExpectedTags[] = {
-    {"sampler.type", "probabilistic"},
-    {"sampler.param", 0.5}
-};
+const Tag testProbablisticExpectedTags[]
+    = { { "sampler.type", "probabilistic" }, { "sampler.param", 0.5 } };
 
-const Tag testLowerBoundExpectedTags[] = {
-    {"sampler.type", "lowerbound"},
-    {"sampler.param", 0.5}
-};
+const Tag testLowerBoundExpectedTags[]
+    = { { "sampler.type", "lowerbound" }, { "sampler.param", 0.5 } };
 
-#define CMP_TAGS(tagArr, tagVec) \
-{ \
-    ASSERT_EQ(sizeof(tagArr) / sizeof(Tag), (tagVec).size()); \
-    for (auto i = static_cast<size_t>(0); i < (tagVec).size(); ++i) { \
-        ASSERT_EQ((tagArr)[i], (tagVec)[i]); \
-    } \
-}
+#define CMP_TAGS(tagArr, tagVec)                                               \
+    {                                                                          \
+        ASSERT_EQ(sizeof(tagArr) / sizeof(Tag), (tagVec).size());              \
+        for (auto i = static_cast<size_t>(0); i < (tagVec).size(); ++i) {      \
+            ASSERT_EQ((tagArr)[i], (tagVec)[i]);                               \
+        }                                                                      \
+    }
 
 }  // anonymous namespace
 
@@ -81,17 +77,15 @@ TEST(Sampler, testSamplerTags)
         Sampler& _sampler;
         Tag::ValueType _typeTag;
         Tag::ValueType _paramTag;
-    } tests[] = {
-        {constTrue, "const", true},
-        {constFalse, "const", false},
-        {prob, "probabilistic", 0.1},
-        {rate, "ratelimiting", 0.1},
-        {remote, "const", true}
-    };
+    } tests[] = { { constTrue, "const", true },
+                  { constFalse, "const", false },
+                  { prob, "probabilistic", 0.1 },
+                  { rate, "ratelimiting", 0.1 },
+                  { remote, "const", true } };
 
     for (auto&& test : tests) {
-        const auto tags =
-            test._sampler.isSampled(TraceID(), kTestOperationName).tags();
+        const auto tags
+            = test._sampler.isSampled(TraceID(), kTestOperationName).tags();
         auto count = 0;
         for (auto&& tag : tags) {
             if (tag.key() == kSamplerTypeTagKey) {
@@ -111,8 +105,8 @@ TEST(Sampler, testSamplerOptions)
 {
     SamplerOptions options;
     ASSERT_EQ(Sampler::Type::kProbabilisticSampler, options.sampler()->type());
-    auto sampler =
-        std::static_pointer_cast<ProbabilisticSampler>(options.sampler());
+    auto sampler
+        = std::static_pointer_cast<ProbabilisticSampler>(options.sampler());
     ASSERT_EQ(0.001, sampler->samplingRate());
     ASSERT_NE(0, options.maxOperations());
     ASSERT_FALSE(options.samplingServerURL().empty());
@@ -133,13 +127,12 @@ TEST(Sampler, testProbabilisticSamplerErrors)
 TEST(Sampler, testProbabilisticSampler)
 {
     ProbabilisticSampler sampler(0.5);
-    auto result =
-        sampler.isSampled(TraceID(0, kTestMaxID + 10), kTestOperationName);
+    auto result
+        = sampler.isSampled(TraceID(0, kTestMaxID + 10), kTestOperationName);
     ASSERT_FALSE(result.isSampled());
     CMP_TAGS(testProbablisticExpectedTags, result.tags());
 
-    result =
-        sampler.isSampled(TraceID(0, kTestMaxID - 20), kTestOperationName);
+    result = sampler.isSampled(TraceID(0, kTestMaxID - 20), kTestOperationName);
     ASSERT_TRUE(result.isSampled());
     CMP_TAGS(testProbablisticExpectedTags, result.tags());
 }
@@ -217,25 +210,23 @@ TEST(Sampler, testAdaptiveSampler)
     strategies.__set_defaultSamplingProbability(
         kTestDefaultSamplingProbability);
     strategies.__set_defaultLowerBoundTracesPerSecond(1.0);
-    strategies.__set_perOperationStrategies({strategy});
+    strategies.__set_perOperationStrategies({ strategy });
 
     AdaptiveSampler sampler(strategies, kTestDefaultMaxOperations);
-    auto result =
-        sampler.isSampled(TraceID(0, kTestMaxID + 10), kTestOperationName);
+    auto result
+        = sampler.isSampled(TraceID(0, kTestMaxID + 10), kTestOperationName);
     ASSERT_TRUE(result.isSampled());
     CMP_TAGS(testLowerBoundExpectedTags, result.tags());
 
-    result =
-        sampler.isSampled(TraceID(0, kTestMaxID - 20), kTestOperationName);
+    result = sampler.isSampled(TraceID(0, kTestMaxID - 20), kTestOperationName);
     ASSERT_TRUE(result.isSampled());
     CMP_TAGS(testProbablisticExpectedTags, result.tags());
 
-    result =
-        sampler.isSampled(TraceID(0, kTestMaxID + 10), kTestOperationName);
+    result = sampler.isSampled(TraceID(0, kTestMaxID + 10), kTestOperationName);
     ASSERT_FALSE(result.isSampled());
 
-    result =
-        sampler.isSampled(TraceID(0, kTestMaxID), kTestFirstTimeOperationName);
+    result = sampler.isSampled(TraceID(0, kTestMaxID),
+                               kTestFirstTimeOperationName);
     ASSERT_TRUE(result.isSampled());
     CMP_TAGS(testProbablisticExpectedTags, result.tags());
 }
@@ -254,15 +245,15 @@ TEST(Sampler, testAdaptiveSamplerErrors)
     strategies.__set_defaultSamplingProbability(
         kTestDefaultSamplingProbability);
     strategies.__set_defaultLowerBoundTracesPerSecond(2.0);
-    strategies.__set_perOperationStrategies({strategy});
+    strategies.__set_perOperationStrategies({ strategy });
 
     {
         AdaptiveSampler sampler(strategies, kTestDefaultMaxOperations);
     }
 
     {
-        strategies.perOperationStrategies.at(0).probabilisticSampling
-            .__set_samplingRate(1.1);
+        strategies.perOperationStrategies.at(0)
+            .probabilisticSampling.__set_samplingRate(1.1);
         AdaptiveSampler sampler(strategies, kTestDefaultMaxOperations);
     }
 }
@@ -284,7 +275,7 @@ TEST(Sampler, testAdaptiveSamplerUpdate)
     strategies.__set_defaultSamplingProbability(
         kTestDefaultSamplingProbability);
     strategies.__set_defaultLowerBoundTracesPerSecond(kLowerBound);
-    strategies.__set_perOperationStrategies({strategy});
+    strategies.__set_perOperationStrategies({ strategy });
 
     AdaptiveSampler sampler(strategies, kTestDefaultMaxOperations);
 
@@ -310,7 +301,8 @@ TEST(Sampler, testAdaptiveSamplerUpdate)
     newStrategies.__set_defaultSamplingProbability(
         kNewDefaultSamplingProbability);
     newStrategies.__set_defaultLowerBoundTracesPerSecond(kNewLowerBound);
-    newStrategies.__set_perOperationStrategies({updatedStrategy, newStrategy});
+    newStrategies.__set_perOperationStrategies(
+        { updatedStrategy, newStrategy });
 
     sampler.update(newStrategies);
 }

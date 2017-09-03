@@ -155,8 +155,8 @@ std::string httpGetRequest(boost::asio::io_service& io, const URI& uri)
     if (res.result() != http::status::ok) {
         std::ostringstream oss;
         oss << "Unexpected response status code"
-               ", host=" << uri._host
-            << ", target=" << target
+               ", host="
+            << uri._host << ", target=" << target
             << ", status=" << res.result();
         throw std::runtime_error(oss.str());
     }

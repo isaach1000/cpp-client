@@ -82,8 +82,8 @@ class Metrics {
         , _samplerUpdated(factory.createCounter("jaeger.sampler",
                                                 { { "state", "updated" } }))
         , _samplerUpdateFailure(factory.createCounter(
-                "jaeger.sampler",
-                { { "state", "failure" }, { "phase", "updating" } }))
+              "jaeger.sampler",
+              { { "state", "failure" }, { "phase", "updating" } }))
         , _samplerQueryFailure(factory.createCounter(
               "jaeger.sampler",
               { { "state", "failure" }, { "phase", "query" } }))

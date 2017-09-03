@@ -51,25 +51,25 @@ class RemotelyControlledSampler : public Sampler {
 
     ~RemotelyControlledSampler() { close(); }
 
-    SamplingStatus isSampled(
-        const TraceID& id, const std::string& operation) override;
+    SamplingStatus isSampled(const TraceID& id,
+                             const std::string& operation) override;
 
     void close() override;
 
     Type type() const override { return Type::kRemotelyControlledSampler; }
 
   private:
-    using PerOperationSamplingStrategies =
-        thrift::sampling_manager::PerOperationSamplingStrategies;
-    using SamplingStrategyResponse =
-        thrift::sampling_manager::SamplingStrategyResponse;
+    using PerOperationSamplingStrategies
+        = thrift::sampling_manager::PerOperationSamplingStrategies;
+    using SamplingStrategyResponse
+        = thrift::sampling_manager::SamplingStrategyResponse;
 
     void pollController();
 
     void updateSampler();
 
-    void updateAdaptiveSampler(
-        const PerOperationSamplingStrategies& strategies);
+    void
+    updateAdaptiveSampler(const PerOperationSamplingStrategies& strategies);
 
     void updateRateLimitingOrProbabilisticSampler(
         const SamplingStrategyResponse& response);

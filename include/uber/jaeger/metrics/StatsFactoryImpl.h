@@ -44,20 +44,17 @@ class StatsFactoryImpl : public StatsFactory {
 
     ~StatsFactoryImpl() = default;
 
-    std::unique_ptr<Counter>
-    createCounter(const std::string& name,
-                  const std::unordered_map<std::string, std::string>& tags)
-    override;
+    std::unique_ptr<Counter> createCounter(
+        const std::string& name,
+        const std::unordered_map<std::string, std::string>& tags) override;
 
-    std::unique_ptr<Timer>
-    createTimer(const std::string& name,
-                const std::unordered_map<std::string, std::string>& tags)
-    override;
+    std::unique_ptr<Timer> createTimer(
+        const std::string& name,
+        const std::unordered_map<std::string, std::string>& tags) override;
 
-    std::unique_ptr<Gauge>
-    createGauge(const std::string& name,
-                const std::unordered_map<std::string, std::string>& tags)
-    override;
+    std::unique_ptr<Gauge> createGauge(
+        const std::string& name,
+        const std::unordered_map<std::string, std::string>& tags) override;
 
   private:
     StatsReporter& _reporter;

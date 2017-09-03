@@ -37,10 +37,10 @@ namespace jaeger {
 namespace thrift {
 namespace sampling_manager {
 
-#define DECODE_FIELD(field) \
-    { \
-        result.__set_##field( \
-            jsonValue.at(#field).get<decltype(result.field)>()); \
+#define DECODE_FIELD(field)                                                    \
+    {                                                                          \
+        result.__set_##field(                                                  \
+            jsonValue.at(#field).get<decltype(result.field)>());               \
     }
 
 void from_json(const nlohmann::json& jsonValue,
@@ -76,13 +76,12 @@ void from_json(const nlohmann::json& jsonValue,
 {
     auto operationSamplingItr = jsonValue.find("operationSampling");
     if (operationSamplingItr != std::end(jsonValue)) {
-        result.operationSampling =
-            operationSamplingItr->get<PerOperationSamplingStrategies>();
+        result.operationSampling
+            = operationSamplingItr->get<PerOperationSamplingStrategies>();
     }
 
-    result.strategyType =
-        static_cast<SamplingStrategyType::type>(
-            jsonValue.at("strategyType").get<int>());
+    result.strategyType = static_cast<SamplingStrategyType::type>(
+        jsonValue.at("strategyType").get<int>());
     switch (result.strategyType) {
     case SamplingStrategyType::PROBABILISTIC: {
         DECODE_FIELD(probabilisticSampling);
@@ -108,8 +107,8 @@ namespace {
 
 class HTTPSamplingManager : public thrift::sampling_manager::SamplingManagerIf {
   public:
-    using SamplingStrategyResponse =
-        thrift::sampling_manager::SamplingStrategyResponse;
+    using SamplingStrategyResponse
+        = thrift::sampling_manager::SamplingStrategyResponse;
 
     explicit HTTPSamplingManager(const std::string& serverURL)
         : _serverURL(serverURL)
@@ -117,13 +116,11 @@ class HTTPSamplingManager : public thrift::sampling_manager::SamplingManagerIf {
     {
     }
 
-    void getSamplingStrategy(
-        SamplingStrategyResponse& result,
-        const std::string& serviceName) override
+    void getSamplingStrategy(SamplingStrategyResponse& result,
+                             const std::string& serviceName) override
     {
-        const auto uriStr =
-            _serverURL + "?" +
-            utils::http::percentEncode("service=" + serviceName);
+        const auto uriStr = _serverURL + "?" + utils::http::percentEncode(
+                                                   "service=" + serviceName);
         const auto uri = utils::http::parseURI(uriStr);
         const auto response = utils::http::httpGetRequest(_io, uri);
         const auto jsonValue = nlohmann::json::parse(response);
@@ -141,8 +138,8 @@ RemotelyControlledSampler::RemotelyControlledSampler(
     const std::string& serviceName, const SamplerOptions& options)
     : _options(options)
     , _serviceName(serviceName)
-    , _manager(std::make_shared<HTTPSamplingManager>(
-                _options.samplingServerURL()))
+    , _manager(
+          std::make_shared<HTTPSamplingManager>(_options.samplingServerURL()))
     , _running(true)
     , _mutex()
     , _shutdownCV()
@@ -150,8 +147,9 @@ RemotelyControlledSampler::RemotelyControlledSampler(
 {
 }
 
-SamplingStatus RemotelyControlledSampler::isSampled(
-    const TraceID& id, const std::string& operation)
+SamplingStatus
+RemotelyControlledSampler::isSampled(const TraceID& id,
+                                     const std::string& operation)
 {
     std::lock_guard<std::mutex> lock(_mutex);
     assert(_options.sampler());
@@ -186,12 +184,10 @@ void RemotelyControlledSampler::updateSampler()
     try {
         assert(_manager);
         _manager->getSamplingStrategy(response, _serviceName);
-    }
-    catch (const std::exception& ex) {
+    } catch (const std::exception& ex) {
         _options.metrics()->samplerQueryFailure().inc(1);
         return;
-    }
-    catch (...) {
+    } catch (...) {
         _options.metrics()->samplerQueryFailure().inc(1);
         return;
     }
@@ -205,12 +201,10 @@ void RemotelyControlledSampler::updateSampler()
     else {
         try {
             updateRateLimitingOrProbabilisticSampler(response);
-        }
-        catch (const std::exception& ex) {
+        } catch (const std::exception& ex) {
             _options.metrics()->samplerUpdateFailure().inc(1);
             return;
-        }
-        catch (...) {
+        } catch (...) {
             _options.metrics()->samplerUpdateFailure().inc(1);
             return;
         }
@@ -227,8 +221,8 @@ void RemotelyControlledSampler::updateAdaptiveSampler(
         static_cast<AdaptiveSampler&>(*sampler).update(strategies);
     }
     else {
-        sampler = std::make_shared<AdaptiveSampler>(
-            strategies, _options.maxOperations());
+        sampler = std::make_shared<AdaptiveSampler>(strategies,
+                                                    _options.maxOperations());
         _options.setSampler(sampler);
     }
 }
@@ -247,8 +241,7 @@ void RemotelyControlledSampler::updateRateLimitingOrProbabilisticSampler(
     }
     else {
         std::ostringstream oss;
-        oss << "Unsupported sampling strategy type "
-            << response.strategyType;
+        oss << "Unsupported sampling strategy type " << response.strategyType;
         throw std::runtime_error(oss.str());
     }
     _options.setSampler(sampler);

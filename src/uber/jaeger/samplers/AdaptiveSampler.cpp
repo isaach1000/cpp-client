@@ -98,8 +98,8 @@ void AdaptiveSampler::update(const PerOperationSamplingStrategies& strategies)
             sampler->update(lowerBound, samplingRate);
         }
         else {
-            sampler =
-                std::make_shared<GuaranteedThroughputProbabilisticSampler>(
+            sampler
+                = std::make_shared<GuaranteedThroughputProbabilisticSampler>(
                     lowerBound, samplingRate);
         }
         assert(sampler);

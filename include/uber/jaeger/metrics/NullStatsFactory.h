@@ -44,24 +44,21 @@ class NullStatsFactory : public StatsFactory {
   public:
     std::unique_ptr<Counter>
     createCounter(const std::string&,
-                  const std::unordered_map<std::string, std::string>&)
-    override
+                  const std::unordered_map<std::string, std::string>&) override
     {
         return std::unique_ptr<Counter>(new NullCounter());
     }
 
     std::unique_ptr<Timer>
     createTimer(const std::string&,
-                const std::unordered_map<std::string, std::string>&)
-    override
+                const std::unordered_map<std::string, std::string>&) override
     {
         return std::unique_ptr<Timer>(new NullTimer());
     }
 
     std::unique_ptr<Gauge>
     createGauge(const std::string&,
-                const std::unordered_map<std::string, std::string>&)
-    override
+                const std::unordered_map<std::string, std::string>&) override
     {
         return std::unique_ptr<Gauge>(new NullGauge());
     }

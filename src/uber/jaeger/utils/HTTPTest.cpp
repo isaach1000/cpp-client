@@ -43,10 +43,9 @@ TEST(HTTP, testPercentEncode)
         std::string _expected;
     };
 
-    const TestCase testCases[] = {
-        { "example", "example" },
-        { "hello world-test", "hello%20world-test" }
-    };
+    const TestCase testCases[]
+        = { { "example", "example" },
+            { "hello world-test", "hello%20world-test" } };
 
     for (auto&& testCase : testCases) {
         const auto result = http::percentEncode(testCase._input);
@@ -61,10 +60,9 @@ TEST(HTTP, testParseURI)
         http::URI _expected;
     };
 
-    const TestCase testCases[] = {
-        { "http://example.com", {"example.com", 80, "", ""} },
-        { "http://example.com:abc", {"example.com", 80, "", ""} }
-    };
+    const TestCase testCases[]
+        = { { "http://example.com", { "example.com", 80, "", "" } },
+            { "http://example.com:abc", { "example.com", 80, "", "" } } };
 
     for (auto&& testCase : testCases) {
         const auto uri = http::parseURI("http://example.com");
@@ -89,8 +87,7 @@ TEST(HTTP, testHTTPGetRequest)
     port = endpoint.port();
     tcp::socket socket(io);
     acceptor.async_accept(
-        socket,
-        [&socket, kJSONContents](boost::system::error_code error) {
+        socket, [&socket, kJSONContents](boost::system::error_code error) {
             ASSERT_FALSE(static_cast<bool>(error));
             beast::http::request<string_body> req;
             beast::flat_buffer buffer;

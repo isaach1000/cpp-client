@@ -69,10 +69,7 @@ class SamplerOptions {
         _maxOperations = maxOperations;
     }
 
-    const std::shared_ptr<Sampler>& sampler() const
-    {
-        return _sampler;
-    }
+    const std::shared_ptr<Sampler>& sampler() const { return _sampler; }
 
     void setSampler(const std::shared_ptr<Sampler>& sampler)
     {
