@@ -48,7 +48,6 @@ if(CMAKE_BUILD_TYPE MATCHES Debug)
                           "${CMAKE_SOURCE_DIR}/src/uber/jaeger/thrift_gen/*")
 endif()
 
-include_directories("include")
 include_directories("src")
 
 file(GLOB SRC "src/uber/jaeger/*.cpp")
