@@ -20,42 +20,4 @@
  * THE SOFTWARE.
  */
 
-#ifndef UBER_JAEGER_TESTUTILS_MOCKAGENT_H
-#define UBER_JAEGER_TESTUTILS_MOCKAGENT_H
-
-#include <atomic>
-#include <mutex>
-#include <vector>
-
 #include "uber/jaeger/testutils/SamplingManager.h"
-#include "uber/jaeger/testutils/TUDPTransport.h"
-#include "uber/jaeger/thrift-gen/jaeger_types.h"
-
-namespace uber {
-namespace jaeger {
-namespace testutils {
-
-class MockAgent {
-  public:
-    explicit MockAgent(boost::asio::io_service& io)
-        : _transport(io, "127.0.0.1:0")
-        , _batches()
-        , _serving(false)
-        , _samplingMgr()
-        , _mutex()
-    {
-    }
-
-  private:
-    TUDPTransport _transport;
-    std::vector<thrift::Batch> _batches;
-    std::atomic<bool> _serving;
-    SamplingManager _samplingMgr;
-    std::mutex _mutex;
-};
-
-}  // namespace testutils
-}  // namespace jaeger
-}  // namespace uber
-
-#endif  // UBER_JAEGER_TESTUTILS_MOCKAGENT_H

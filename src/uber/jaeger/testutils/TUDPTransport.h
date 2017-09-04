@@ -24,17 +24,23 @@
 #define UBER_JAEGER_TESTUTILS_TUDPTRANSPORT_H
 
 #include <boost/asio/ip/udp.hpp>
-#include <thrift/transport/TBufferTransports.h>
+#include <thrift/transport/TVirtualTransport.h>
 
 namespace uber {
 namespace jaeger {
 namespace testutils {
 
-class TUDPTransport : public apache::thrift::transport::TTransport {
+class TUDPTransport
+    : public apache::thrift::transport::TVirtualTransport<TUDPTransport> {
   public:
+    using udp = boost::asio::ip::udp;
+
     TUDPTransport(boost::asio::io_service& io,
                  const std::string& hostPort)
         : _socket(io)
+        , _host()
+        , _port()
+        , _senderEndpoint()
     {
         const auto colonPos = hostPort.find(':');
         if (colonPos == std::string::npos) {
@@ -71,24 +77,29 @@ class TUDPTransport : public apache::thrift::transport::TTransport {
         }
     }
 
-    void close() override { _socket.close(); }
+    void close() override
+    {
+        _socket.close();
+    }
+
+    udp::endpoint addr() const { return _socket.local_endpoint(); }
 
     uint32_t read(uint8_t* buf, uint32_t len)
     {
-        return _socket.receive(boost::asio::buffer(buf, len));
+        return _socket.receive_from(boost::asio::buffer(buf, len),
+                                    _senderEndpoint);
     }
 
     void write(const uint8_t* buf, uint32_t len)
     {
-        _socket.send(boost::asio::buffer(buf, len));
+        _socket.send_to(boost::asio::buffer(buf, len), _senderEndpoint);
     }
 
   private:
-    using udp = boost::asio::ip::udp;
-
     udp::socket _socket;
     std::string _host;
     std::string _port;
+    udp::endpoint _senderEndpoint;
 };
 
 }  // namespace testutils

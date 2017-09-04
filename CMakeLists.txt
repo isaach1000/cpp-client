@@ -50,7 +50,8 @@ endif()
 include_directories("src")
 
 file(GLOB SRC "src/uber/jaeger/*.cpp")
-file(GLOB TEST_SRC "src/uber/jaeger/*Test.cpp")
+file(GLOB TEST_SRC "src/uber/jaeger/*Test.cpp"
+                   "src/uber/jaeger/testutils/*Test.cpp")
 foreach(SUBDIR "metrics"
                "propagation"
                "reporters"
