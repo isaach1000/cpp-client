@@ -1,0 +1,25 @@
+language: cpp
+sudo: false
+dist: trusty
+compiler:
+  - g++
+os:
+  - linux
+lang: cpp
+dist: trusty
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - cmake
+branches:
+  only:
+  - master
+script:
+  - mkdir build
+  - cd build
+  - cmake -DCMAKE_BUILD_TYPE=Debug ..
+env:
+  global:
+    - LANG="en_US.UTF-8"
