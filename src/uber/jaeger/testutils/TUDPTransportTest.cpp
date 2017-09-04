@@ -42,6 +42,9 @@ TEST(TUDPTransport, testUDPTransport)
     const std::string message("test");
 
     boost::asio::io_service io;
+
+    ASSERT_THROW({ TUDPTransport(io, "127.0.0.1"); }, std::logic_error);
+
     TUDPTransport server(io, "127.0.0.1:0");
 
     ASSERT_NO_THROW({ server.open(); });
@@ -73,6 +76,7 @@ TEST(TUDPTransport, testUDPTransport)
     server.write(std::begin(buffer), numRead);
 
     clientThread.join();
+    server.close();
 }
 
 }  // namespace testutils

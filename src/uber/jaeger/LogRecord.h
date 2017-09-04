@@ -27,7 +27,7 @@
 #include <string>
 #include <vector>
 
-#include <boost/variant/variant.hpp>
+#include <boost/any.hpp>
 
 namespace uber {
 namespace jaeger {
@@ -38,7 +38,7 @@ class LogRecord {
 
     class Field {
       public:
-        using ValueType = boost::variant<std::string, int64_t, double, bool>;
+        using ValueType = boost::any;
 
         Field() = default;
 

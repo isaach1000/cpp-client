@@ -58,23 +58,11 @@ class TUDPTransport
     void open() override
     {
         udp::resolver resolver(_socket.get_io_service());
-        boost::system::error_code error;
         const auto entryItr =
-            resolver.resolve(udp::resolver::query(_host, _port), error);
-        if (error) {
-            throw boost::system::system_error(error);
-        }
+            resolver.resolve(udp::resolver::query(_host, _port));
         const auto endpoint = entryItr->endpoint();
-
-        _socket.open(endpoint.protocol(), error);
-        if (error) {
-            throw boost::system::system_error(error);
-        }
-
-        _socket.bind(endpoint, error);
-        if (error) {
-            throw boost::system::system_error(error);
-        }
+        _socket.open(endpoint.protocol());
+        _socket.bind(endpoint);
     }
 
     void close() override
