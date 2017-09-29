@@ -24,34 +24,100 @@
 #define UBER_JAEGER_TESTUTILS_MOCKAGENT_H
 
 #include <atomic>
+#include <condition_variable>
 #include <mutex>
+#include <thread>
 #include <vector>
 
 #include "uber/jaeger/testutils/SamplingManager.h"
 #include "uber/jaeger/testutils/TUDPTransport.h"
+#include "uber/jaeger/thrift-gen/Agent.h"
 #include "uber/jaeger/thrift-gen/jaeger_types.h"
 
 namespace uber {
 namespace jaeger {
 namespace testutils {
 
-class MockAgent {
+class MockAgent : public agent::thrift::AgentIf,
+                  public std::enable_shared_from_this<MockAgent> {
   public:
+    static std::shared_ptr<MockAgent> make(boost::asio::io_service& io)
+    {
+        std::shared_ptr<MockAgent> newInstance(new MockAgent(io));
+        return newInstance;
+    }
+
+    ~MockAgent()
+    {
+        if (isServing()) {
+            close();
+        }
+    }
+
+    void start();
+
+    void close();
+
+    virtual void emitZipkinBatch(
+        const std::vector<twitter::zipkin::thrift::Span>&) override
+    {
+        throw std::runtime_error(
+            "emitZipkinBatch is deprecated, call emitBatch instead");
+    }
+
+    virtual void emitBatch(const thrift::Batch& batch) override;
+
+    bool isServing() const { return _serving; }
+
+    template <typename... Args>
+    void addSamplingStrategy(Args&&... args)
+    {
+        _samplingMgr.addSamplingStrategy(std::forward<Args>(args)...);
+    }
+
+    std::vector<thrift::Batch> batches() const
+    {
+        std::lock_guard<std::mutex> lock(_mutex);
+        return _batches;
+    }
+
+    TUDPTransport::udp::endpoint spanServerAddress() const
+    {
+        return _transport.addr();
+    }
+
+    std::unique_ptr<thrift::agent::AgentIf> spanServerClient() const
+    {
+        // TODO
+        return nullptr;
+    }
+
+    void resetBatches()
+    {
+        std::lock_guard<std::mutex> lock(_mutex);
+        _batches.clear();
+    }
+
+  private:
     explicit MockAgent(boost::asio::io_service& io)
         : _transport(io, "127.0.0.1:0")
         , _batches()
         , _serving(false)
         , _samplingMgr()
         , _mutex()
+        , _thread()
     {
     }
 
-  private:
+    void serve();
+
     TUDPTransport _transport;
     std::vector<thrift::Batch> _batches;
     std::atomic<bool> _serving;
     SamplingManager _samplingMgr;
-    std::mutex _mutex;
+    mutable std::mutex _mutex;
+    std::thread _thread;
+    std::condition_variable _started;
 };
 
 }  // namespace testutils

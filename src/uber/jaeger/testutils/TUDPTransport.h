@@ -26,6 +26,8 @@
 #include <boost/asio/ip/udp.hpp>
 #include <thrift/transport/TVirtualTransport.h>
 
+#include "uber/jaeger/utils/UDPClient.h"
+
 namespace uber {
 namespace jaeger {
 namespace testutils {
@@ -36,21 +38,13 @@ class TUDPTransport
     using udp = boost::asio::ip::udp;
 
     TUDPTransport(boost::asio::io_service& io,
-                 const std::string& hostPort)
+                  const std::string& hostPort)
         : _socket(io)
         , _host()
         , _port()
         , _senderEndpoint()
     {
-        const auto colonPos = hostPort.find(':');
-        if (colonPos == std::string::npos) {
-            std::ostringstream oss;
-            oss << "Invalid host/port string contains no colon: "
-                << hostPort;
-            throw std::logic_error(oss.str());
-        }
-        _host = hostPort.substr(0, colonPos);
-        _port = hostPort.substr(colonPos + 1);
+        std::tie(_host, _port) = utils::parseHostPort(hostPort);
     }
 
     bool isOpen() override { return _socket.is_open(); }
