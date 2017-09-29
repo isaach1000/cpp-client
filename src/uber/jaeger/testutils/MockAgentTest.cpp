@@ -34,7 +34,8 @@ TEST(MockAgent, testSpanServer)
     std::shared_ptr<MockAgent> mockAgent = MockAgent::make(io);
     mockAgent->start();
 
-    client = mockAgent->spanServerClient();
+    /* TODO
+       auto client = */ mockAgent->spanServerClient();
 }
 
 }  // namespace testutils

@@ -58,14 +58,14 @@ class MockAgent : public agent::thrift::AgentIf,
 
     void close();
 
-    virtual void emitZipkinBatch(
+    void emitZipkinBatch(
         const std::vector<twitter::zipkin::thrift::Span>&) override
     {
         throw std::runtime_error(
             "emitZipkinBatch is deprecated, call emitBatch instead");
     }
 
-    virtual void emitBatch(const thrift::Batch& batch) override;
+    void emitBatch(const thrift::Batch& batch) override;
 
     bool isServing() const { return _serving; }
 
@@ -86,7 +86,7 @@ class MockAgent : public agent::thrift::AgentIf,
         return _transport.addr();
     }
 
-    std::unique_ptr<thrift::agent::AgentIf> spanServerClient() const
+    std::unique_ptr<agent::thrift::AgentIf> spanServerClient() const
     {
         // TODO
         return nullptr;

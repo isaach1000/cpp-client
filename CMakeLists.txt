@@ -1,12 +1,13 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.1)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
 include(HunterGate)
-HunterGate(URL "https://github.com/ruslo/hunter/archive/v0.19.89.tar.gz"
-           SHA1 "98bf8e401fff1394e8df0a757772265511dd9084")
+HunterGate(
+    URL "https://github.com/ruslo/hunter/archive/v0.19.115.tar.gz"
+    SHA1 "aeb37c4b667c4201837bcac38702f3ce8b4a9b44")
 
-project(jaeger-client-cpp)
+project(jaegerclient)
 
 if(NOT CMAKE_VERSION VERSION_LESS 3.1)
     set(CMAKE_CXX_STANDARD_REQUIRED true)
@@ -31,6 +32,9 @@ hunter_add_package(nlohmann_json)
 find_package(nlohmann_json CONFIG REQUIRED)
 list(APPEND LIBS nlohmann_json)
 
+hunter_add_package(thrift)
+find_package(thrift CONFIG REQUIRED)
+
 hunter_add_package(spdlog)
 find_package(spdlog CONFIG REQUIRED)
 list(APPEND LIBS spdlog::spdlog)
@@ -49,34 +53,33 @@ if(BUILD_TESTING)
     endif()
 endif()
 
-find_package(Thrift REQUIRED)
-include_directories(${THRIFT_INCLUDE_DIR})
 
-include_directories("src")
+set(SUBDIRS metrics propagation reporters samplers utils)
 
 file(GLOB SRC "src/uber/jaeger/*.cpp")
-file(GLOB TEST_SRC "src/uber/jaeger/*Test.cpp"
-                   "src/uber/jaeger/testutils/*Test.cpp")
-foreach(SUBDIR "metrics"
-               "propagation"
-               "reporters"
-               "samplers"
-               "utils")
+foreach(SUBDIR IN LISTS SUBDIRS)
     file(GLOB SUBDIR_SRC "src/uber/jaeger/${SUBDIR}/*.cpp")
     list(FILTER SUBDIR_SRC EXCLUDE REGEX ".*Test\\.cpp")
     list(APPEND SRC ${SUBDIR_SRC})
-    file(GLOB SUBDIR_TEST_SRC "src/uber/jaeger/${SUBDIR}/*Test.cpp")
-    list(APPEND TEST_SRC ${SUBDIR_TEST_SRC})
-endforeach(SUBDIR)
+endforeach()
 
 add_subdirectory("src/uber/jaeger/thrift-gen")
-list(APPEND LIBS thriftgen)
+list(APPEND LIBS thriftgen thrift::thrift_static)
 
 add_library(jaeger ${SRC})
+target_include_directories(jaeger PUBLIC
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>)
 target_link_libraries(jaeger ${LIBS})
 
 if(BUILD_TESTING)
     add_subdirectory("${CMAKE_SOURCE_DIR}/src/uber/jaeger/testutils")
+    file(GLOB TEST_SRC "src/uber/jaeger/*Test.cpp"
+                       "src/uber/jaeger/testutils/*Test.cpp")
+    foreach(SUBDIR IN LISTS SUBDIRS)
+        file(GLOB SUBDIR_TEST_SRC "src/uber/jaeger/${SUBDIR}/*Test.cpp")
+        list(APPEND TEST_SRC ${SUBDIR_TEST_SRC})
+    endforeach()
+
     add_executable(UnitTest ${TEST_SRC})
     target_link_libraries(UnitTest testutils GTest::main jaeger ${LIBS})
     add_test(NAME UnitTest
