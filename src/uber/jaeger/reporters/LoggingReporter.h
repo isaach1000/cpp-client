@@ -20,40 +20,34 @@
  * THE SOFTWARE.
  */
 
-#include "uber/jaeger/samplers/SamplerOptions.h"
+#ifndef UBER_JAEGER_REPORTERS_LOGGINGREPORTER_H
+#define UBER_JAEGER_REPORTERS_LOGGINGREPORTER_H
 
-#include "uber/jaeger/Logging.h"
-#include "uber/jaeger/metrics/Counter.h"
-#include "uber/jaeger/metrics/Gauge.h"
-#include "uber/jaeger/metrics/NullStatsFactory.h"
-#include "uber/jaeger/samplers/ProbabilisticSampler.h"
+#include <spdlog/spdlog.h>
+
+#include "uber/jaeger/reporters/Reporter.h"
 
 namespace uber {
 namespace jaeger {
-namespace samplers {
-namespace {
+namespace reporters {
 
-constexpr auto kDefaultMaxOperations = 2000;
-constexpr auto kDefaultSamplingRate = 0.001;
-constexpr auto kDefaultSamplingServerURL = "http://localhost:5778/sampling";
-const auto kDefaultSamplingRefreshInterval = std::chrono::minutes(1);
+class LoggingReporter : public Reporter {
+  public:
+    explicit LoggingReporter(const std::shared_ptr<spdlog::logger>& logger)
+        : _logger(logger)
+    {
+    }
 
-}  // anonymous namespace
+    void report(const Span& span) override;
 
-SamplerOptions::SamplerOptions()
-    : _metrics()
-    , _maxOperations(kDefaultMaxOperations)
-    , _sampler(std::make_shared<ProbabilisticSampler>(kDefaultSamplingRate))
-    , _logger(logging::nullLogger())
-    , _samplingServerURL(kDefaultSamplingServerURL)
-    , _samplingRefreshInterval(kDefaultSamplingRefreshInterval)
-{
-    metrics::NullStatsFactory factory;
-    _metrics = std::make_shared<metrics::Metrics>(factory);
-}
+    void close() override {}
 
-SamplerOptions::~SamplerOptions() = default;
+  private:
+    std::shared_ptr<spdlog::logger> _logger;
+};
 
-}  // namespace samplers
+}  // namespace reporters
 }  // namespace jaeger
 }  // namespace uber
+
+#endif  // UBER_JAEGER_REPORTERS_LOGGINGREPORTER_H

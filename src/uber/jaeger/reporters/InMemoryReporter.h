@@ -20,40 +20,62 @@
  * THE SOFTWARE.
  */
 
-#include "uber/jaeger/samplers/SamplerOptions.h"
+#ifndef UBER_JAEGER_REPORTERS_INMEMORYREPORTER_H
+#define UBER_JAEGER_REPORTERS_INMEMORYREPORTER_H
 
-#include "uber/jaeger/Logging.h"
-#include "uber/jaeger/metrics/Counter.h"
-#include "uber/jaeger/metrics/Gauge.h"
-#include "uber/jaeger/metrics/NullStatsFactory.h"
-#include "uber/jaeger/samplers/ProbabilisticSampler.h"
+#include <mutex>
+#include <vector>
+
+#include "uber/jaeger/Span.h"
+#include "uber/jaeger/reporters/Reporter.h"
 
 namespace uber {
 namespace jaeger {
-namespace samplers {
-namespace {
+namespace reporters {
 
-constexpr auto kDefaultMaxOperations = 2000;
-constexpr auto kDefaultSamplingRate = 0.001;
-constexpr auto kDefaultSamplingServerURL = "http://localhost:5778/sampling";
-const auto kDefaultSamplingRefreshInterval = std::chrono::minutes(1);
+class InMemoryReporter : public Reporter {
+  public:
+    InMemoryReporter()
+        : _spans()
+        , _mutex()
+    {
+        constexpr auto kInitialCapacity = 10;
+        _spans.reserve(kInitialCapacity);
+    }
 
-}  // anonymous namespace
+    void report(const Span& span) override
+    {
+        std::lock_guard<std::mutex> lock(_mutex);
+        _spans.push_back(span);
+    }
 
-SamplerOptions::SamplerOptions()
-    : _metrics()
-    , _maxOperations(kDefaultMaxOperations)
-    , _sampler(std::make_shared<ProbabilisticSampler>(kDefaultSamplingRate))
-    , _logger(logging::nullLogger())
-    , _samplingServerURL(kDefaultSamplingServerURL)
-    , _samplingRefreshInterval(kDefaultSamplingRefreshInterval)
-{
-    metrics::NullStatsFactory factory;
-    _metrics = std::make_shared<metrics::Metrics>(factory);
-}
+    void close() override {}
 
-SamplerOptions::~SamplerOptions() = default;
+    int spansSubmitted() const
+    {
+        std::lock_guard<std::mutex> lock(_mutex);
+        return _spans.size();
+    }
 
-}  // namespace samplers
+    std::vector<Span> spans() const
+    {
+        std::lock_guard<std::mutex> lock(_mutex);
+        return _spans;
+    }
+
+    void reset()
+    {
+        std::lock_guard<std::mutex> lock(_mutex);
+        _spans.clear();
+    }
+
+  private:
+    std::vector<Span> _spans;
+    mutable std::mutex _mutex;
+};
+
+}  // namespace reporters
 }  // namespace jaeger
 }  // namespace uber
+
+#endif  // UBER_JAEGER_REPORTERS_INMEMORYREPORTER_H

@@ -20,40 +20,52 @@
  * THE SOFTWARE.
  */
 
-#include "uber/jaeger/samplers/SamplerOptions.h"
+#ifndef UBER_JAEGER_REPORTERS_COMPOSITEREPORTER_H
+#define UBER_JAEGER_REPORTERS_COMPOSITEREPORTER_H
 
-#include "uber/jaeger/Logging.h"
-#include "uber/jaeger/metrics/Counter.h"
-#include "uber/jaeger/metrics/Gauge.h"
-#include "uber/jaeger/metrics/NullStatsFactory.h"
-#include "uber/jaeger/samplers/ProbabilisticSampler.h"
+#include <algorithm>
+#include <memory>
+#include <vector>
+
+#include "uber/jaeger/reporters/Reporter.h"
 
 namespace uber {
 namespace jaeger {
-namespace samplers {
-namespace {
+namespace reporters {
 
-constexpr auto kDefaultMaxOperations = 2000;
-constexpr auto kDefaultSamplingRate = 0.001;
-constexpr auto kDefaultSamplingServerURL = "http://localhost:5778/sampling";
-const auto kDefaultSamplingRefreshInterval = std::chrono::minutes(1);
+class CompositeReporter : public Reporter {
+  public:
+    using ReporterPtr = std::shared_ptr<Reporter>;
 
-}  // anonymous namespace
+    explicit CompositeReporter(const std::vector<ReporterPtr>& reporters)
+        : _reporters(reporters)
+    {
+    }
 
-SamplerOptions::SamplerOptions()
-    : _metrics()
-    , _maxOperations(kDefaultMaxOperations)
-    , _sampler(std::make_shared<ProbabilisticSampler>(kDefaultSamplingRate))
-    , _logger(logging::nullLogger())
-    , _samplingServerURL(kDefaultSamplingServerURL)
-    , _samplingRefreshInterval(kDefaultSamplingRefreshInterval)
-{
-    metrics::NullStatsFactory factory;
-    _metrics = std::make_shared<metrics::Metrics>(factory);
-}
+    void report(const Span& span) override
+    {
+        std::for_each(std::begin(_reporters),
+                      std::end(_reporters),
+                      [&span](const ReporterPtr& reporter) {
+                          reporter->report(span);
+                      });
+    }
 
-SamplerOptions::~SamplerOptions() = default;
+    void close() override
+    {
+        std::for_each(std::begin(_reporters),
+                      std::end(_reporters),
+                      [](const ReporterPtr& reporter) {
+                          reporter->close();
+                      });
+    }
 
-}  // namespace samplers
+  private:
+    std::vector<ReporterPtr> _reporters;
+};
+
+}  // namespace reporters
 }  // namespace jaeger
 }  // namespace uber
+
+#endif  // UBER_JAEGER_REPORTERS_COMPOSITEREPORTER_H

@@ -20,40 +20,27 @@
  * THE SOFTWARE.
  */
 
-#include "uber/jaeger/samplers/SamplerOptions.h"
-
-#include "uber/jaeger/Logging.h"
-#include "uber/jaeger/metrics/Counter.h"
-#include "uber/jaeger/metrics/Gauge.h"
-#include "uber/jaeger/metrics/NullStatsFactory.h"
-#include "uber/jaeger/samplers/ProbabilisticSampler.h"
+#ifndef UBER_JAEGER_REPORTERS_REPORTER_H
+#define UBER_JAEGER_REPORTERS_REPORTER_H
 
 namespace uber {
 namespace jaeger {
-namespace samplers {
-namespace {
 
-constexpr auto kDefaultMaxOperations = 2000;
-constexpr auto kDefaultSamplingRate = 0.001;
-constexpr auto kDefaultSamplingServerURL = "http://localhost:5778/sampling";
-const auto kDefaultSamplingRefreshInterval = std::chrono::minutes(1);
+class Span;
 
-}  // anonymous namespace
+namespace reporters {
 
-SamplerOptions::SamplerOptions()
-    : _metrics()
-    , _maxOperations(kDefaultMaxOperations)
-    , _sampler(std::make_shared<ProbabilisticSampler>(kDefaultSamplingRate))
-    , _logger(logging::nullLogger())
-    , _samplingServerURL(kDefaultSamplingServerURL)
-    , _samplingRefreshInterval(kDefaultSamplingRefreshInterval)
-{
-    metrics::NullStatsFactory factory;
-    _metrics = std::make_shared<metrics::Metrics>(factory);
-}
+class Reporter {
+  public:
+    virtual ~Reporter() = default;
 
-SamplerOptions::~SamplerOptions() = default;
+    virtual void report(const Span& span) = 0;
 
-}  // namespace samplers
+    virtual void close() = 0;
+};
+
+}  // namespace reporters
 }  // namespace jaeger
 }  // namespace uber
+
+#endif  // UBER_JAEGER_REPORTERS_REPORTER_H

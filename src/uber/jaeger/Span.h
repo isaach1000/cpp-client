@@ -41,7 +41,60 @@ class Span {
   public:
     using Clock = std::chrono::steady_clock;
 
+    Span(const Span& span)
+    {
+        std::lock_guard<std::mutex> lock(span._mutex);
+        _context = span._context;
+        _operationName = span._operationName;
+        _startTime = span._startTime;
+        _duration = span._duration;
+        _tags = span._tags;
+    }
+
+    Span& operator=(const Span& rhs)
+    {
+        std::lock_guard<std::mutex> lock(_mutex);
+        std::lock_guard<std::mutex> rhsLock(rhs._mutex);
+        _context = rhs._context;
+        _operationName = rhs._operationName;
+        _startTime = rhs._startTime;
+        _duration = rhs._duration;
+        _tags = rhs._tags;
+        return *this;
+    }
+
     ~Span();
+
+    template <typename Stream>
+    void print(Stream& out) const
+    {
+        std::lock_guard<std::mutex> lock(_mutex);
+        out << _context;
+    }
+
+    std::string operationName() const
+    {
+        std::lock_guard<std::mutex> lock(_mutex);
+        return _operationName;
+    }
+
+    Clock::time_point startTime() const
+    {
+        std::lock_guard<std::mutex> lock(_mutex);
+        return _startTime;
+    }
+
+    Clock::duration duration() const
+    {
+        std::lock_guard<std::mutex> lock(_mutex);
+        return _duration;
+    }
+
+    std::vector<Tag> tags() const
+    {
+        std::lock_guard<std::mutex> lock(_mutex);
+        return _tags;
+    }
 
   private:
     // TODO: Tracer& _tracer;
@@ -52,10 +105,17 @@ class Span {
     std::vector<Tag> _tags;
     std::vector<LogRecord> _logs;
     std::vector<Reference> _references;
-    std::mutex _mutex;
+    mutable std::mutex _mutex;
 };
 
 }  // namespace jaeger
 }  // namespace uber
+
+template <typename Stream>
+inline Stream& operator<<(Stream& out, const uber::jaeger::Span& span)
+{
+    span.print(out);
+    return out;
+}
 
 #endif  // UBER_JAEGER_SPAN_H

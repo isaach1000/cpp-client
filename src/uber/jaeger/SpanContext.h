@@ -91,7 +91,8 @@ class SpanContext {
 
     bool isValid() const { return _traceID.isValid() && _spanID != 0; }
 
-    void print(std::ostream& out) const
+    template <typename Stream>
+    void print(Stream& out) const
     {
         _traceID.print(out);
         out << ':' << std::hex << _spanID << ':' << std::hex << _parentID << ':'
@@ -114,8 +115,9 @@ class SpanContext {
 }  // namespace jaeger
 }  // namespace uber
 
-inline std::ostream& operator<<(std::ostream& out,
-                                const uber::jaeger::SpanContext& spanContext)
+template <typename Stream>
+inline Stream& operator<<(Stream& out,
+                          const uber::jaeger::SpanContext& spanContext)
 {
     spanContext.print(out);
     return out;

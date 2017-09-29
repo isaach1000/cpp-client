@@ -20,40 +20,42 @@
  * THE SOFTWARE.
  */
 
-#include "uber/jaeger/samplers/SamplerOptions.h"
+#ifndef UBER_JAEGER_TRANSPORT_H
+#define UBER_JAEGER_TRANSPORT_H
 
-#include "uber/jaeger/Logging.h"
-#include "uber/jaeger/metrics/Counter.h"
-#include "uber/jaeger/metrics/Gauge.h"
-#include "uber/jaeger/metrics/NullStatsFactory.h"
-#include "uber/jaeger/samplers/ProbabilisticSampler.h"
+#include <stdexcept>
 
 namespace uber {
 namespace jaeger {
-namespace samplers {
-namespace {
 
-constexpr auto kDefaultMaxOperations = 2000;
-constexpr auto kDefaultSamplingRate = 0.001;
-constexpr auto kDefaultSamplingServerURL = "http://localhost:5778/sampling";
-const auto kDefaultSamplingRefreshInterval = std::chrono::minutes(1);
+class Span;
 
-}  // anonymous namespace
+class Transport {
+  public:
+    class Exception : public std::runtime_error {
+      public:
+        Exception(const std::string& what, int numFailed)
+            : std::runtime_error(what)
+            , _numFailed(numFailed)
+        {
+        }
 
-SamplerOptions::SamplerOptions()
-    : _metrics()
-    , _maxOperations(kDefaultMaxOperations)
-    , _sampler(std::make_shared<ProbabilisticSampler>(kDefaultSamplingRate))
-    , _logger(logging::nullLogger())
-    , _samplingServerURL(kDefaultSamplingServerURL)
-    , _samplingRefreshInterval(kDefaultSamplingRefreshInterval)
-{
-    metrics::NullStatsFactory factory;
-    _metrics = std::make_shared<metrics::Metrics>(factory);
-}
+        int numFailed() const { return _numFailed; }
 
-SamplerOptions::~SamplerOptions() = default;
+      private:
+        int _numFailed;
+    };
 
-}  // namespace samplers
+    virtual ~Transport() = default;
+
+    virtual int append(const Span& span) = 0;
+
+    virtual int flush() = 0;
+
+    virtual void close() = 0;
+};
+
 }  // namespace jaeger
 }  // namespace uber
+
+#endif  // UBER_JAEGER_TRANSPORT_H

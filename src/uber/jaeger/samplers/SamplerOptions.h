@@ -23,15 +23,17 @@
 #ifndef UBER_JAEGER_SAMPLERS_SAMPLEROPTIONS_H
 #define UBER_JAEGER_SAMPLERS_SAMPLEROPTIONS_H
 
-#include "uber/jaeger/Constants.h"
-#include "uber/jaeger/metrics/Metrics.h"
-#include "uber/jaeger/samplers/Sampler.h"
-#include "uber/jaeger/utils/RateLimiter.h"
-
 #include <cassert>
 #include <chrono>
 #include <memory>
 #include <string>
+
+#include <spdlog/spdlog.h>
+
+#include "uber/jaeger/Constants.h"
+#include "uber/jaeger/metrics/Metrics.h"
+#include "uber/jaeger/samplers/Sampler.h"
+#include "uber/jaeger/utils/RateLimiter.h"
 
 namespace uber {
 namespace jaeger {
@@ -77,15 +79,13 @@ class SamplerOptions {
         _sampler = sampler;
     }
 
-    /* TODO
-    const std::shared_ptr<Logger>& logger() const { return _logger; }
+    const std::shared_ptr<spdlog::logger>& logger() const { return _logger; }
 
-    void setLogger(const std::shared_ptr<Logger>& logger)
+    void setLogger(const std::shared_ptr<spdlog::logger>& logger)
     {
         assert(logger);
         _logger = logger;
     }
-    */
 
     const std::string& samplingServerURL() const { return _samplingServerURL; }
 
@@ -109,6 +109,7 @@ class SamplerOptions {
     std::shared_ptr<metrics::Metrics> _metrics;
     size_t _maxOperations;
     std::shared_ptr<Sampler> _sampler;
+    std::shared_ptr<spdlog::logger> _logger;
     std::string _samplingServerURL;
     Clock::duration _samplingRefreshInterval;
 };

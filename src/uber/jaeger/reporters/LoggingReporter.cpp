@@ -20,40 +20,23 @@
  * THE SOFTWARE.
  */
 
-#include "uber/jaeger/samplers/SamplerOptions.h"
+#include "uber/jaeger/reporters/LoggingReporter.h"
 
-#include "uber/jaeger/Logging.h"
-#include "uber/jaeger/metrics/Counter.h"
-#include "uber/jaeger/metrics/Gauge.h"
-#include "uber/jaeger/metrics/NullStatsFactory.h"
-#include "uber/jaeger/samplers/ProbabilisticSampler.h"
+#include <sstream>
+
+#include "uber/jaeger/Span.h"
 
 namespace uber {
 namespace jaeger {
-namespace samplers {
-namespace {
+namespace reporters {
 
-constexpr auto kDefaultMaxOperations = 2000;
-constexpr auto kDefaultSamplingRate = 0.001;
-constexpr auto kDefaultSamplingServerURL = "http://localhost:5778/sampling";
-const auto kDefaultSamplingRefreshInterval = std::chrono::minutes(1);
-
-}  // anonymous namespace
-
-SamplerOptions::SamplerOptions()
-    : _metrics()
-    , _maxOperations(kDefaultMaxOperations)
-    , _sampler(std::make_shared<ProbabilisticSampler>(kDefaultSamplingRate))
-    , _logger(logging::nullLogger())
-    , _samplingServerURL(kDefaultSamplingServerURL)
-    , _samplingRefreshInterval(kDefaultSamplingRefreshInterval)
+void LoggingReporter::report(const Span& span)
 {
-    metrics::NullStatsFactory factory;
-    _metrics = std::make_shared<metrics::Metrics>(factory);
+    std::ostringstream oss;
+    oss << span;
+    _logger->info("Reporting span %s", oss.str());
 }
 
-SamplerOptions::~SamplerOptions() = default;
-
-}  // namespace samplers
+}  // namespace reporters
 }  // namespace jaeger
 }  // namespace uber

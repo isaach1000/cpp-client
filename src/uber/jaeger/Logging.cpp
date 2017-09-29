@@ -20,40 +20,30 @@
  * THE SOFTWARE.
  */
 
-#include "uber/jaeger/samplers/SamplerOptions.h"
-
 #include "uber/jaeger/Logging.h"
-#include "uber/jaeger/metrics/Counter.h"
-#include "uber/jaeger/metrics/Gauge.h"
-#include "uber/jaeger/metrics/NullStatsFactory.h"
-#include "uber/jaeger/samplers/ProbabilisticSampler.h"
+
+#include <mutex>
+
+#include <spdlog/sinks/null_sink.h>
 
 namespace uber {
 namespace jaeger {
-namespace samplers {
-namespace {
+namespace logging {
 
-constexpr auto kDefaultMaxOperations = 2000;
-constexpr auto kDefaultSamplingRate = 0.001;
-constexpr auto kDefaultSamplingServerURL = "http://localhost:5778/sampling";
-const auto kDefaultSamplingRefreshInterval = std::chrono::minutes(1);
-
-}  // anonymous namespace
-
-SamplerOptions::SamplerOptions()
-    : _metrics()
-    , _maxOperations(kDefaultMaxOperations)
-    , _sampler(std::make_shared<ProbabilisticSampler>(kDefaultSamplingRate))
-    , _logger(logging::nullLogger())
-    , _samplingServerURL(kDefaultSamplingServerURL)
-    , _samplingRefreshInterval(kDefaultSamplingRefreshInterval)
+std::shared_ptr<spdlog::logger> nullLogger()
 {
-    metrics::NullStatsFactory factory;
-    _metrics = std::make_shared<metrics::Metrics>(factory);
+    static std::shared_ptr<spdlog::logger> logger;
+    if (!logger) {
+        static std::mutex mutex;
+        std::lock_guard<std::mutex> lock(mutex);
+        if (!logger) {
+            auto nullSink = std::make_shared<spdlog::sinks::null_sink_mt>();
+            logger = spdlog::create("null", nullSink);
+        }
+    }
+    return logger;
 }
 
-SamplerOptions::~SamplerOptions() = default;
-
-}  // namespace samplers
+}  // namespace logging
 }  // namespace jaeger
 }  // namespace uber
