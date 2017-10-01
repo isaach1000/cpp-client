@@ -44,20 +44,17 @@ class CompositeReporter : public Reporter {
 
     void report(const Span& span) override
     {
-        std::for_each(std::begin(_reporters),
-                      std::end(_reporters),
-                      [&span](const ReporterPtr& reporter) {
-                          reporter->report(span);
-                      });
+        std::for_each(
+            std::begin(_reporters),
+            std::end(_reporters),
+            [&span](const ReporterPtr& reporter) { reporter->report(span); });
     }
 
     void close() override
     {
         std::for_each(std::begin(_reporters),
                       std::end(_reporters),
-                      [](const ReporterPtr& reporter) {
-                          reporter->close();
-                      });
+                      [](const ReporterPtr& reporter) { reporter->close(); });
     }
 
   private:

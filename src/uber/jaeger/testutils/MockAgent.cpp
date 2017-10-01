@@ -37,9 +37,7 @@ void MockAgent::start()
     // TODO: Start HTTP server
 
     std::promise<void> started;
-    _thread = std::thread([this, &started]() {
-        serve(started);
-    });
+    _thread = std::thread([this, &started]() { serve(started); });
     started.get_future().wait();
 }
 
@@ -59,18 +57,15 @@ void MockAgent::emitBatch(const thrift::Batch& batch)
 
 void MockAgent::serve(std::promise<void>& started)
 {
-    using TCompactProtocolFactory =
-        apache::thrift::protocol::TCompactProtocolFactory;
+    using TCompactProtocolFactory
+        = apache::thrift::protocol::TCompactProtocolFactory;
     using TMemoryBuffer = apache::thrift::transport::TMemoryBuffer;
 
     // Trick for converting std::shared_ptr into boost::shared_ptr. See
     // https://stackoverflow.com/a/12315035/1930331.
     auto ptr = shared_from_this();
     boost::shared_ptr<agent::thrift::AgentIf> iface(
-        ptr.get(),
-        [&ptr](MockAgent*) {
-            ptr.reset();
-        });
+        ptr.get(), [&ptr](MockAgent*) { ptr.reset(); });
     agent::thrift::AgentProcessor handler(iface);
     TCompactProtocolFactory protocolFactory;
     boost::shared_ptr<TMemoryBuffer> trans(
@@ -83,8 +78,8 @@ void MockAgent::serve(std::promise<void>& started)
     std::array<uint8_t, utils::kUDPPacketMaxLength> buffer;
     while (isServing()) {
         try {
-            auto numRead = _transport.read(
-                &buffer[0], utils::kUDPPacketMaxLength);
+            auto numRead
+                = _transport.read(&buffer[0], utils::kUDPPacketMaxLength);
             trans->write(&buffer[0], numRead);
             auto protocol = protocolFactory.getProtocol(trans);
             handler.process(protocol, protocol, nullptr);

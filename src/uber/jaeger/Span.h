@@ -93,10 +93,11 @@ class Span : public opentracing::Span {
         span.__set_flags(_context.flags());
         span.__set_startTime(
             std::chrono::duration_cast<std::chrono::microseconds>(
-                _startTime.time_since_epoch()).count());
+                _startTime.time_since_epoch())
+                .count());
         span.__set_duration(
-            std::chrono::duration_cast<std::chrono::microseconds>(
-                _duration).count());
+            std::chrono::duration_cast<std::chrono::microseconds>(_duration)
+                .count());
 
         std::vector<thrift::Tag> tags;
         tags.reserve(_tags.size());
@@ -155,9 +156,8 @@ class Span : public opentracing::Span {
     }
 
   protected:
-    void FinishWithOptions(
-        const opentracing::FinishSpanOptions& finishSpanOptions)
-        noexcept override
+    void FinishWithOptions(const opentracing::FinishSpanOptions&
+                               finishSpanOptions) noexcept override
     {
         // TODO
     }
@@ -171,8 +171,8 @@ class Span : public opentracing::Span {
         _operationName = name;
     }
 
-    void SetTag(opentracing::string_view key, const opentracing::Value& value)
-        noexcept override
+    void SetTag(opentracing::string_view key,
+                const opentracing::Value& value) noexcept override
     {
         // TODO
     }
@@ -191,8 +191,8 @@ class Span : public opentracing::Span {
     }
 
     void Log(std::initializer_list<std::pair<opentracing::string_view,
-                                             opentracing::Value>> fields)
-        noexcept override
+                                             opentracing::Value>>
+                 fields) noexcept override
     {
         // TODO
     }

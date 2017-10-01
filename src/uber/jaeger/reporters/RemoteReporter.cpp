@@ -45,8 +45,8 @@ RemoteReporter::RemoteReporter(std::unique_ptr<Transport> sender,
 void RemoteReporter::report(const Span& span)
 {
     std::unique_lock<std::mutex> lock(_mutex);
-    const auto pushed = (
-        static_cast<int>(_queue.size()) < _reporterOptions.queueSize());
+    const auto pushed
+        = (static_cast<int>(_queue.size()) < _reporterOptions.queueSize());
     if (pushed) {
         _queue.push_back(span);
         lock.unlock();
@@ -79,10 +79,8 @@ void RemoteReporter::sweepQueue()
         }
 
         _cv.wait(lock, [this]() {
-            return !_running ||
-                   !_queue.empty() ||
-                   bufferFlushIntervalExpired() ||
-                   _forceFlush;
+            return !_running || !_queue.empty() || bufferFlushIntervalExpired()
+                   || _forceFlush;
         });
 
         if (!_running) {
@@ -110,15 +108,12 @@ void RemoteReporter::sendSpan(const Span& span)
             _reporterOptions.metrics()->reporterQueueLength().update(
                 _queueLength);
         }
-    }
-    catch (const Transport::Exception& ex) {
-        _reporterOptions.metrics()->reporterFailure().inc(
-            ex.numFailed());
+    } catch (const Transport::Exception& ex) {
+        _reporterOptions.metrics()->reporterFailure().inc(ex.numFailed());
         const auto& logger = _reporterOptions.logger();
         assert(logger);
-        logger->error(fmt::format("error reporting span {0}: {1}",
-                                  span.operationName(),
-                                  ex.what()));
+        logger->error(fmt::format(
+            "error reporting span {0}: {1}", span.operationName(), ex.what()));
     }
 }
 
@@ -129,8 +124,7 @@ void RemoteReporter::flush()
         if (flushed > 0) {
             _reporterOptions.metrics()->reporterSuccess().inc(flushed);
         }
-    }
-    catch (const Transport::Exception& ex) {
+    } catch (const Transport::Exception& ex) {
         _reporterOptions.metrics()->reporterFailure().inc(ex.numFailed());
         _reporterOptions.logger()->error(ex.what());
     }

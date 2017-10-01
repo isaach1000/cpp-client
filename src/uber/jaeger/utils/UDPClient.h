@@ -38,14 +38,13 @@ namespace utils {
 
 static constexpr auto kUDPPacketMaxLength = 65000;
 
-inline std::tuple<std::string, std::string> parseHostPort(
-    const std::string& hostPort)
+inline std::tuple<std::string, std::string>
+parseHostPort(const std::string& hostPort)
 {
     const auto colonPos = hostPort.find(':');
     if (colonPos == std::string::npos) {
         std::ostringstream oss;
-        oss << "Invalid host/port string contains no colon: "
-            << hostPort;
+        oss << "Invalid host/port string contains no colon: " << hostPort;
         throw std::logic_error(oss.str());
     }
 
@@ -53,15 +52,15 @@ inline std::tuple<std::string, std::string> parseHostPort(
                            hostPort.substr(colonPos + 1));
 }
 
-inline boost::asio::ip::udp::endpoint resolveHostPort(
-    boost::asio::io_service& io, const std::string& hostPort)
+inline boost::asio::ip::udp::endpoint
+resolveHostPort(boost::asio::io_service& io, const std::string& hostPort)
 {
     std::string host;
     std::string port;
     std::tie(host, port) = parseHostPort(hostPort);
     boost::asio::ip::udp::resolver resolver(io);
-    const auto entryItr =
-        resolver.resolve(boost::asio::ip::udp::resolver::query(host, port));
+    const auto entryItr
+        = resolver.resolve(boost::asio::ip::udp::resolver::query(host, port));
     return entryItr->endpoint();
 }
 
@@ -79,8 +78,8 @@ class UDPClient : public agent::thrift::AgentIf {
     UDPClient(boost::asio::io_service& io,
               const udp::endpoint& endpoint,
               int maxPacketSize)
-        : _maxPacketSize(
-            maxPacketSize == 0 ? kUDPPacketMaxLength : maxPacketSize)
+        : _maxPacketSize(maxPacketSize == 0 ? kUDPPacketMaxLength
+                                            : maxPacketSize)
         , _buffer(new apache::thrift::transport::TMemoryBuffer(_maxPacketSize))
         , _socket(io)
         , _endpoint(endpoint)
@@ -89,8 +88,8 @@ class UDPClient : public agent::thrift::AgentIf {
         _socket.open(_endpoint.protocol());
         _socket.connect(_endpoint);
 
-        using TCompactProtocolFactory =
-            apache::thrift::protocol::TCompactProtocolFactory;
+        using TCompactProtocolFactory
+            = apache::thrift::protocol::TCompactProtocolFactory;
         using TProtocolFactory = apache::thrift::protocol::TProtocolFactory;
 
         boost::shared_ptr<TProtocolFactory> protocolFactory(
@@ -115,14 +114,12 @@ class UDPClient : public agent::thrift::AgentIf {
         if (static_cast<int>(size) > _maxPacketSize) {
             std::ostringstream oss;
             oss << "Data does not fit within one UDP packet"
-                   "; size " << size
-                << ", max " << _maxPacketSize
-                << ", spans " << batch.spans.size();
+                   "; size "
+                << size << ", max " << _maxPacketSize << ", spans "
+                << batch.spans.size();
             throw std::logic_error(oss.str());
         }
-        _socket.send_to(
-            boost::asio::buffer(data, size),
-            _endpoint);
+        _socket.send_to(boost::asio::buffer(data, size), _endpoint);
     }
 
     int maxPacketSize() const { return _maxPacketSize; }
@@ -133,10 +130,7 @@ class UDPClient : public agent::thrift::AgentIf {
         return protocolFactory.getProtocol(_buffer);
     }
 
-    void close()
-    {
-        _socket.close();
-    }
+    void close() { _socket.close(); }
 
   private:
     int _maxPacketSize;

@@ -28,4 +28,3 @@ namespace utils {
 }  // namespace utils
 }  // namespace jaeger
 }  // namespace uber
-

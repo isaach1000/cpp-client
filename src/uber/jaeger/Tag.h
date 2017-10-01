@@ -71,15 +71,9 @@ class Tag {
         {
         }
 
-        void operator()(const std::string& value) const
-        {
-            setString(value);
-        }
+        void operator()(const std::string& value) const { setString(value); }
 
-        void operator()(const char* value) const
-        {
-            setString(value);
-        }
+        void operator()(const char* value) const { setString(value); }
 
         void operator()(double value) const
         {
@@ -93,15 +87,9 @@ class Tag {
             _tag.__set_vBool(value);
         }
 
-        void operator()(int64_t value) const
-        {
-            setLong(value);
-        }
+        void operator()(int64_t value) const { setLong(value); }
 
-        void operator()(uint64_t value) const
-        {
-            setLong(value);
-        }
+        void operator()(uint64_t value) const { setLong(value); }
 
         template <typename Arg>
         void operator()(Arg&& value) const

@@ -58,8 +58,8 @@ class MockAgent : public agent::thrift::AgentIf,
 
     void close();
 
-    void emitZipkinBatch(
-        const std::vector<twitter::zipkin::thrift::Span>&) override
+    void
+    emitZipkinBatch(const std::vector<twitter::zipkin::thrift::Span>&) override
     {
         throw std::logic_error("emitZipkinBatch not implemented");
     }
@@ -80,17 +80,12 @@ class MockAgent : public agent::thrift::AgentIf,
         return _batches;
     }
 
-    udp::endpoint spanServerAddress() const
-    {
-        return _transport.addr();
-    }
+    udp::endpoint spanServerAddress() const { return _transport.addr(); }
 
     std::unique_ptr<agent::thrift::AgentIf> spanServerClient()
     {
-        return std::unique_ptr<agent::thrift::AgentIf>(
-            new utils::UDPClient(_transport.ioService(),
-                                 spanServerAddress(),
-                                 0));
+        return std::unique_ptr<agent::thrift::AgentIf>(new utils::UDPClient(
+            _transport.ioService(), spanServerAddress(), 0));
     }
 
     tcp::endpoint samplingServerAddr() const

@@ -37,8 +37,7 @@ class TUDPTransport
   public:
     using udp = boost::asio::ip::udp;
 
-    TUDPTransport(boost::asio::io_service& io,
-                  const std::string& hostPort)
+    TUDPTransport(boost::asio::io_service& io, const std::string& hostPort)
         : _socket(io)
         , _host()
         , _port()
@@ -52,17 +51,14 @@ class TUDPTransport
     void open() override
     {
         udp::resolver resolver(_socket.get_io_service());
-        const auto entryItr =
-            resolver.resolve(udp::resolver::query(_host, _port));
+        const auto entryItr
+            = resolver.resolve(udp::resolver::query(_host, _port));
         const auto endpoint = entryItr->endpoint();
         _socket.open(endpoint.protocol());
         _socket.bind(endpoint);
     }
 
-    void close() override
-    {
-        _socket.close();
-    }
+    void close() override { _socket.close(); }
 
     udp::endpoint addr() const { return _socket.local_endpoint(); }
 

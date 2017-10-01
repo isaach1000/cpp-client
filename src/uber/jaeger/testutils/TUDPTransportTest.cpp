@@ -54,16 +54,15 @@ TEST(TUDPTransport, testUDPTransport)
     std::thread clientThread([&io, serverEndpoint, message]() {
         udp::socket connUDP(io);
         connUDP.open(serverEndpoint.protocol());
-        const auto numWritten =
-            connUDP.send_to(boost::asio::buffer(message), serverEndpoint);
+        const auto numWritten
+            = connUDP.send_to(boost::asio::buffer(message), serverEndpoint);
         ASSERT_EQ(numWritten, message.size());
 
         std::array<char, kBufferSize> buffer;
-        const auto numRead =
-            connUDP.receive(
-                boost::asio::buffer(std::begin(buffer), kBufferSize));
-        const std::string received(
-            std::begin(buffer), std::begin(buffer) + numRead);
+        const auto numRead = connUDP.receive(
+            boost::asio::buffer(std::begin(buffer), kBufferSize));
+        const std::string received(std::begin(buffer),
+                                   std::begin(buffer) + numRead);
         ASSERT_EQ(message.size(), numRead);
         ASSERT_EQ(message, received);
 

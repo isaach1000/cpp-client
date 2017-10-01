@@ -57,7 +57,8 @@ class LogRecord {
         thrift::Log log;
         log.__set_timestamp(
             std::chrono::duration_cast<std::chrono::microseconds>(
-                _timestamp.time_since_epoch()).count());
+                _timestamp.time_since_epoch())
+                .count());
 
         std::vector<thrift::Tag> fields;
         fields.reserve(_fields.size());

@@ -71,8 +71,7 @@ class TraceID {
 }  // namespace uber
 
 template <typename Stream>
-inline Stream& operator<<(Stream& out,
-                          const uber::jaeger::TraceID& traceID)
+inline Stream& operator<<(Stream& out, const uber::jaeger::TraceID& traceID)
 {
     traceID.print(out);
     return out;

@@ -51,10 +51,8 @@ UDPTransport::UDPTransport(boost::asio::io_service& io,
     , _spanBuffer()
     , _protocol(_client->protocol())
     , _process()
-    , _processByteSize(
-        calcSizeOfSerializedThrift(_process,
-                                   _protocol,
-                                   _client->maxPacketSize()))
+    , _processByteSize(calcSizeOfSerializedThrift(
+          _process, _protocol, _client->maxPacketSize()))
 {
 }
 
