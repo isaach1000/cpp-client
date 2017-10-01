@@ -53,6 +53,18 @@ inline std::tuple<std::string, std::string> parseHostPort(
                            hostPort.substr(colonPos + 1));
 }
 
+inline boost::asio::ip::udp::endpoint resolveHostPort(
+    boost::asio::io_service& io, const std::string& hostPort)
+{
+    std::string host;
+    std::string port;
+    std::tie(host, port) = parseHostPort(hostPort);
+    boost::asio::ip::udp::resolver resolver(io);
+    const auto entryItr =
+        resolver.resolve(boost::asio::ip::udp::resolver::query(host, port));
+    return entryItr->endpoint();
+}
+
 class UDPClient : public agent::thrift::AgentIf {
   public:
     using udp = boost::asio::ip::udp;
@@ -60,19 +72,20 @@ class UDPClient : public agent::thrift::AgentIf {
     UDPClient(boost::asio::io_service& io,
               const std::string& hostPort,
               int maxPacketSize)
+        : UDPClient(io, resolveHostPort(io, hostPort), maxPacketSize)
+    {
+    }
+
+    UDPClient(boost::asio::io_service& io,
+              const udp::endpoint& endpoint,
+              int maxPacketSize)
         : _maxPacketSize(
-            maxPacketSize >= 0 ? maxPacketSize : kUDPPacketMaxLength)
+            maxPacketSize == 0 ? kUDPPacketMaxLength : maxPacketSize)
         , _buffer(new apache::thrift::transport::TMemoryBuffer(_maxPacketSize))
         , _socket(io)
+        , _endpoint(endpoint)
         , _client()
     {
-        std::string host;
-        std::string port;
-        std::tie(host, port) = parseHostPort(hostPort);
-        udp::resolver resolver(_socket.get_io_service());
-        const auto entryItr =
-            resolver.resolve(udp::resolver::query(host, port));
-        _endpoint = entryItr->endpoint();
         _socket.open(_endpoint.protocol());
         _socket.connect(_endpoint);
 

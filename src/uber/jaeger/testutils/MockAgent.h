@@ -24,15 +24,18 @@
 #define UBER_JAEGER_TESTUTILS_MOCKAGENT_H
 
 #include <atomic>
-#include <condition_variable>
+#include <future>
 #include <mutex>
 #include <thread>
 #include <vector>
+
+#include <boost/asio.hpp>
 
 #include "uber/jaeger/testutils/SamplingManager.h"
 #include "uber/jaeger/testutils/TUDPTransport.h"
 #include "uber/jaeger/thrift-gen/Agent.h"
 #include "uber/jaeger/thrift-gen/jaeger_types.h"
+#include "uber/jaeger/utils/UDPClient.h"
 
 namespace uber {
 namespace jaeger {
@@ -41,17 +44,14 @@ namespace testutils {
 class MockAgent : public agent::thrift::AgentIf,
                   public std::enable_shared_from_this<MockAgent> {
   public:
+    using tcp = boost::asio::ip::tcp;
+    using udp = boost::asio::ip::udp;
+
     static std::shared_ptr<MockAgent> make(boost::asio::io_service& io)
     {
+        // Avoid `make_shared` when `weak_ptr` might be used.
         std::shared_ptr<MockAgent> newInstance(new MockAgent(io));
         return newInstance;
-    }
-
-    ~MockAgent()
-    {
-        if (isServing()) {
-            close();
-        }
     }
 
     void start();
@@ -61,8 +61,7 @@ class MockAgent : public agent::thrift::AgentIf,
     void emitZipkinBatch(
         const std::vector<twitter::zipkin::thrift::Span>&) override
     {
-        throw std::runtime_error(
-            "emitZipkinBatch is deprecated, call emitBatch instead");
+        throw std::logic_error("emitZipkinBatch not implemented");
     }
 
     void emitBatch(const thrift::Batch& batch) override;
@@ -81,15 +80,23 @@ class MockAgent : public agent::thrift::AgentIf,
         return _batches;
     }
 
-    TUDPTransport::udp::endpoint spanServerAddress() const
+    udp::endpoint spanServerAddress() const
     {
         return _transport.addr();
     }
 
-    std::unique_ptr<agent::thrift::AgentIf> spanServerClient() const
+    std::unique_ptr<agent::thrift::AgentIf> spanServerClient()
+    {
+        return std::unique_ptr<agent::thrift::AgentIf>(
+            new utils::UDPClient(_transport.ioService(),
+                                 spanServerAddress(),
+                                 0));
+    }
+
+    tcp::endpoint samplingServerAddr() const
     {
         // TODO
-        return nullptr;
+        return tcp::endpoint();
     }
 
     void resetBatches()
@@ -109,7 +116,7 @@ class MockAgent : public agent::thrift::AgentIf,
     {
     }
 
-    void serve();
+    void serve(std::promise<void>& started);
 
     TUDPTransport _transport;
     std::vector<thrift::Batch> _batches;
@@ -117,7 +124,6 @@ class MockAgent : public agent::thrift::AgentIf,
     SamplingManager _samplingMgr;
     mutable std::mutex _mutex;
     std::thread _thread;
-    std::condition_variable _started;
 };
 
 }  // namespace testutils

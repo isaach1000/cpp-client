@@ -25,6 +25,7 @@
 #include <thrift/protocol/TCompactProtocol.h>
 #include <thrift/transport/TBufferTransports.h>
 
+#include "uber/jaeger/Logging.h"
 #include "uber/jaeger/utils/UDPClient.h"
 
 namespace uber {
@@ -33,16 +34,19 @@ namespace testutils {
 
 void MockAgent::start()
 {
-    _thread = std::thread([this]() {
-        serve();
+    // TODO: Start HTTP server
+
+    std::promise<void> started;
+    _thread = std::thread([this, &started]() {
+        serve(started);
     });
-    std::unique_lock<std::mutex> lock(_mutex);
-    _started.wait(lock, [this]() { return isServing(); });
+    started.get_future().wait();
 }
 
 void MockAgent::close()
 {
     _serving = false;
+    // TODO: Stop HTTP server
     _transport.close();
     _thread.join();
 }
@@ -53,7 +57,7 @@ void MockAgent::emitBatch(const thrift::Batch& batch)
     _batches.push_back(batch);
 }
 
-void MockAgent::serve()
+void MockAgent::serve(std::promise<void>& started)
 {
     using TCompactProtocolFactory =
         apache::thrift::protocol::TCompactProtocolFactory;
@@ -73,11 +77,8 @@ void MockAgent::serve()
         new TMemoryBuffer(utils::kUDPPacketMaxLength));
 
     // Notify main thread that setup is done.
-    {
-        std::lock_guard<std::mutex> lock(_mutex);
-        _serving = true;
-    }
-    _started.notify_one();
+    _serving = true;
+    started.set_value();
 
     std::array<uint8_t, utils::kUDPPacketMaxLength> buffer;
     while (isServing()) {
@@ -87,8 +88,9 @@ void MockAgent::serve()
             trans->write(&buffer[0], numRead);
             auto protocol = protocolFactory.getProtocol(trans);
             handler.process(protocol, protocol, nullptr);
-        } catch (...) {
-            // TODO: Exception logging/handling
+        } catch (const std::exception& ex) {
+            logging::consoleLogger()->error(
+                "An error occurred in MockAgent, %s", ex.what());
         }
     }
 }

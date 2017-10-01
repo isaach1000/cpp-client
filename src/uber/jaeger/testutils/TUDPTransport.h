@@ -77,6 +77,8 @@ class TUDPTransport
         _socket.send_to(boost::asio::buffer(buf, len), _senderEndpoint);
     }
 
+    boost::asio::io_service& ioService() { return _socket.get_io_service(); }
+
   private:
     udp::socket _socket;
     std::string _host;

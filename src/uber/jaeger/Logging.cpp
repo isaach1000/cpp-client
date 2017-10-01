@@ -32,15 +32,14 @@ namespace logging {
 
 std::shared_ptr<spdlog::logger> nullLogger()
 {
-    static std::shared_ptr<spdlog::logger> logger;
-    if (!logger) {
-        static std::mutex mutex;
-        std::lock_guard<std::mutex> lock(mutex);
-        if (!logger) {
-            auto nullSink = std::make_shared<spdlog::sinks::null_sink_mt>();
-            logger = spdlog::create("null", nullSink);
-        }
-    }
+    static auto logger = spdlog::create(
+        "null", std::make_shared<spdlog::sinks::null_sink_mt>());
+    return logger;
+}
+
+std::shared_ptr<spdlog::logger> consoleLogger()
+{
+    static auto logger = spdlog::stdout_color_mt("console");
     return logger;
 }
 

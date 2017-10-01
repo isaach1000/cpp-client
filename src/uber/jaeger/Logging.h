@@ -31,6 +31,8 @@ namespace logging {
 
 std::shared_ptr<spdlog::logger> nullLogger();
 
+std::shared_ptr<spdlog::logger> consoleLogger();
+
 }  // namespace logging
 }  // namespace jaeger
 }  // namespace uber
