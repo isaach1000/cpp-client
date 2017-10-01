@@ -31,38 +31,11 @@
 #include <thrift/transport/TBufferTransports.h>
 
 #include "uber/jaeger/thrift-gen/Agent.h"
+#include "uber/jaeger/utils/Net.h"
 
 namespace uber {
 namespace jaeger {
 namespace utils {
-
-static constexpr auto kUDPPacketMaxLength = 65000;
-
-inline std::tuple<std::string, std::string>
-parseHostPort(const std::string& hostPort)
-{
-    const auto colonPos = hostPort.find(':');
-    if (colonPos == std::string::npos) {
-        std::ostringstream oss;
-        oss << "Invalid host/port string contains no colon: " << hostPort;
-        throw std::logic_error(oss.str());
-    }
-
-    return std::make_tuple(hostPort.substr(0, colonPos),
-                           hostPort.substr(colonPos + 1));
-}
-
-inline boost::asio::ip::udp::endpoint
-resolveHostPort(boost::asio::io_service& io, const std::string& hostPort)
-{
-    std::string host;
-    std::string port;
-    std::tie(host, port) = parseHostPort(hostPort);
-    boost::asio::ip::udp::resolver resolver(io);
-    const auto entryItr
-        = resolver.resolve(boost::asio::ip::udp::resolver::query(host, port));
-    return entryItr->endpoint();
-}
 
 class UDPClient : public agent::thrift::AgentIf {
   public:
@@ -71,14 +44,14 @@ class UDPClient : public agent::thrift::AgentIf {
     UDPClient(boost::asio::io_service& io,
               const std::string& hostPort,
               int maxPacketSize)
-        : UDPClient(io, resolveHostPort(io, hostPort), maxPacketSize)
+        : UDPClient(io, net::resolveHostPort<udp>(io, hostPort), maxPacketSize)
     {
     }
 
     UDPClient(boost::asio::io_service& io,
               const udp::endpoint& endpoint,
               int maxPacketSize)
-        : _maxPacketSize(maxPacketSize == 0 ? kUDPPacketMaxLength
+        : _maxPacketSize(maxPacketSize == 0 ? net::kUDPPacketMaxLength
                                             : maxPacketSize)
         , _buffer(new apache::thrift::transport::TMemoryBuffer(_maxPacketSize))
         , _socket(io)

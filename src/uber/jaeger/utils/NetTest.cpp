@@ -22,7 +22,7 @@
 
 #include <gtest/gtest.h>
 
-#include "uber/jaeger/utils/HTTP.h"
+#include "uber/jaeger/utils/Net.h"
 
 #include <thread>
 
@@ -36,7 +36,7 @@ namespace uber {
 namespace jaeger {
 namespace utils {
 
-TEST(HTTP, testPercentEncode)
+TEST(Net, testPercentEncode)
 {
     struct TestCase {
         std::string _input;
@@ -48,16 +48,16 @@ TEST(HTTP, testPercentEncode)
             { "hello world-test", "hello%20world-test" } };
 
     for (auto&& testCase : testCases) {
-        const auto result = http::percentEncode(testCase._input);
+        const auto result = net::percentEncode(testCase._input);
         ASSERT_EQ(testCase._expected, result);
     }
 }
 
-TEST(HTTP, testParseURI)
+TEST(Net, testParseURI)
 {
     struct TestCase {
         std::string _input;
-        http::URI _expected;
+        net::URI _expected;
     };
 
     const TestCase testCases[]
@@ -65,17 +65,17 @@ TEST(HTTP, testParseURI)
             { "http://example.com:abc", { "example.com", 80, "", "" } } };
 
     for (auto&& testCase : testCases) {
-        const auto uri = http::parseURI("http://example.com");
+        const auto uri = net::parseURI("http://example.com");
         ASSERT_EQ(testCase._expected, uri);
     }
 }
 
-TEST(HTTP, testHTTPGetRequest)
+TEST(Net, testHTTPGetRequest)
 {
     using tcp = boost::asio::ip::tcp;
     using string_body = beast::http::string_body;
 
-    constexpr auto kJSONContents = "{ \"test\": [] }";
+    const auto kJSONContents = "{ \"test\": [] }";
 
     boost::asio::io_service io;
     const auto address = boost::asio::ip::address::from_string("0.0.0.0");
@@ -87,7 +87,7 @@ TEST(HTTP, testHTTPGetRequest)
     port = endpoint.port();
     tcp::socket socket(io);
     acceptor.async_accept(
-        socket, [&socket, kJSONContents](boost::system::error_code error) {
+        socket, [&socket, &kJSONContents](boost::system::error_code error) {
             ASSERT_FALSE(static_cast<bool>(error));
             beast::http::request<string_body> req;
             beast::flat_buffer buffer;
@@ -115,8 +115,8 @@ TEST(HTTP, testHTTPGetRequest)
     std::thread clientThread([&io, port, kJSONContents]() {
         std::string uriStr("http://0.0.0.0:");
         uriStr += std::to_string(port);
-        const auto uri = http::parseURI(uriStr);
-        const auto responseStr = http::httpGetRequest(io, uri);
+        const auto uri = net::parseURI(uriStr);
+        const auto responseStr = net::httpGetRequest(io, uri);
         ASSERT_EQ(kJSONContents, responseStr);
     });
     io.run();

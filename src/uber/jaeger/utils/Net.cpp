@@ -20,7 +20,7 @@
  * THE SOFTWARE.
  */
 
-#include "uber/jaeger/utils/HTTP.h"
+#include "uber/jaeger/utils/Net.h"
 
 #include <iomanip>
 #include <iostream>
@@ -36,7 +36,7 @@
 namespace uber {
 namespace jaeger {
 namespace utils {
-namespace http {
+namespace net {
 namespace {
 
 bool isUnreserved(char ch)
@@ -164,7 +164,7 @@ std::string httpGetRequest(boost::asio::io_service& io, const URI& uri)
     return res.body;
 }
 
-}  // namespace http
+}  // namespace net
 }  // namespace utils
 }  // namespace jaeger
 }  // namespace uber

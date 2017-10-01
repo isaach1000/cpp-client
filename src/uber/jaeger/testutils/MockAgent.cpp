@@ -31,6 +31,20 @@
 namespace uber {
 namespace jaeger {
 namespace testutils {
+namespace {
+
+class HTTPServer {
+  public:
+    using tcp = boost::asio::ip::tcp;
+
+    HTTPServer(boost::asio::io_service& io,
+               const std::string& hostPort);
+
+  private:
+    tcp::socket _socket;
+};
+
+}  // anonymous namespace
 
 void MockAgent::start()
 {
@@ -69,23 +83,23 @@ void MockAgent::serve(std::promise<void>& started)
     agent::thrift::AgentProcessor handler(iface);
     TCompactProtocolFactory protocolFactory;
     boost::shared_ptr<TMemoryBuffer> trans(
-        new TMemoryBuffer(utils::kUDPPacketMaxLength));
+        new TMemoryBuffer(utils::net::kUDPPacketMaxLength));
 
     // Notify main thread that setup is done.
     _serving = true;
     started.set_value();
 
-    std::array<uint8_t, utils::kUDPPacketMaxLength> buffer;
+    std::array<uint8_t, utils::net::kUDPPacketMaxLength> buffer;
     while (isServing()) {
         try {
-            auto numRead
-                = _transport.read(&buffer[0], utils::kUDPPacketMaxLength);
+            const auto numRead
+                = _transport.read(&buffer[0], utils::net::kUDPPacketMaxLength);
             trans->write(&buffer[0], numRead);
             auto protocol = protocolFactory.getProtocol(trans);
             handler.process(protocol, protocol, nullptr);
         } catch (const std::exception& ex) {
             logging::consoleLogger()->error(
-                "An error occurred in MockAgent, %s", ex.what());
+                "An error occurred in MockAgent, {0}", ex.what());
         }
     }
 }

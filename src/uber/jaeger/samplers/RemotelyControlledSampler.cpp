@@ -24,12 +24,13 @@
 
 #include <cassert>
 
+#include <boost/asio/io_service.hpp>
 #include <nlohmann/json.hpp>
 
 #include "uber/jaeger/metrics/Counter.h"
 #include "uber/jaeger/metrics/Gauge.h"
 #include "uber/jaeger/samplers/AdaptiveSampler.h"
-#include "uber/jaeger/utils/HTTP.h"
+#include "uber/jaeger/utils/Net.h"
 
 namespace uber {
 namespace jaeger {
@@ -119,10 +120,10 @@ class HTTPSamplingManager : public thrift::sampling_manager::SamplingManagerIf {
     void getSamplingStrategy(SamplingStrategyResponse& result,
                              const std::string& serviceName) override
     {
-        const auto uriStr = _serverURL + "?" + utils::http::percentEncode(
+        const auto uriStr = _serverURL + "?" + utils::net::percentEncode(
                                                    "service=" + serviceName);
-        const auto uri = utils::http::parseURI(uriStr);
-        const auto response = utils::http::httpGetRequest(_io, uri);
+        const auto uri = utils::net::parseURI(uriStr);
+        const auto response = utils::net::httpGetRequest(_io, uri);
         const auto jsonValue = nlohmann::json::parse(response);
         result = jsonValue.get<SamplingStrategyResponse>();
     }

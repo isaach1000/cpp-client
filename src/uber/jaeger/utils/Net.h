@@ -20,17 +20,18 @@
  * THE SOFTWARE.
  */
 
-#ifndef UBER_JAEGER_UTILS_HTTP_H
-#define UBER_JAEGER_UTILS_HTTP_H
+#ifndef UBER_JAEGER_UTILS_NET_H
+#define UBER_JAEGER_UTILS_NET_H
 
 #include <string>
+#include <tuple>
 
-#include <boost/asio/io_service.hpp>
+#include <boost/asio.hpp>
 
 namespace uber {
 namespace jaeger {
 namespace utils {
-namespace http {
+namespace net {
 
 struct URI {
     bool operator==(const URI& rhs) const
@@ -51,9 +52,38 @@ URI parseURI(const std::string& uriStr);
 
 std::string httpGetRequest(boost::asio::io_service& io, const URI& uri);
 
-}  // namespace http
+static constexpr auto kUDPPacketMaxLength = 65000;
+
+inline std::tuple<std::string, std::string>
+parseHostPort(const std::string& hostPort)
+{
+    const auto colonPos = hostPort.find(':');
+    if (colonPos == std::string::npos) {
+        std::ostringstream oss;
+        oss << "Invalid host/port string contains no colon: " << hostPort;
+        throw std::logic_error(oss.str());
+    }
+
+    return std::make_tuple(hostPort.substr(0, colonPos),
+                           hostPort.substr(colonPos + 1));
+}
+
+template <typename Transport>
+typename Transport::endpoint
+resolveHostPort(boost::asio::io_service& io, const std::string& hostPort)
+{
+    std::string host;
+    std::string port;
+    std::tie(host, port) = parseHostPort(hostPort);
+    boost::asio::ip::udp::resolver resolver(io);
+    const auto entryItr
+        = resolver.resolve(boost::asio::ip::udp::resolver::query(host, port));
+    return entryItr->endpoint();
+}
+
+}  // namespace net
 }  // namespace utils
 }  // namespace jaeger
 }  // namespace uber
 
-#endif  // UBER_JAEGER_UTILS_HTTP_H
+#endif  // UBER_JAEGER_UTILS_NET_H

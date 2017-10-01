@@ -28,7 +28,7 @@ namespace uber {
 namespace jaeger {
 namespace testutils {
 
-TEST(MockAgent, testSpanServer)
+TEST(MockAgent, DISABLED_testSpanServer)
 {
     boost::asio::io_service io;
     std::shared_ptr<MockAgent> mockAgent = MockAgent::make(io);

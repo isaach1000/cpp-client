@@ -43,7 +43,7 @@ class TUDPTransport
         , _port()
         , _senderEndpoint()
     {
-        std::tie(_host, _port) = utils::parseHostPort(hostPort);
+        std::tie(_host, _port) = utils::net::parseHostPort(hostPort);
     }
 
     bool isOpen() override { return _socket.is_open(); }
