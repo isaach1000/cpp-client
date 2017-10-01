@@ -1,6 +1,10 @@
 # Build directory
 /build
 
+# Exclude anything in src other than uber
+/src/*
+!/src/uber/
+
 # Personal YCM config
 .ycm_extra_conf.py
 
