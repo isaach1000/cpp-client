@@ -26,6 +26,8 @@
 #include <sstream>
 #include <string>
 
+#include <opentracing/propagation.h>
+
 #include "uber/jaeger/SpanContext.h"
 #include "uber/jaeger/thrift-gen/jaeger_types.h"
 
@@ -34,7 +36,7 @@ namespace jaeger {
 
 class Reference {
   public:
-    enum class Type { kChildOfRef, kFollowsFromRef };
+    using Type = opentracing::SpanReferenceType;
 
     Reference(const SpanContext& spanContext, Type type)
         : _spanContext(spanContext)
@@ -50,10 +52,10 @@ class Reference {
     {
         thrift::SpanRef spanRef;
         switch (_type) {
-        case Type::kChildOfRef: {
+        case Type::ChildOfRef: {
             spanRef.__set_refType(thrift::SpanRefType::CHILD_OF);
         } break;
-        case Type::kFollowsFromRef: {
+        case Type::FollowsFromRef: {
             spanRef.__set_refType(thrift::SpanRefType::FOLLOWS_FROM);
         } break;
         default: {

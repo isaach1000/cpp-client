@@ -20,31 +20,34 @@
  * THE SOFTWARE.
  */
 
-#ifndef UBER_JAEGER_SPAN_H
-#define UBER_JAEGER_SPAN_H
+#ifndef UBER_JAEGER_TRACER_H
+#define UBER_JAEGER_TRACER_H
 
 #include <chrono>
 #include <random>
 #include <vector>
 
+#include <opentracing/tracer.h>
+
+#include "uber/jaeger/Logging.h"
 #include "uber/jaeger/Span.h"
 #include "uber/jaeger/Tag.h"
+#include "uber/jaeger/metrics/Metrics.h"
+#include "uber/jaeger/reporters/Reporter.h"
+#include "uber/jaeger/samplers/Sampler.h"
+
 /* TODO
-#include "uber/jaeger/Logger.h"
 #include "uber/jaeger/internal/baggage/RestrictionManager.h"
 #include "uber/jaeger/propagation/Extractor.h"
 #include "uber/jaeger/propagation/Injector.h"
-#include "uber/jaeger/reporters/Reporter.h"
-#include "uber/jaeger/samplers/Sampler.h"
 */
 
 namespace uber {
 namespace jaeger {
 
-template <typename ClockType = std::chrono::steady_clock>
-class Tracer {
+class Tracer : public opentracing::Tracer {
   public:
-    using Clock = ClockType;
+    using Clock = std::chrono::steady_clock;
 
     class Options {
       public:
@@ -72,12 +75,10 @@ class Tracer {
   private:
     std::string _serviceName;
     uint32_t _hostIPv4;
-    /* TODO
-    samplers::Sampler _sampler;
-    reporters::Reporter _reporter;
+    std::unique_ptr<samplers::Sampler> _sampler;
+    std::unique_ptr<reporters::Reporter> _reporter;
     metrics::Metrics _metrics;
-    Logger _logger;
-    */
+    std::shared_ptr<spdlog::logger> _logger;
     std::mt19937 _randomNumberGenerator;
     // TODO: `Span` object pool.
     /* TODO
@@ -90,4 +91,4 @@ class Tracer {
 }  // namespace jaeger
 }  // namespace uber
 
-#endif  // UBER_JAEGER_SPAN_H
+#endif  // UBER_JAEGER_TRACER_H

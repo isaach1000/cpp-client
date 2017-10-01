@@ -21,3 +21,23 @@
  */
 
 #include "uber/jaeger/Span.h"
+
+#include "uber/jaeger/Tracer.h"
+
+namespace uber {
+namespace jaeger {
+
+const opentracing::Tracer& Span::tracer() const noexcept
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    std::shared_ptr<opentracing::Tracer> tracer(_tracer.lock());
+    if (tracer) {
+        return *tracer;
+    }
+    tracer = opentracing::Tracer::Global();
+    assert(tracer);
+    return *tracer;
+}
+
+}  // namespace jaeger
+}  // namespace uber

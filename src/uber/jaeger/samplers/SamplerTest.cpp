@@ -45,7 +45,7 @@ namespace {
 constexpr auto kTestOperationName = "op";
 constexpr auto kTestFirstTimeOperationName = "firstTimeOp";
 constexpr auto kTestDefaultSamplingProbability = 0.5;
-constexpr auto kTestMaxID = static_cast<uint64_t>(1) << 63;
+constexpr auto kTestMaxID = std::numeric_limits<uint64_t>::max() / 2 + 1;
 constexpr auto kTestDefaultMaxOperations = 10;
 
 const Tag testProbablisticExpectedTags[]
@@ -58,7 +58,7 @@ const Tag testLowerBoundExpectedTags[]
     {                                                                          \
         ASSERT_EQ(sizeof(tagArr) / sizeof(Tag), (tagVec).size());              \
         for (auto i = static_cast<size_t>(0); i < (tagVec).size(); ++i) {      \
-            ASSERT_EQ((tagArr)[i], (tagVec)[i]);                               \
+            ASSERT_EQ((tagArr)[i].thrift(), (tagVec)[i].thrift());             \
         }                                                                      \
     }
 

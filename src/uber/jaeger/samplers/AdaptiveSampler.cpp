@@ -61,17 +61,11 @@ SamplingStatus AdaptiveSampler::isSampled(const TraceID& id,
     if (samplerItr != std::end(_samplers)) {
         return samplerItr->second->isSampled(id, operation);
     }
-
-    boost::upgrade_to_unique_lock<boost::upgrade_mutex> writeLock(readLock);
-    samplerItr = _samplers.find(operation);
-    if (samplerItr != std::end(_samplers)) {
-        return samplerItr->second->isSampled(id, operation);
-    }
-
     if (_samplers.size() >= _maxOperations) {
         return _defaultSampler.isSampled(id, operation);
     }
 
+    boost::upgrade_to_unique_lock<boost::upgrade_mutex> writeLock(readLock);
     auto newSampler
         = std::make_shared<GuaranteedThroughputProbabilisticSampler>(
             _lowerBound, _defaultSampler.samplingRate());

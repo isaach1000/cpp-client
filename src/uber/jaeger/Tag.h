@@ -25,7 +25,7 @@
 
 #include <string>
 
-#include <boost/variant/variant.hpp>
+#include <opentracing/value.h>
 
 #include "uber/jaeger/thrift-gen/jaeger_types.h"
 
@@ -34,10 +34,7 @@ namespace jaeger {
 
 class Tag {
   public:
-    using ValueType = boost::variant<std::string,
-                                     double,
-                                     bool,
-                                     int64_t>;
+    using ValueType = opentracing::Value;
 
     template <typename ValueArg>
     Tag(const std::string& key, ValueArg&& value)
@@ -60,7 +57,7 @@ class Tag {
         thrift::Tag tag;
         tag.__set_key(_key);
         ThriftVisitor visitor(tag);
-        _value.apply_visitor(visitor);
+        opentracing::util::apply_visitor(visitor, _value);
         return tag;
     }
 
@@ -76,8 +73,12 @@ class Tag {
 
         void operator()(const std::string& value) const
         {
-            _tag.__set_vType(thrift::TagType::STRING);
-            _tag.__set_vStr(value);
+            setString(value);
+        }
+
+        void operator()(const char* value) const
+        {
+            setString(value);
         }
 
         void operator()(double value) const
@@ -94,11 +95,33 @@ class Tag {
 
         void operator()(int64_t value) const
         {
+            setLong(value);
+        }
+
+        void operator()(uint64_t value) const
+        {
+            setLong(value);
+        }
+
+        template <typename Arg>
+        void operator()(Arg&& value) const
+        {
+            // No-op
+        }
+
+      private:
+        void setString(opentracing::string_view value) const
+        {
+            _tag.__set_vType(thrift::TagType::STRING);
+            _tag.__set_vStr(value);
+        }
+
+        void setLong(int64_t value) const
+        {
             _tag.__set_vType(thrift::TagType::LONG);
             _tag.__set_vLong(value);
         }
 
-      private:
         thrift::Tag& _tag;
     };
 

@@ -28,12 +28,14 @@
 #include <string>
 #include <unordered_map>
 
+#include <opentracing/span.h>
+
 #include "uber/jaeger/TraceID.h"
 
 namespace uber {
 namespace jaeger {
 
-class SpanContext {
+class SpanContext : public opentracing::SpanContext {
   public:
     static SpanContext fromStream(std::istream& in);
 
@@ -63,7 +65,7 @@ class SpanContext {
     void forEachBaggageItem(Function f) const
     {
         for (auto&& pair : _baggage) {
-            if (!f(pair)) {
+            if (!f(pair.first, pair.second)) {
                 break;
             }
         }
@@ -73,7 +75,7 @@ class SpanContext {
     void forEachBaggageItem(Function f)
     {
         for (auto&& pair : _baggage) {
-            if (!f(pair)) {
+            if (!f(pair.first, pair.second)) {
                 break;
             }
         }
@@ -99,6 +101,14 @@ class SpanContext {
         _traceID.print(out);
         out << ':' << std::hex << _spanID << ':' << std::hex << _parentID << ':'
             << std::hex << static_cast<size_t>(_flags);
+    }
+
+  protected:
+    void ForeachBaggageItem(
+        std::function<bool(const std::string& key, const std::string& value)> f)
+        const override
+    {
+        forEachBaggageItem(f);
     }
 
   private:

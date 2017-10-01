@@ -27,6 +27,8 @@
 #include <memory>
 #include <mutex>
 
+#include <opentracing/span.h>
+
 #include "uber/jaeger/LogRecord.h"
 #include "uber/jaeger/Reference.h"
 #include "uber/jaeger/SpanContext.h"
@@ -38,7 +40,7 @@ namespace jaeger {
 
 class Tracer;
 
-class Span {
+class Span : public opentracing::Span {
   public:
     using Clock = std::chrono::steady_clock;
 
@@ -146,8 +148,67 @@ class Span {
         return _tags;
     }
 
+    template <typename... Arg>
+    void setOperationName(Arg&&... args)
+    {
+        SetOperationName(std::forward<Arg>(args)...);
+    }
+
+  protected:
+    void FinishWithOptions(
+        const opentracing::FinishSpanOptions& finishSpanOptions)
+        noexcept override
+    {
+        // TODO
+    }
+
+    void SetOperationName(opentracing::string_view name) noexcept override
+    {
+        std::lock_guard<std::mutex> lock(_mutex);
+        if (isFinished()) {
+            return;
+        }
+        _operationName = name;
+    }
+
+    void SetTag(opentracing::string_view key, const opentracing::Value& value)
+        noexcept override
+    {
+        // TODO
+    }
+
+    void SetBaggageItem(opentracing::string_view restrictedKey,
+                        opentracing::string_view value) noexcept override
+    {
+        // TODO
+    }
+
+    std::string BaggageItem(opentracing::string_view restrictedKey) const
+        noexcept override
+    {
+        // TODO
+        return "";
+    }
+
+    void Log(std::initializer_list<std::pair<opentracing::string_view,
+                                             opentracing::Value>> fields)
+        noexcept override
+    {
+        // TODO
+    }
+
+    const opentracing::SpanContext& context() const noexcept override
+    {
+        std::lock_guard<std::mutex> lock(_mutex);
+        return _context;
+    }
+
+    const opentracing::Tracer& tracer() const noexcept override;
+
   private:
-    // TODO: Tracer& _tracer;
+    bool isFinished() const { return _duration != Clock::duration(); }
+
+    std::weak_ptr<Tracer> _tracer;
     SpanContext _context;
     std::string _operationName;
     Clock::time_point _startTime;

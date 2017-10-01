@@ -58,7 +58,7 @@ class GuaranteedThroughputProbabilisticSampler : public Sampler {
         }
         const auto sampled
             = _lowerBoundSampler->isSampled(id, operation).isSampled();
-        return SamplingStatus(sampled, samplingStatus.tags());
+        return SamplingStatus(sampled, _tags);
     }
 
     void close() override
