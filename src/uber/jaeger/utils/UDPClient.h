@@ -23,7 +23,11 @@
 #ifndef UBER_JAEGER_UTILS_UDPCLIENT_H
 #define UBER_JAEGER_UTILS_UDPCLIENT_H
 
+#include <sstream>
+#include <stdexcept>
+
 #include <boost/asio/ip/udp.hpp>
+#include <thrift/protocol/TCompactProtocol.h>
 #include <thrift/transport/TBufferTransports.h>
 
 #include "uber/jaeger/thrift-gen/Agent.h"
@@ -58,7 +62,7 @@ class UDPClient : public agent::thrift::AgentIf {
               int maxPacketSize)
         : _maxPacketSize(
             maxPacketSize >= 0 ? maxPacketSize : kUDPPacketMaxLength)
-        , _buffer(_maxPacketSize)
+        , _buffer(new apache::thrift::transport::TMemoryBuffer(_maxPacketSize))
         , _socket(io)
         , _client()
     {
@@ -68,19 +72,64 @@ class UDPClient : public agent::thrift::AgentIf {
         udp::resolver resolver(_socket.get_io_service());
         const auto entryItr =
             resolver.resolve(udp::resolver::query(host, port));
-        const auto endpoint = entryItr->endpoint();
-        _socket.open(endpoint.protocol());
-        _socket.bind(endpoint);
+        _endpoint = entryItr->endpoint();
+        _socket.open(_endpoint.protocol());
+        _socket.connect(_endpoint);
 
-        /* TODO
-        boost::shared_ptr<apache::thrift::protocol::TProtocolFactory> factory(
-            new apache::thrift::protocol::TCompactProtocolFactory());*/
+        using TCompactProtocolFactory =
+            apache::thrift::protocol::TCompactProtocolFactory;
+        using TProtocolFactory = apache::thrift::protocol::TProtocolFactory;
+
+        boost::shared_ptr<TProtocolFactory> protocolFactory(
+            new TCompactProtocolFactory());
+        auto protocol = protocolFactory->getProtocol(_buffer);
+        _client.reset(new agent::thrift::AgentClient(protocol));
+    }
+
+    void emitZipkinBatch(
+        const std::vector<twitter::zipkin::thrift::Span>& spans) override
+    {
+        throw std::logic_error("emitZipkinBatch not implemented");
+    }
+
+    void emitBatch(const thrift::Batch& batch) override
+    {
+        _buffer->resetBuffer();
+        _client->emitBatch(batch);
+        uint8_t* data = nullptr;
+        uint32_t size = 0;
+        _buffer->getBuffer(&data, &size);
+        if (static_cast<int>(size) > _maxPacketSize) {
+            std::ostringstream oss;
+            oss << "Data does not fit within one UDP packet"
+                   "; size " << size
+                << ", max " << _maxPacketSize
+                << ", spans " << batch.spans.size();
+            throw std::logic_error(oss.str());
+        }
+        _socket.send_to(
+            boost::asio::buffer(data, size),
+            _endpoint);
+    }
+
+    int maxPacketSize() const { return _maxPacketSize; }
+
+    boost::shared_ptr<apache::thrift::protocol::TProtocol> protocol() const
+    {
+        apache::thrift::protocol::TCompactProtocolFactory protocolFactory;
+        return protocolFactory.getProtocol(_buffer);
+    }
+
+    void close()
+    {
+        _socket.close();
     }
 
   private:
     int _maxPacketSize;
-    apache::thrift::transport::TMemoryBuffer _buffer;
+    boost::shared_ptr<apache::thrift::transport::TMemoryBuffer> _buffer;
     udp::socket _socket;
+    udp::endpoint _endpoint;
     std::unique_ptr<agent::thrift::AgentClient> _client;
 };
 

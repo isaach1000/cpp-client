@@ -24,10 +24,8 @@
 #define UBER_JAEGER_LOGRECORD_H
 
 #include <chrono>
-#include <string>
-#include <vector>
 
-#include <boost/any.hpp>
+#include "uber/jaeger/Tag.h"
 
 namespace uber {
 namespace jaeger {
@@ -36,31 +34,10 @@ class LogRecord {
   public:
     using Clock = std::chrono::steady_clock;
 
-    class Field {
-      public:
-        using ValueType = boost::any;
-
-        Field() = default;
-
-        template <typename ValueArg>
-        Field(const std::string& key, ValueArg&& value)
-            : _key(key)
-            , _value(std::forward<ValueArg>(value))
-        {
-        }
-
-        const std::string& key() const { return _key; }
-
-        std::string& key() { return _key; }
-
-        const ValueType& value() const { return _value; }
-
-        ValueType& value() { return _value; }
-
-      private:
-        std::string _key;
-        ValueType _value;
-    };
+    LogRecord()
+        : _timestamp(Clock::now())
+    {
+    }
 
     template <typename FieldIterator>
     LogRecord(const Clock::time_point& timestamp,
@@ -73,11 +50,29 @@ class LogRecord {
 
     const Clock::time_point& timestamp() const { return _timestamp; }
 
-    const std::vector<Field>& fields() const { return _fields; }
+    const std::vector<Tag>& fields() const { return _fields; }
+
+    thrift::Log thrift() const
+    {
+        thrift::Log log;
+        log.__set_timestamp(
+            std::chrono::duration_cast<std::chrono::microseconds>(
+                _timestamp.time_since_epoch()).count());
+
+        std::vector<thrift::Tag> fields;
+        fields.reserve(_fields.size());
+        std::transform(std::begin(_fields),
+                       std::end(_fields),
+                       std::back_inserter(fields),
+                       [](const Tag& tag) { return tag.thrift(); });
+        log.__set_fields(fields);
+
+        return log;
+    }
 
   private:
     Clock::time_point _timestamp;
-    std::vector<Field> _fields;
+    std::vector<Tag> _fields;
 };
 
 }  // namespace jaeger

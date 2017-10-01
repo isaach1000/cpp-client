@@ -79,6 +79,8 @@ class SpanContext {
         }
     }
 
+    unsigned char flags() const { return _flags; }
+
     bool isSampled() const
     {
         return _flags & static_cast<unsigned char>(Flag::kSampled);

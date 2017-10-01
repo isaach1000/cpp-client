@@ -23,9 +23,11 @@
 #ifndef UBER_JAEGER_REFERENCE_H
 #define UBER_JAEGER_REFERENCE_H
 
+#include <sstream>
 #include <string>
 
 #include "uber/jaeger/SpanContext.h"
+#include "uber/jaeger/thrift-gen/jaeger_types.h"
 
 namespace uber {
 namespace jaeger {
@@ -43,6 +45,29 @@ class Reference {
     const SpanContext& spanContext() const { return _spanContext; }
 
     Type type() const { return _type; }
+
+    thrift::SpanRef thrift() const
+    {
+        thrift::SpanRef spanRef;
+        switch (_type) {
+        case Type::kChildOfRef: {
+            spanRef.__set_refType(thrift::SpanRefType::CHILD_OF);
+        } break;
+        case Type::kFollowsFromRef: {
+            spanRef.__set_refType(thrift::SpanRefType::FOLLOWS_FROM);
+        } break;
+        default: {
+            std::ostringstream oss;
+            oss << "Invalid span reference type " << static_cast<int>(_type)
+                << ", context " << _spanContext;
+            throw std::invalid_argument(oss.str());
+        } break;
+        }
+        spanRef.__set_traceIdHigh(_spanContext.traceID().high());
+        spanRef.__set_traceIdLow(_spanContext.traceID().low());
+        spanRef.__set_spanId(_spanContext.spanID());
+        return spanRef;
+    }
 
   private:
     SpanContext _spanContext;
