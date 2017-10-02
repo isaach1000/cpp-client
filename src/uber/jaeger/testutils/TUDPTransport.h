@@ -39,10 +39,8 @@ class TUDPTransport
 
     TUDPTransport(boost::asio::io_service& io, const std::string& hostPort)
         : _io(io)
-        , _socket(io, utils::net::resolveHostPort<udp>(_io, hostPort))
-        , _host()
-        , _port()
-        , _senderEndpoint()
+        , _socket(_io, utils::net::resolveHostPort<udp>(_io, hostPort))
+        , _clientEndpoint()
     {
     }
 
@@ -52,18 +50,25 @@ class TUDPTransport
     {
     }
 
-    void close() override { _socket.close(); }
+    void close() override
+    {
+        boost::system::error_code err;
+        _socket.shutdown(udp::socket::shutdown_both, err);
+        _socket.close(err);
+    }
 
     udp::endpoint addr() const { return _socket.local_endpoint(); }
 
     uint32_t read(uint8_t* buf, uint32_t len)
     {
-        return _socket.receive(boost::asio::buffer(buf, len));
+        auto numRead = _socket.receive_from(boost::asio::buffer(buf, len),
+                                            _clientEndpoint);
+        return numRead;
     }
 
     void write(const uint8_t* buf, uint32_t len)
     {
-        _socket.send(boost::asio::buffer(buf, len));
+        _socket.send_to(boost::asio::buffer(buf, len), _clientEndpoint);
     }
 
     boost::asio::io_service& ioService() { return _socket.get_io_service(); }
@@ -71,9 +76,7 @@ class TUDPTransport
   private:
     boost::asio::io_service& _io;
     udp::socket _socket;
-    std::string _host;
-    std::string _port;
-    udp::endpoint _senderEndpoint;
+    udp::endpoint _clientEndpoint;
 };
 
 }  // namespace testutils

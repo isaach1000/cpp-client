@@ -23,6 +23,7 @@
 #include <gtest/gtest.h>
 
 #include "uber/jaeger/testutils/MockAgent.h"
+#include "uber/jaeger/utils/Net.h"
 
 namespace uber {
 namespace jaeger {
@@ -33,6 +34,7 @@ TEST(MockAgent, testSpanServer)
     boost::asio::io_service io;
     std::shared_ptr<MockAgent> mockAgent = MockAgent::make(io);
     mockAgent->start();
+    io.run();
 
     auto client = mockAgent->spanServerClient();
 
@@ -61,13 +63,30 @@ TEST(MockAgent, testSpanServer)
         const auto batches = mockAgent->batches();
         ASSERT_FALSE(batches.empty());
         ASSERT_EQ(i, static_cast<int>(batches[0].spans.size()));
-        for (auto j = 0; j < i; ++i) {
+        for (auto j = 0; j < i; ++j) {
             std::string operationName("span-");
             operationName += std::to_string(j);
             ASSERT_EQ(operationName, batches[0].spans[j].operationName);
         }
         mockAgent->resetBatches();
     }
+}
+
+TEST(MockAgent, testSamplingManager)
+{
+    boost::asio::io_service io;
+    auto mockAgent = MockAgent::make(io);
+    mockAgent->start();
+    io.run();
+
+    std::ostringstream oss;
+    oss << "http://" << mockAgent->samplingServerAddr().address().to_string()
+        << ':' << mockAgent->samplingServerAddr().port()
+        << '/';
+    auto uriStr = oss.str();
+    auto uri = utils::net::parseURI(uriStr);
+    auto response = utils::net::httpGetRequest(io, uri);
+    ASSERT_EQ("no 'service' parameter", response);
 }
 
 }  // namespace testutils

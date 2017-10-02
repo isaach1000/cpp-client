@@ -49,23 +49,29 @@ class UDPClient : public agent::thrift::AgentIf {
     }
 
     UDPClient(boost::asio::io_service& io,
-              const udp::endpoint& endpoint,
+              const udp::endpoint& serverEndpoint,
               int maxPacketSize)
         : _maxPacketSize(maxPacketSize == 0 ? net::kUDPPacketMaxLength
                                             : maxPacketSize)
         , _buffer(new apache::thrift::transport::TMemoryBuffer(_maxPacketSize))
         , _socket(io)
-        , _endpoint(endpoint)
+        , _serverEndpoint(serverEndpoint)
         , _client()
     {
         using TCompactProtocolFactory
             = apache::thrift::protocol::TCompactProtocolFactory;
         using TProtocolFactory = apache::thrift::protocol::TProtocolFactory;
 
+        _socket.open(udp::v4());
         boost::shared_ptr<TProtocolFactory> protocolFactory(
             new TCompactProtocolFactory());
         auto protocol = protocolFactory->getProtocol(_buffer);
         _client.reset(new agent::thrift::AgentClient(protocol));
+    }
+
+    ~UDPClient()
+    {
+        close();
     }
 
     void emitZipkinBatch(
@@ -89,7 +95,7 @@ class UDPClient : public agent::thrift::AgentIf {
                 << batch.spans.size();
             throw std::logic_error(oss.str());
         }
-        _socket.send(boost::asio::buffer(data, size));
+        _socket.send_to(boost::asio::buffer(data, size), _serverEndpoint);
     }
 
     int maxPacketSize() const { return _maxPacketSize; }
@@ -100,13 +106,18 @@ class UDPClient : public agent::thrift::AgentIf {
         return protocolFactory.getProtocol(_buffer);
     }
 
-    void close() { _socket.close(); }
+    void close()
+    {
+        boost::system::error_code err;
+        _socket.shutdown(udp::socket::shutdown_both, err);
+        _socket.close(err);
+    }
 
   private:
     int _maxPacketSize;
     boost::shared_ptr<apache::thrift::transport::TMemoryBuffer> _buffer;
     udp::socket _socket;
-    udp::endpoint _endpoint;
+    udp::endpoint _serverEndpoint;
     std::unique_ptr<agent::thrift::AgentClient> _client;
 };
 

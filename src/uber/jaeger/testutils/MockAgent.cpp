@@ -106,7 +106,7 @@ class HTTPConnection : public std::enable_shared_from_this<HTTPConnection> {
             _response.result(http::status::bad_request);
             _response.set(http::field::content_type, "text/plain");
             beast::ostream(_response.body)
-                << "'service' parameter is empty";
+                << "no 'service' parameter";
             return;
         }
 
@@ -179,8 +179,9 @@ class MockAgent::HTTPServer {
 
     void start()
     {
-        _serving = true;
-        _thread = std::thread([this]() { serve(); });
+        if (!_serving) {
+            _thread = std::thread([this]() { serve(); });
+        }
     }
 
     void close()
@@ -197,8 +198,10 @@ class MockAgent::HTTPServer {
     void serve()
     {
         auto& io = _acceptor.get_io_service();
-        _acceptor =
-            tcp::acceptor(io, utils::net::resolveHostPort<tcp>(io, _hostPort));
+        const auto endpoint = utils::net::resolveHostPort<tcp>(io, _hostPort);
+        _acceptor.open(endpoint.protocol());
+        _acceptor.bind(endpoint);
+        _serving = true;
         accept();
     }
 
@@ -253,7 +256,6 @@ void MockAgent::start()
     std::promise<void> started;
     _thread = std::thread([this, &started]() { serve(started); });
     started.get_future().wait();
-    _serving = true;
 }
 
 void MockAgent::close()
@@ -305,6 +307,7 @@ void MockAgent::serve(std::promise<void>& started)
         new TMemoryBuffer(utils::net::kUDPPacketMaxLength));
 
     // Notify main thread that setup is done.
+    _serving = true;
     started.set_value();
 
     std::array<uint8_t, utils::net::kUDPPacketMaxLength> buffer;
