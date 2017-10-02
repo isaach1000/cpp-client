@@ -28,14 +28,46 @@ namespace uber {
 namespace jaeger {
 namespace testutils {
 
-TEST(MockAgent, DISABLED_testSpanServer)
+TEST(MockAgent, testSpanServer)
 {
     boost::asio::io_service io;
     std::shared_ptr<MockAgent> mockAgent = MockAgent::make(io);
     mockAgent->start();
 
-    /* TODO
-       auto client = */ mockAgent->spanServerClient();
+    auto client = mockAgent->spanServerClient();
+
+    constexpr auto kBiggestBatch = 5;
+    for (auto i = 1; i < kBiggestBatch; ++i) {
+        thrift::Batch batch;
+        batch.spans.resize(i);
+        for (auto j = 0; j < i; ++j) {
+            std::string operationName("span-");
+            operationName += std::to_string(j);
+            batch.spans[j].__set_operationName(operationName);
+        }
+
+        client->emitBatch(batch);
+
+        constexpr auto kNumTries = 100;
+        for (auto k = 0; k < kNumTries; ++k) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            const auto batches = mockAgent->batches();
+            if (!batches.empty() &&
+                static_cast<int>(batches[0].spans.size()) == i) {
+                break;
+            }
+        }
+
+        const auto batches = mockAgent->batches();
+        ASSERT_FALSE(batches.empty());
+        ASSERT_EQ(i, static_cast<int>(batches[0].spans.size()));
+        for (auto j = 0; j < i; ++i) {
+            std::string operationName("span-");
+            operationName += std::to_string(j);
+            ASSERT_EQ(operationName, batches[0].spans[j].operationName);
+        }
+        mockAgent->resetBatches();
+    }
 }
 
 }  // namespace testutils

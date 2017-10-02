@@ -21,10 +21,3 @@
  */
 
 #include "uber/jaeger/utils/UDPClient.h"
-
-namespace uber {
-namespace jaeger {
-namespace utils {
-}  // namespace utils
-}  // namespace jaeger
-}  // namespace uber

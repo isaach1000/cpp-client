@@ -29,7 +29,7 @@ BraceWrapping:
   BeforeCatch:     false
   BeforeElse:      true
   IndentBraces:    false
-BreakBeforeBinaryOperators: All
+BreakBeforeBinaryOperators: None
 BreakBeforeBraces: Custom
 BreakBeforeTernaryOperators: true
 BreakConstructorInitializersBeforeComma: true

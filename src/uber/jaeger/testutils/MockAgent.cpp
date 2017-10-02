@@ -30,6 +30,7 @@
 #include <boost/asio.hpp>
 #include <boost/tokenizer.hpp>
 #include <thrift/protocol/TCompactProtocol.h>
+#include <thrift/protocol/TJSONProtocol.h>
 #include <thrift/transport/TBufferTransports.h>
 
 #include "uber/jaeger/Logging.h"
@@ -117,12 +118,41 @@ class HTTPConnection : public std::enable_shared_from_this<HTTPConnection> {
             return;
         }
 
+        const auto service = std::string(results[0].first, results[0].second);
+        thrift::sampling_manager::SamplingStrategyResponse response;
+        try {
+            _samplingMgr.getSamplingStrategy(response, service);
+        } catch (const std::exception& ex) {
+            _response.result(http::status::internal_server_error);
+            _response.set(http::field::content_type, "text/plain");
+            beast::ostream(_response.body)
+                << "Error retrieving strategy: " << ex.what();
+            return;
+        }
 
+        try {
+            const auto json = apache::thrift::ThriftJSONString(response);
+            _response.result(http::status::ok);
+            _response.set(http::field::content_type, "application/json");
+        } catch (const std::exception& ex) {
+            _response.result(http::status::internal_server_error);
+            _response.set(http::field::content_type, "text/plain");
+            beast::ostream(_response.body)
+                << "Cannot marshal Thrift to JSON: " << ex.what();
+        }
     }
 
     void writeResponse()
     {
-        // TODO
+        auto self = shared_from_this();
+        _response.prepare_payload();
+
+        http::async_write(
+            _socket,
+            _response,
+            [self](boost::system::error_code err) {
+                self->_socket.shutdown(tcp::socket::shutdown_send, err);
+            });
     }
 
     SamplingManager& _samplingMgr;
@@ -153,10 +183,12 @@ class MockAgent::HTTPServer {
         _thread = std::thread([this]() { serve(); });
     }
 
-    void stop()
+    void close()
     {
-        _serving = false;
-        _thread.join();
+        if (_serving) {
+            _serving = false;
+            _thread.join();
+        }
     }
 
     tcp::endpoint addr() const { return _acceptor.local_endpoint(); }
@@ -165,7 +197,8 @@ class MockAgent::HTTPServer {
     void serve()
     {
         auto& io = _acceptor.get_io_service();
-        _acceptor.bind(utils::net::resolveHostPort<tcp>(io, _hostPort));
+        _acceptor =
+            tcp::acceptor(io, utils::net::resolveHostPort<tcp>(io, _hostPort));
         accept();
     }
 
@@ -209,7 +242,10 @@ class MockAgent::HTTPServer {
     std::thread _thread;
 };
 
-MockAgent::~MockAgent() = default;
+MockAgent::~MockAgent()
+{
+    close();
+}
 
 void MockAgent::start()
 {
@@ -217,14 +253,17 @@ void MockAgent::start()
     std::promise<void> started;
     _thread = std::thread([this, &started]() { serve(started); });
     started.get_future().wait();
+    _serving = true;
 }
 
 void MockAgent::close()
 {
-    _serving = false;
-    _samplingSrv->stop();
-    _transport.close();
-    _thread.join();
+    if (_serving) {
+        _serving = false;
+        _transport.close();
+        _thread.join();
+        _samplingSrv->close();
+    }
 }
 
 void MockAgent::emitBatch(const thrift::Batch& batch)
@@ -255,7 +294,7 @@ void MockAgent::serve(std::promise<void>& started)
         = apache::thrift::protocol::TCompactProtocolFactory;
     using TMemoryBuffer = apache::thrift::transport::TMemoryBuffer;
 
-    // Trick for converting std::shared_ptr into boost::shared_ptr. See
+    // Trick for converting `std::shared_ptr` into `boost::shared_ptr`. See
     // https://stackoverflow.com/a/12315035/1930331.
     auto ptr = shared_from_this();
     boost::shared_ptr<agent::thrift::AgentIf> iface(
@@ -266,7 +305,6 @@ void MockAgent::serve(std::promise<void>& started)
         new TMemoryBuffer(utils::net::kUDPPacketMaxLength));
 
     // Notify main thread that setup is done.
-    _serving = true;
     started.set_value();
 
     std::array<uint8_t, utils::net::kUDPPacketMaxLength> buffer;

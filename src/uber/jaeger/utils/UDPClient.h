@@ -58,9 +58,6 @@ class UDPClient : public agent::thrift::AgentIf {
         , _endpoint(endpoint)
         , _client()
     {
-        _socket.open(_endpoint.protocol());
-        _socket.connect(_endpoint);
-
         using TCompactProtocolFactory
             = apache::thrift::protocol::TCompactProtocolFactory;
         using TProtocolFactory = apache::thrift::protocol::TProtocolFactory;
@@ -92,7 +89,7 @@ class UDPClient : public agent::thrift::AgentIf {
                 << batch.spans.size();
             throw std::logic_error(oss.str());
         }
-        _socket.send_to(boost::asio::buffer(data, size), _endpoint);
+        _socket.send(boost::asio::buffer(data, size));
     }
 
     int maxPacketSize() const { return _maxPacketSize; }
