@@ -34,7 +34,7 @@ TEST(MockAgent, testSpanServer)
     boost::asio::io_service io;
     std::shared_ptr<MockAgent> mockAgent = MockAgent::make(io);
     mockAgent->start();
-    io.run();
+    io.poll();
 
     auto client = mockAgent->spanServerClient();
 
@@ -77,7 +77,7 @@ TEST(MockAgent, testSamplingManager)
     boost::asio::io_service io;
     auto mockAgent = MockAgent::make(io);
     mockAgent->start();
-    io.run();
+    io.poll();
 
     std::ostringstream oss;
     oss << "http://" << mockAgent->samplingServerAddr().address().to_string()

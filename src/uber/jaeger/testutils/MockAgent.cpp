@@ -180,7 +180,9 @@ class MockAgent::HTTPServer {
     void start()
     {
         if (!_serving) {
-            _thread = std::thread([this]() { serve(); });
+            std::promise<void> started;
+            _thread = std::thread([this, &started]() { serve(started); });
+            started.get_future().wait();
         }
     }
 
@@ -192,16 +194,23 @@ class MockAgent::HTTPServer {
         }
     }
 
-    tcp::endpoint addr() const { return _acceptor.local_endpoint(); }
+    tcp::endpoint addr() const
+    {
+        return _acceptor.local_endpoint();
+    }
 
   private:
-    void serve()
+    void serve(std::promise<void>& started)
     {
         auto& io = _acceptor.get_io_service();
         const auto endpoint = utils::net::resolveHostPort<tcp>(io, _hostPort);
         _acceptor.open(endpoint.protocol());
         _acceptor.bind(endpoint);
+        _acceptor.listen();
+
         _serving = true;
+        started.set_value();
+
         accept();
     }
 
