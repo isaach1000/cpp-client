@@ -22,34 +22,198 @@
 
 #include "uber/jaeger/testutils/MockAgent.h"
 
+#include <regex>
+#include <thread>
+
+#include <beast/core.hpp>
+#include <beast/http.hpp>
+#include <boost/asio.hpp>
+#include <boost/tokenizer.hpp>
 #include <thrift/protocol/TCompactProtocol.h>
 #include <thrift/transport/TBufferTransports.h>
 
 #include "uber/jaeger/Logging.h"
 #include "uber/jaeger/utils/UDPClient.h"
 
+namespace http = beast::http;
+using tcp = boost::asio::ip::tcp;
+
 namespace uber {
 namespace jaeger {
 namespace testutils {
 namespace {
 
-class HTTPServer {
+class HTTPConnection : public std::enable_shared_from_this<HTTPConnection> {
   public:
-    using tcp = boost::asio::ip::tcp;
+    static std::shared_ptr<HTTPConnection> make(boost::asio::io_service& io,
+                                                SamplingManager& samplingMgr)
+    {
+        return std::shared_ptr<HTTPConnection>(
+            new HTTPConnection(io, samplingMgr));
+    }
 
-    HTTPServer(boost::asio::io_service& io,
-               const std::string& hostPort);
+    void start()
+    {
+        readRequest();
+    }
+
+    tcp::socket& socket() { return _socket; }
 
   private:
+    HTTPConnection(boost::asio::io_service& io,
+                   SamplingManager& samplingMgr)
+        : _samplingMgr(samplingMgr)
+        , _socket(io)
+        , _buffer()
+        , _request()
+        , _response()
+    {
+    }
+
+    void readRequest()
+    {
+        auto self = shared_from_this();
+        http::async_read(
+            _socket,
+            _buffer,
+            _request,
+            [self](const beast::error_code& err) {
+                if (err) {
+                    logging::consoleLogger()->error(
+                        "Read error occurred, {0}", err.message());
+                    return;
+                }
+
+                self->handleRequest();
+                self->writeResponse();
+            });
+    }
+
+    void handleRequest()
+    {
+        _response.version = 11;
+        _response.set(http::field::connection, "close");
+
+        const auto uri = utils::net::parseURI(std::string(_request.target()));
+        const auto& query = uri._query;
+        constexpr auto kPattern = "(^service|&service)=([^&=]+)";
+        std::regex serviceRegex(kPattern);
+        std::smatch results;
+        std::regex_search(query, results, serviceRegex);
+
+        if (results.empty()) {
+            _response.result(http::status::bad_request);
+            _response.set(http::field::content_type, "text/plain");
+            beast::ostream(_response.body)
+                << "'service' parameter is empty";
+            return;
+        }
+
+        if (results.size() > 1) {
+            _response.result(http::status::bad_request);
+            _response.set(http::field::content_type, "text/plain");
+            beast::ostream(_response.body)
+                << "'service' parameter must occur only once";
+            return;
+        }
+
+
+    }
+
+    void writeResponse()
+    {
+        // TODO
+    }
+
+    SamplingManager& _samplingMgr;
     tcp::socket _socket;
+    beast::flat_buffer _buffer;
+    http::request<http::dynamic_body> _request;
+    http::response<http::dynamic_body> _response;
 };
 
 }  // anonymous namespace
 
+class MockAgent::HTTPServer {
+  public:
+    HTTPServer(boost::asio::io_service& io,
+               SamplingManager& samplingMgr,
+               const std::string& hostPort)
+        : _samplingMgr(samplingMgr)
+        , _acceptor(io)
+        , _hostPort(hostPort)
+        , _serving(false)
+        , _thread()
+    {
+    }
+
+    void start()
+    {
+        _serving = true;
+        _thread = std::thread([this]() { serve(); });
+    }
+
+    void stop()
+    {
+        _serving = false;
+        _thread.join();
+    }
+
+    tcp::endpoint addr() const { return _acceptor.local_endpoint(); }
+
+  private:
+    void serve()
+    {
+        auto& io = _acceptor.get_io_service();
+        _acceptor.bind(utils::net::resolveHostPort<tcp>(io, _hostPort));
+        accept();
+    }
+
+    void accept()
+    {
+        auto& io = _acceptor.get_io_service();
+        auto conn = HTTPConnection::make(io, _samplingMgr);
+        _acceptor.async_accept(
+            conn->socket(),
+            [this, conn](const boost::system::error_code& err) {
+                handleConnection(conn, err);
+            });
+    }
+
+    void handleConnection(
+        const std::shared_ptr<HTTPConnection>& conn,
+        const boost::system::error_code& err)
+    {
+        if (err) {
+            logging::consoleLogger()->error(
+                "Accept error, {0}", err.message());
+            return;
+        }
+
+        if (!_serving) {
+            conn->socket().shutdown(tcp::socket::shutdown_both);
+            return;
+        }
+
+        conn->start();
+
+        if (_serving) {
+            accept();
+        }
+    }
+
+    SamplingManager& _samplingMgr;
+    tcp::acceptor _acceptor;
+    std::string _hostPort;
+    std::atomic<bool> _serving;
+    std::thread _thread;
+};
+
+MockAgent::~MockAgent() = default;
+
 void MockAgent::start()
 {
-    // TODO: Start HTTP server
-
+    _samplingSrv->start();
     std::promise<void> started;
     _thread = std::thread([this, &started]() { serve(started); });
     started.get_future().wait();
@@ -58,7 +222,7 @@ void MockAgent::start()
 void MockAgent::close()
 {
     _serving = false;
-    // TODO: Stop HTTP server
+    _samplingSrv->stop();
     _transport.close();
     _thread.join();
 }
@@ -67,6 +231,22 @@ void MockAgent::emitBatch(const thrift::Batch& batch)
 {
     std::lock_guard<std::mutex> lock(_mutex);
     _batches.push_back(batch);
+}
+
+tcp::endpoint MockAgent::samplingServerAddr() const
+{
+    return _samplingSrv->addr();
+}
+
+MockAgent::MockAgent(boost::asio::io_service& io)
+    : _transport(io, "127.0.0.1:0")
+    , _batches()
+    , _serving(false)
+    , _samplingMgr()
+    , _samplingSrv(new HTTPServer(io, _samplingMgr, "127.0.0.1:0"))
+    , _mutex()
+    , _thread()
+{
 }
 
 void MockAgent::serve(std::promise<void>& started)

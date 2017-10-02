@@ -54,6 +54,8 @@ class MockAgent : public agent::thrift::AgentIf,
         return newInstance;
     }
 
+    ~MockAgent();
+
     void start();
 
     void close();
@@ -88,11 +90,7 @@ class MockAgent : public agent::thrift::AgentIf,
             _transport.ioService(), spanServerAddress(), 0));
     }
 
-    tcp::endpoint samplingServerAddr() const
-    {
-        // TODO
-        return tcp::endpoint();
-    }
+    tcp::endpoint samplingServerAddr() const;
 
     void resetBatches()
     {
@@ -101,15 +99,9 @@ class MockAgent : public agent::thrift::AgentIf,
     }
 
   private:
-    explicit MockAgent(boost::asio::io_service& io)
-        : _transport(io, "127.0.0.1:0")
-        , _batches()
-        , _serving(false)
-        , _samplingMgr()
-        , _mutex()
-        , _thread()
-    {
-    }
+    class HTTPServer;
+
+    explicit MockAgent(boost::asio::io_service& io);
 
     void serve(std::promise<void>& started);
 
@@ -117,6 +109,7 @@ class MockAgent : public agent::thrift::AgentIf,
     std::vector<thrift::Batch> _batches;
     std::atomic<bool> _serving;
     SamplingManager _samplingMgr;
+    std::unique_ptr<HTTPServer> _samplingSrv;
     mutable std::mutex _mutex;
     std::thread _thread;
 };

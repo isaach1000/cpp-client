@@ -33,6 +33,8 @@
 #include <boost/asio/connect.hpp>
 #include <boost/asio/ip/tcp.hpp>
 
+#include "uber/jaeger/utils/HexParsing.h"
+
 namespace uber {
 namespace jaeger {
 namespace utils {
@@ -70,6 +72,79 @@ std::string percentEncode(const std::string& input)
         }
     }
     return oss.str();
+}
+
+std::string percentDecode(const std::string& input)
+{
+    enum class State {
+        kDefault,
+        kPercent,
+        kFirstDigit
+    };
+
+    std::string result;
+    auto state = State::kDefault;
+    auto value = 0;
+    for (auto&& ch : input) {
+        switch (state) {
+        case State::kDefault: {
+            if (ch == '%') {
+                state = State::kPercent;
+            }
+            else {
+                result += ch;
+            }
+        } break;
+        case State::kPercent: {
+            if (ch == '%') {
+                result += '%';
+                state = State::kDefault;
+            }
+            else if (HexParsing::isHex(ch)) {
+                if (ch >= '0' && ch <= '9') {
+                    value = ch - '0';
+                }
+                else if (ch >= 'A' && ch <= 'F') {
+                    value = ch - 'A' + 10;
+                }
+                else {
+                    assert(ch >= 'a' && ch <= 'f');
+                    value = ch - 'a' + 10;
+                }
+                state = State::kFirstDigit;
+            }
+            else {
+                result += '%';
+                result += ch;
+            }
+        } break;
+        default: {
+            assert(state == State::kFirstDigit);
+            if (HexParsing::isHex(ch)) {
+                value <<= 4;
+                if (ch >= '0' && ch <= '9') {
+                    value |= ch - '0';
+                }
+                else if (ch >= 'A' && ch <= 'F') {
+                    value |= ch - 'A' + 10;
+                }
+                else {
+                    assert(ch >= 'a' && ch <= 'f');
+                    value |= ch - 'a' + 10;
+                }
+                result += static_cast<char>(value);
+            }
+            else {
+                result += '%';
+                result += static_cast<char>(value);
+                result += ch;
+            }
+            state = State::kDefault;
+        } break;
+        }
+    }
+
+    return result;
 }
 
 URI parseURI(const std::string& uriStr)

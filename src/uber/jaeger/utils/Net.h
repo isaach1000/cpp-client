@@ -48,6 +48,8 @@ struct URI {
 
 std::string percentEncode(const std::string& input);
 
+std::string percentDecode(const std::string& input);
+
 URI parseURI(const std::string& uriStr);
 
 std::string httpGetRequest(boost::asio::io_service& io, const URI& uri);
@@ -75,9 +77,9 @@ resolveHostPort(boost::asio::io_service& io, const std::string& hostPort)
     std::string host;
     std::string port;
     std::tie(host, port) = parseHostPort(hostPort);
-    boost::asio::ip::udp::resolver resolver(io);
+    typename Transport::resolver resolver(io);
     const auto entryItr
-        = resolver.resolve(boost::asio::ip::udp::resolver::query(host, port));
+        = resolver.resolve(typename Transport::resolver::query(host, port));
     return entryItr->endpoint();
 }
 
