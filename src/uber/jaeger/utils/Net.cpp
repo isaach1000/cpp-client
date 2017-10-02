@@ -22,16 +22,12 @@
 
 #include "uber/jaeger/utils/Net.h"
 
+#include <sys/socket.h>
+
 #include <iomanip>
 #include <iostream>
 #include <regex>
 #include <sstream>
-
-#include <beast/core.hpp>
-#include <beast/http.hpp>
-#include <beast/version.hpp>
-#include <boost/asio/connect.hpp>
-#include <boost/asio/ip/tcp.hpp>
 
 #include "uber/jaeger/utils/HexParsing.h"
 
@@ -57,6 +53,30 @@ bool isUnreserved(char ch)
         return false;
     }
 }
+
+class Socket {
+  public:
+    Socket(int domain, int type)
+        : _handle(::socket(domain, type, 0))
+    {
+    }
+
+    ~Socket()
+    {
+        reset();
+    }
+
+    void reset()
+    {
+        ::close(_handle);
+        _handle = -1;
+    }
+
+    void connect();
+
+  private:
+    int _handle;
+};
 
 }  // anonymous namespace
 
@@ -197,46 +217,20 @@ URI parseURI(const std::string& uriStr)
     return uri;
 }
 
-std::string httpGetRequest(boost::asio::io_service& io, const URI& uri)
+std::string httpGetRequest(const URI& uri)
 {
-    using tcp = boost::asio::ip::tcp;
-    namespace http = beast::http;
-
-    tcp::resolver resolver(io);
-    const tcp::resolver::query query(uri._host, std::to_string(uri._port));
-    const auto lookup = resolver.resolve(query);
-    tcp::socket socket(io);
-    boost::asio::connect(socket, lookup);
-
     auto target = uri._path + uri._query;
     if (target.empty()) {
         target = "/";
     }
-    http::request<http::string_body> req(http::verb::get, target, 11);
-    req.set(http::field::host, uri._host);
-    req.set(http::field::user_agent, BEAST_VERSION_STRING);
-    http::write(socket, req);
 
-    beast::flat_buffer buffer;
-    http::response<http::string_body> res;
-    http::read(socket, buffer, res);
+    Socket clientSocket(AF_INET, SOCK_STREAM);
 
-    boost::system::error_code error;
-    socket.shutdown(tcp::socket::shutdown_both, error);
-    if (error && error != boost::system::errc::not_connected) {
-        throw boost::system::system_error(error);
-    }
+    // TODO: Write HTTP 1.1 request to host.
 
-    if (res.result() != http::status::ok) {
-        std::ostringstream oss;
-        oss << "Unexpected response status code"
-               ", host="
-            << uri._host << ", target=" << target
-            << ", status=" << res.result();
-        throw std::runtime_error(oss.str());
-    }
+    // TODO: Read response into string and return string.
 
-    return res.body;
+    return "";
 }
 
 }  // namespace net

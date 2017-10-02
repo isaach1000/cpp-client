@@ -26,8 +26,6 @@
 #include <string>
 #include <tuple>
 
-#include <boost/asio.hpp>
-
 namespace uber {
 namespace jaeger {
 namespace utils {
@@ -52,7 +50,12 @@ std::string percentDecode(const std::string& input);
 
 URI parseURI(const std::string& uriStr);
 
-std::string httpGetRequest(boost::asio::io_service& io, const URI& uri);
+std::string httpGetRequest(const URI& uri);
+
+inline std::string httpGetRequest(const std::string& uriStr)
+{
+    return httpGetRequest(parseURI(uriStr));
+}
 
 static constexpr auto kUDPPacketMaxLength = 65000;
 
@@ -68,19 +71,6 @@ parseHostPort(const std::string& hostPort)
 
     return std::make_tuple(hostPort.substr(0, colonPos),
                            hostPort.substr(colonPos + 1));
-}
-
-template <typename Transport>
-typename Transport::endpoint
-resolveHostPort(boost::asio::io_service& io, const std::string& hostPort)
-{
-    std::string host;
-    std::string port;
-    std::tie(host, port) = parseHostPort(hostPort);
-    typename Transport::resolver resolver(io);
-    const auto entryItr
-        = resolver.resolve(typename Transport::resolver::query(host, port));
-    return entryItr->endpoint();
 }
 
 }  // namespace net
