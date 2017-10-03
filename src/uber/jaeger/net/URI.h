@@ -20,62 +20,69 @@
  * THE SOFTWARE.
  */
 
-#ifndef UBER_JAEGER_UTILS_NET_H
-#define UBER_JAEGER_UTILS_NET_H
+#ifndef UBER_JAEGER_NET_URI_H
+#define UBER_JAEGER_NET_URI_H
 
-#include <string>
+#include <sstream>
 #include <tuple>
 
 namespace uber {
 namespace jaeger {
-namespace utils {
 namespace net {
 
-struct URI {
+class URI {
+  public:
+    static URI parse(const std::string& uriStr);
+
+    std::tuple<std::string, std::string>
+    parseHostPort(const std::string& hostPort)
+    {
+        const auto colonPos = hostPort.find(':');
+        if (colonPos == std::string::npos) {
+            std::ostringstream oss;
+            oss << "Invalid host/port string contains no colon: " << hostPort;
+            throw std::logic_error(oss.str());
+        }
+
+        return std::make_tuple(hostPort.substr(0, colonPos),
+                               hostPort.substr(colonPos + 1));
+    }
+
+    static std::string percentEncode(const std::string& input);
+
+    static std::string percentDecode(const std::string& input);
+
     bool operator==(const URI& rhs) const
     {
         return _host == rhs._host && _port == rhs._port && _path == rhs._path
                && _query == rhs._query;
     }
 
+    void setHost(const std::string& host) { _host = host; }
+
+    const std::string& host() const { return _host; }
+
+    void setPort(int port) { _port = port; }
+
+    int port() const { return _port; }
+
+    void setPath(const std::string& path) { _path = path; }
+
+    const std::string& path() const { return _path; }
+
+    void setQuery(const std::string& query) { _query = query; }
+
+    const std::string& query() const { return _query; }
+
+  private:
     std::string _host;
     int _port;
     std::string _path;
     std::string _query;
 };
 
-std::string percentEncode(const std::string& input);
-
-std::string percentDecode(const std::string& input);
-
-URI parseURI(const std::string& uriStr);
-
-std::string httpGetRequest(const URI& uri);
-
-inline std::string httpGetRequest(const std::string& uriStr)
-{
-    return httpGetRequest(parseURI(uriStr));
-}
-
-static constexpr auto kUDPPacketMaxLength = 65000;
-
-inline std::tuple<std::string, std::string>
-parseHostPort(const std::string& hostPort)
-{
-    const auto colonPos = hostPort.find(':');
-    if (colonPos == std::string::npos) {
-        std::ostringstream oss;
-        oss << "Invalid host/port string contains no colon: " << hostPort;
-        throw std::logic_error(oss.str());
-    }
-
-    return std::make_tuple(hostPort.substr(0, colonPos),
-                           hostPort.substr(colonPos + 1));
-}
-
 }  // namespace net
-}  // namespace utils
 }  // namespace jaeger
 }  // namespace uber
 
-#endif  // UBER_JAEGER_UTILS_NET_H
+#endif  // UBER_JAEGER_NET_URI_H

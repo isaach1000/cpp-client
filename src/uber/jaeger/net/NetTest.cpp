@@ -20,17 +20,11 @@
  * THE SOFTWARE.
  */
 
-#include <gtest/gtest.h>
-
-#include "uber/jaeger/utils/Net.h"
-
 #include <thread>
 
-#include <beast/core.hpp>
-#include <beast/http.hpp>
-#include <beast/version.hpp>
-#include <boost/asio/connect.hpp>
-#include <boost/asio/ip/tcp.hpp>
+#include <gtest/gtest.h>
+
+#include "uber/jaeger/net/URI.h"
 
 namespace uber {
 namespace jaeger {
