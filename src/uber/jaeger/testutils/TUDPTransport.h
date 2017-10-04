@@ -23,7 +23,6 @@
 #ifndef UBER_JAEGER_TESTUTILS_TUDPTRANSPORT_H
 #define UBER_JAEGER_TESTUTILS_TUDPTRANSPORT_H
 
-#include <boost/asio/ip/udp.hpp>
 #include <thrift/transport/TVirtualTransport.h>
 
 #include "uber/jaeger/utils/UDPClient.h"
@@ -35,16 +34,22 @@ namespace testutils {
 class TUDPTransport
     : public apache::thrift::transport::TVirtualTransport<TUDPTransport> {
   public:
-    using udp = boost::asio::ip::udp;
-
-    TUDPTransport(boost::asio::io_service& io, const std::string& hostPort)
-        : _io(io)
-        , _socket(_io, utils::net::resolveHostPort<udp>(_io, hostPort))
-        , _clientEndpoint()
+    TUDPTransport(const std::string& ip, int port)
+        : TUDPTransport(utils::net::makeAddress(ip, port))
     {
     }
 
-    bool isOpen() override { return _socket.is_open(); }
+    TUDPTransport(const ::sockaddr_in& addr)
+        : _socket()
+        , _serverAddr(addr)
+    {
+        _socket.open(SOCK_DGRAM);
+        _socket.bind(_serverAddr);
+    }
+
+    virtual ~TUDPTransport() = default;
+
+    bool isOpen() override { return _socket.handle() >= 0; }
 
     void open() override
     {
@@ -52,31 +57,31 @@ class TUDPTransport
 
     void close() override
     {
-        boost::system::error_code err;
-        _socket.shutdown(udp::socket::shutdown_both, err);
-        _socket.close(err);
+        _socket.close();
     }
 
-    udp::endpoint addr() const { return _socket.local_endpoint(); }
+    const ::sockaddr_in& addr() const { return _serverAddr; }
 
     uint32_t read(uint8_t* buf, uint32_t len)
     {
-        auto numRead = _socket.receive_from(boost::asio::buffer(buf, len),
-                                            _clientEndpoint);
-        return numRead;
+        return ::recvfrom(_socket.handle(),
+                          buf,
+                          len,
+                          0,
+                          _clientAddr,
+                          &_clientAddrLen);
     }
 
     void write(const uint8_t* buf, uint32_t len)
     {
-        _socket.send_to(boost::asio::buffer(buf, len), _clientEndpoint);
+        ::sendto(_socket.handle(), buf, len, 0, _clientAddr, _clientAddrLen);
     }
 
-    boost::asio::io_service& ioService() { return _socket.get_io_service(); }
-
   private:
-    boost::asio::io_service& _io;
-    udp::socket _socket;
-    udp::endpoint _clientEndpoint;
+    utils::net::Socket _socket;
+    ::sockaddr_in _serverAddr;
+    ::sockaddr* _clientAddr;
+    ::socklen_t _clientAddrLen;
 };
 
 }  // namespace testutils

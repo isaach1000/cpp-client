@@ -23,11 +23,6 @@
 #ifndef UBER_JAEGER_UTILS_UDPCLIENT_H
 #define UBER_JAEGER_UTILS_UDPCLIENT_H
 
-#include <arpa/inet.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <unistd.h>
-
 #include <sstream>
 #include <stdexcept>
 #include <system_error>
@@ -36,6 +31,7 @@
 #include <thrift/transport/TBufferTransports.h>
 
 #include "uber/jaeger/thrift-gen/Agent.h"
+#include "uber/jaeger/utils/Net.h"
 
 namespace uber {
 namespace jaeger {
@@ -43,7 +39,12 @@ namespace utils {
 
 class UDPClient : public agent::thrift::AgentIf {
   public:
-    UDPClient(const char* ip, int port, int maxPacketSize);
+    UDPClient(const std::string& ip, int port, int maxPacketSize)
+        : UDPClient(net::makeAddress(ip, port), maxPacketSize)
+    {
+    }
+
+    UDPClient(const ::sockaddr_in& serverAddr, int maxPacketSize);
 
     ~UDPClient()
     {
@@ -71,7 +72,7 @@ class UDPClient : public agent::thrift::AgentIf {
                 << batch.spans.size();
             throw std::logic_error(oss.str());
         }
-        const auto numWritten = ::write(_socketFD, data, size);
+        const auto numWritten = ::write(_socket.handle(), data, size);
         if (numWritten != size) {
             throw std::system_error(errno,
                                     std::generic_category(),
@@ -89,15 +90,13 @@ class UDPClient : public agent::thrift::AgentIf {
 
     void close()
     {
-        if (_socketFD >= 0) {
-            ::close(_socketFD);
-        }
+        _socket.close();
     }
 
   private:
     int _maxPacketSize;
     boost::shared_ptr<apache::thrift::transport::TMemoryBuffer> _buffer;
-    int _socketFD;
+    net::Socket _socket;
     ::sockaddr_in _serverAddr;
     std::unique_ptr<agent::thrift::AgentClient> _client;
 };

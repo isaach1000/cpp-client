@@ -37,32 +37,35 @@ constexpr auto kBufferSize = 256;
 
 TEST(TUDPTransport, testUDPTransport)
 {
-    using udp = boost::asio::ip::udp;
-
     const std::string message("test");
 
-    boost::asio::io_service io;
-
-    ASSERT_THROW({ TUDPTransport(io, "127.0.0.1"); }, std::logic_error);
-
-    TUDPTransport server(io, "127.0.0.1:0");
-
-    ASSERT_NO_THROW({ server.open(); });
+    TUDPTransport server("127.0.0.1", 12345);
+    server.open();  // Not necessary. Just making sure this is called.
     ASSERT_TRUE(server.isOpen());
 
-    const auto serverEndpoint = server.addr();
-    std::thread clientThread([&io, serverEndpoint, message]() {
-        udp::socket connUDP(io);
-        connUDP.open(serverEndpoint.protocol());
-        const auto numWritten
-            = connUDP.send_to(boost::asio::buffer(message), serverEndpoint);
+    const auto serverAddr = server.addr();
+    std::thread clientThread([serverAddr, message]() {
+        utils::net::Socket connUDP;
+        connUDP.open(SOCK_DGRAM);
+        std::cout << serverAddr << std::endl;
+        const auto numWritten =
+            ::sendto(connUDP.handle(),
+                     message.c_str(),
+                     message.size(),
+                     0,
+                     reinterpret_cast<const ::sockaddr*>(&serverAddr),
+                     sizeof(serverAddr));
         ASSERT_EQ(numWritten, message.size());
 
         std::array<char, kBufferSize> buffer;
-        const auto numRead = connUDP.receive(
-            boost::asio::buffer(std::begin(buffer), kBufferSize));
-        const std::string received(std::begin(buffer),
-                                   std::begin(buffer) + numRead);
+        const auto numRead =
+            ::recvfrom(connUDP.handle(),
+                       &buffer[0],
+                       buffer.size(),
+                       0,
+                       nullptr,
+                       0);
+        const std::string received(&buffer[0], &buffer[numRead]);
         ASSERT_EQ(message.size(), numRead);
         ASSERT_EQ(message, received);
 
@@ -70,9 +73,9 @@ TEST(TUDPTransport, testUDPTransport)
     });
 
     std::array<uint8_t, kBufferSize> buffer;
-    const auto numRead = server.readAll(std::begin(buffer), message.size());
+    const auto numRead = server.readAll(&buffer[0], message.size());
     ASSERT_LT(0, numRead);
-    server.write(std::begin(buffer), numRead);
+    server.write(&buffer[0], numRead);
 
     clientThread.join();
     server.close();

@@ -29,8 +29,6 @@
 #include <thread>
 #include <vector>
 
-#include <boost/asio.hpp>
-
 #include "uber/jaeger/testutils/SamplingManager.h"
 #include "uber/jaeger/testutils/TUDPTransport.h"
 #include "uber/jaeger/thrift-gen/Agent.h"
@@ -44,13 +42,10 @@ namespace testutils {
 class MockAgent : public agent::thrift::AgentIf,
                   public std::enable_shared_from_this<MockAgent> {
   public:
-    using tcp = boost::asio::ip::tcp;
-    using udp = boost::asio::ip::udp;
-
-    static std::shared_ptr<MockAgent> make(boost::asio::io_service& io)
+    static std::shared_ptr<MockAgent> make()
     {
         // Avoid `make_shared` when `weak_ptr` might be used.
-        std::shared_ptr<MockAgent> newInstance(new MockAgent(io));
+        std::shared_ptr<MockAgent> newInstance(new MockAgent());
         return newInstance;
     }
 
@@ -82,15 +77,15 @@ class MockAgent : public agent::thrift::AgentIf,
         return _batches;
     }
 
-    udp::endpoint spanServerAddress() const { return _transport.addr(); }
+    ::sockaddr_in spanServerAddress() const { return _transport.addr(); }
 
     std::unique_ptr<agent::thrift::AgentIf> spanServerClient()
     {
-        return std::unique_ptr<agent::thrift::AgentIf>(new utils::UDPClient(
-            _transport.ioService(), spanServerAddress(), 0));
+        return std::unique_ptr<agent::thrift::AgentIf>(
+            new utils::UDPClient(spanServerAddress(), 0));
     }
 
-    tcp::endpoint samplingServerAddr() const;
+    ::sockaddr_in samplingServerAddr() const;
 
     void resetBatches()
     {
@@ -101,7 +96,7 @@ class MockAgent : public agent::thrift::AgentIf,
   private:
     class HTTPServer;
 
-    explicit MockAgent(boost::asio::io_service& io);
+    MockAgent();
 
     void serve(std::promise<void>& started);
 
@@ -109,9 +104,9 @@ class MockAgent : public agent::thrift::AgentIf,
     std::vector<thrift::Batch> _batches;
     std::atomic<bool> _serving;
     SamplingManager _samplingMgr;
-    std::unique_ptr<HTTPServer> _samplingSrv;
     mutable std::mutex _mutex;
-    std::thread _thread;
+    std::thread _udpThread;
+    std::thread _httpThread;
 };
 
 }  // namespace testutils

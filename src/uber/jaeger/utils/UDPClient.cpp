@@ -26,49 +26,20 @@ namespace uber {
 namespace jaeger {
 namespace utils {
 
-UDPClient(const char* ip,
-          int port,
-          int maxPacketSize)
+UDPClient::UDPClient(const ::sockaddr_in& serverAddr, int maxPacketSize)
     : _maxPacketSize(maxPacketSize == 0 ? net::kUDPPacketMaxLength
                                         : maxPacketSize)
     , _buffer(new apache::thrift::transport::TMemoryBuffer(_maxPacketSize))
-    , _socketFD(::socket(AF_INET, SOCK_DGRAM, 0))
-    , _serverAddr()
+    , _socket()
+    , _serverAddr(serverAddr)
     , _client()
 {
-    if (_socketFD < 0) {
-        throw std::system_error(
-            errno, std::generic_category(), "Failed to open socket");
-    }
-    _socketFD = fd;
+    using TProtocolFactory = apache::thrift::protocol::TProtocolFactory;
+    using TCompactProtocolFactory =
+        apache::thrift::protocol::TCompactProtocolFactory;
 
-    std::memset(&_serverAddr, 0, sizeof(_serverAddr));
-    auto returnCode = inet_pton(AF_INET, ip, &_serverAddr);
-    if (returnCode < 0) {
-        ::close(_socketFD);
-        if (returnCode == 0) {
-            std::ostringstream oss;
-            oss << "Invalid IP format: " << ip;
-            throw std::invalid_argument(oss.what());
-        }
-        throw std::system_error(
-            errno,
-            std::generic_category(),
-            "Internal parse error (inet_pton)");
-    }
-    if (port > 0) {
-        _serverAddr.sin_port = port;
-    }
-
-    returnCode = ::connect(_socketFD,
-                           reinterpret_cast<::sockaddr*>(&_serverAddr),
-                           sizeof(_serverAddr));
-    if (returnCode != 0) {
-        throw std::system_error(errno,
-                                std::generic_category(),
-                                "Failed to connect to UDP server");
-    }
-
+    _socket.open(SOCK_DGRAM);
+    _socket.connect(_serverAddr);
     boost::shared_ptr<TProtocolFactory> protocolFactory(
         new TCompactProtocolFactory());
     auto protocol = protocolFactory->getProtocol(_buffer);

@@ -24,13 +24,11 @@
 
 #include <cassert>
 
-#include <boost/asio/io_service.hpp>
 #include <nlohmann/json.hpp>
 
 #include "uber/jaeger/metrics/Counter.h"
 #include "uber/jaeger/metrics/Gauge.h"
 #include "uber/jaeger/samplers/AdaptiveSampler.h"
-#include "uber/jaeger/utils/Net.h"
 
 namespace uber {
 namespace jaeger {
@@ -106,6 +104,37 @@ void from_json(const nlohmann::json& jsonValue,
 namespace samplers {
 namespace {
 
+bool isUnreserved(char ch)
+{
+    if (std::isalpha(ch) || std::isdigit(ch)) {
+        return true;
+    }
+
+    switch (ch) {
+    case '-':
+    case '.':
+    case '_':
+    case '~':
+        return true;
+    default:
+        return false;
+    }
+}
+
+std::string percentEncode(const std::string& input)
+{
+    std::ostringstream oss;
+    for (auto&& ch : input) {
+        if (isUnreserved(ch)) {
+            oss << ch;
+        }
+        else {
+            oss << '%' << std::uppercase << std::hex << static_cast<int>(ch);
+        }
+    }
+    return oss.str();
+}
+
 class HTTPSamplingManager : public thrift::sampling_manager::SamplingManagerIf {
   public:
     using SamplingStrategyResponse
@@ -113,24 +142,23 @@ class HTTPSamplingManager : public thrift::sampling_manager::SamplingManagerIf {
 
     explicit HTTPSamplingManager(const std::string& serverURL)
         : _serverURL(serverURL)
-        , _io()
     {
     }
 
     void getSamplingStrategy(SamplingStrategyResponse& result,
                              const std::string& serviceName) override
     {
-        const auto uriStr = _serverURL + "?" + utils::net::percentEncode(
-                                                   "service=" + serviceName);
-        const auto uri = utils::net::parseURI(uriStr);
-        const auto response = utils::net::httpGetRequest(_io, uri);
+        const auto uriStr =
+            _serverURL + "?service=" + percentEncode(serviceName);
+        /* TODO:
+        const auto uri = parseURI(uriStr);
+        const auto response = httpGetRequest(uri);
         const auto jsonValue = nlohmann::json::parse(response);
-        result = jsonValue.get<SamplingStrategyResponse>();
+        result = jsonValue.get<SamplingStrategyResponse>();*/
     }
 
   private:
     std::string _serverURL;
-    boost::asio::io_service _io;
 };
 
 }  // anonymous namespace

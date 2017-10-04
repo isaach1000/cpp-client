@@ -42,217 +42,6 @@ using tcp = boost::asio::ip::tcp;
 namespace uber {
 namespace jaeger {
 namespace testutils {
-namespace {
-
-class HTTPConnection : public std::enable_shared_from_this<HTTPConnection> {
-  public:
-    static std::shared_ptr<HTTPConnection> make(boost::asio::io_service& io,
-                                                SamplingManager& samplingMgr)
-    {
-        return std::shared_ptr<HTTPConnection>(
-            new HTTPConnection(io, samplingMgr));
-    }
-
-    void start()
-    {
-        readRequest();
-    }
-
-    tcp::socket& socket() { return _socket; }
-
-  private:
-    HTTPConnection(boost::asio::io_service& io,
-                   SamplingManager& samplingMgr)
-        : _samplingMgr(samplingMgr)
-        , _socket(io)
-        , _buffer()
-        , _request()
-        , _response()
-    {
-    }
-
-    void readRequest()
-    {
-        auto self = shared_from_this();
-        http::async_read(
-            _socket,
-            _buffer,
-            _request,
-            [self](const beast::error_code& err) {
-                if (err) {
-                    logging::consoleLogger()->error(
-                        "Read error occurred, {0}", err.message());
-                    return;
-                }
-
-                self->handleRequest();
-                self->writeResponse();
-            });
-    }
-
-    void handleRequest()
-    {
-        _response.version = 11;
-        _response.set(http::field::connection, "close");
-
-        const auto uri = utils::net::parseURI(std::string(_request.target()));
-        const auto& query = uri._query;
-        constexpr auto kPattern = "(^service|&service)=([^&=]+)";
-        std::regex serviceRegex(kPattern);
-        std::smatch results;
-        std::regex_search(query, results, serviceRegex);
-
-        if (results.empty()) {
-            _response.result(http::status::bad_request);
-            _response.set(http::field::content_type, "text/plain");
-            beast::ostream(_response.body)
-                << "no 'service' parameter";
-            return;
-        }
-
-        if (results.size() > 1) {
-            _response.result(http::status::bad_request);
-            _response.set(http::field::content_type, "text/plain");
-            beast::ostream(_response.body)
-                << "'service' parameter must occur only once";
-            return;
-        }
-
-        const auto service = std::string(results[0].first, results[0].second);
-        thrift::sampling_manager::SamplingStrategyResponse response;
-        try {
-            _samplingMgr.getSamplingStrategy(response, service);
-        } catch (const std::exception& ex) {
-            _response.result(http::status::internal_server_error);
-            _response.set(http::field::content_type, "text/plain");
-            beast::ostream(_response.body)
-                << "Error retrieving strategy: " << ex.what();
-            return;
-        }
-
-        try {
-            const auto json = apache::thrift::ThriftJSONString(response);
-            _response.result(http::status::ok);
-            _response.set(http::field::content_type, "application/json");
-        } catch (const std::exception& ex) {
-            _response.result(http::status::internal_server_error);
-            _response.set(http::field::content_type, "text/plain");
-            beast::ostream(_response.body)
-                << "Cannot marshal Thrift to JSON: " << ex.what();
-        }
-    }
-
-    void writeResponse()
-    {
-        auto self = shared_from_this();
-        _response.prepare_payload();
-
-        http::async_write(
-            _socket,
-            _response,
-            [self](boost::system::error_code err) {
-                self->_socket.shutdown(tcp::socket::shutdown_send, err);
-            });
-    }
-
-    SamplingManager& _samplingMgr;
-    tcp::socket _socket;
-    beast::flat_buffer _buffer;
-    http::request<http::dynamic_body> _request;
-    http::response<http::dynamic_body> _response;
-};
-
-}  // anonymous namespace
-
-class MockAgent::HTTPServer {
-  public:
-    HTTPServer(boost::asio::io_service& io,
-               SamplingManager& samplingMgr,
-               const std::string& hostPort)
-        : _samplingMgr(samplingMgr)
-        , _acceptor(io)
-        , _hostPort(hostPort)
-        , _serving(false)
-        , _thread()
-    {
-    }
-
-    void start()
-    {
-        if (!_serving) {
-            std::promise<void> started;
-            _thread = std::thread([this, &started]() { serve(started); });
-            started.get_future().wait();
-        }
-    }
-
-    void close()
-    {
-        if (_serving) {
-            _serving = false;
-            _thread.join();
-        }
-    }
-
-    tcp::endpoint addr() const
-    {
-        return _acceptor.local_endpoint();
-    }
-
-  private:
-    void serve(std::promise<void>& started)
-    {
-        auto& io = _acceptor.get_io_service();
-        const auto endpoint = utils::net::resolveHostPort<tcp>(io, _hostPort);
-        _acceptor.open(endpoint.protocol());
-        _acceptor.bind(endpoint);
-        _acceptor.listen();
-
-        _serving = true;
-        started.set_value();
-
-        accept();
-    }
-
-    void accept()
-    {
-        auto& io = _acceptor.get_io_service();
-        auto conn = HTTPConnection::make(io, _samplingMgr);
-        _acceptor.async_accept(
-            conn->socket(),
-            [this, conn](const boost::system::error_code& err) {
-                handleConnection(conn, err);
-            });
-    }
-
-    void handleConnection(
-        const std::shared_ptr<HTTPConnection>& conn,
-        const boost::system::error_code& err)
-    {
-        if (err) {
-            logging::consoleLogger()->error(
-                "Accept error, {0}", err.message());
-            return;
-        }
-
-        if (!_serving) {
-            conn->socket().shutdown(tcp::socket::shutdown_both);
-            return;
-        }
-
-        conn->start();
-
-        if (_serving) {
-            accept();
-        }
-    }
-
-    SamplingManager& _samplingMgr;
-    tcp::acceptor _acceptor;
-    std::string _hostPort;
-    std::atomic<bool> _serving;
-    std::thread _thread;
-};
 
 MockAgent::~MockAgent()
 {
@@ -261,9 +50,8 @@ MockAgent::~MockAgent()
 
 void MockAgent::start()
 {
-    _samplingSrv->start();
     std::promise<void> started;
-    _thread = std::thread([this, &started]() { serve(started); });
+    _udpThread = std::thread([this, &started]() { serve(started); });
     started.get_future().wait();
 }
 
@@ -272,8 +60,7 @@ void MockAgent::close()
     if (_serving) {
         _serving = false;
         _transport.close();
-        _thread.join();
-        _samplingSrv->close();
+        _udpThread.join();
     }
 }
 
@@ -283,19 +70,20 @@ void MockAgent::emitBatch(const thrift::Batch& batch)
     _batches.push_back(batch);
 }
 
-tcp::endpoint MockAgent::samplingServerAddr() const
+::sockaddr_in MockAgent::samplingServerAddr() const
 {
-    return _samplingSrv->addr();
+    // TODO
+    return ::sockaddr_in();
 }
 
-MockAgent::MockAgent(boost::asio::io_service& io)
-    : _transport(io, "127.0.0.1:0")
+MockAgent::MockAgent()
+    : _transport("127.0.0.1", 0)
     , _batches()
     , _serving(false)
     , _samplingMgr()
-    , _samplingSrv(new HTTPServer(io, _samplingMgr, "127.0.0.1:0"))
     , _mutex()
-    , _thread()
+    , _udpThread()
+    , _httpThread()
 {
 }
 
