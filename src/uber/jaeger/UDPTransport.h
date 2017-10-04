@@ -33,9 +33,7 @@ namespace jaeger {
 
 class UDPTransport : public Transport {
   public:
-    UDPTransport(boost::asio::io_service& io,
-                 const std::string& hostPort,
-                 int maxPacketSize);
+    UDPTransport(const char* ip, int port, int maxPacketSize);
 
     int append(const Span& span) override;
 

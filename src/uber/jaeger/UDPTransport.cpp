@@ -42,10 +42,8 @@ int calcSizeOfSerializedThrift(
 
 }  // anonymous namespace
 
-UDPTransport::UDPTransport(boost::asio::io_service& io,
-                           const std::string& hostPort,
-                           int maxPacketSize)
-    : _client(new utils::UDPClient(io, hostPort, maxPacketSize))
+UDPTransport::UDPTransport(const char* ip, int port, int maxPacketSize)
+    : _client(new utils::UDPClient(ip, port, maxPacketSize))
     , _maxSpanBytes(maxPacketSize - kEmitBatchOverhead)
     , _byteBufferSize(0)
     , _spanBuffer()

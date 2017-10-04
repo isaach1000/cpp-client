@@ -23,15 +23,19 @@
 #ifndef UBER_JAEGER_UTILS_UDPCLIENT_H
 #define UBER_JAEGER_UTILS_UDPCLIENT_H
 
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <unistd.h>
+
 #include <sstream>
 #include <stdexcept>
+#include <system_error>
 
-#include <boost/asio/ip/udp.hpp>
 #include <thrift/protocol/TCompactProtocol.h>
 #include <thrift/transport/TBufferTransports.h>
 
 #include "uber/jaeger/thrift-gen/Agent.h"
-#include "uber/jaeger/utils/Net.h"
 
 namespace uber {
 namespace jaeger {
@@ -39,35 +43,7 @@ namespace utils {
 
 class UDPClient : public agent::thrift::AgentIf {
   public:
-    using udp = boost::asio::ip::udp;
-
-    UDPClient(boost::asio::io_service& io,
-              const std::string& hostPort,
-              int maxPacketSize)
-        : UDPClient(io, net::resolveHostPort<udp>(io, hostPort), maxPacketSize)
-    {
-    }
-
-    UDPClient(boost::asio::io_service& io,
-              const udp::endpoint& serverEndpoint,
-              int maxPacketSize)
-        : _maxPacketSize(maxPacketSize == 0 ? net::kUDPPacketMaxLength
-                                            : maxPacketSize)
-        , _buffer(new apache::thrift::transport::TMemoryBuffer(_maxPacketSize))
-        , _socket(io)
-        , _serverEndpoint(serverEndpoint)
-        , _client()
-    {
-        using TCompactProtocolFactory
-            = apache::thrift::protocol::TCompactProtocolFactory;
-        using TProtocolFactory = apache::thrift::protocol::TProtocolFactory;
-
-        _socket.open(udp::v4());
-        boost::shared_ptr<TProtocolFactory> protocolFactory(
-            new TCompactProtocolFactory());
-        auto protocol = protocolFactory->getProtocol(_buffer);
-        _client.reset(new agent::thrift::AgentClient(protocol));
-    }
+    UDPClient(const char* ip, int port, int maxPacketSize);
 
     ~UDPClient()
     {
@@ -95,7 +71,12 @@ class UDPClient : public agent::thrift::AgentIf {
                 << batch.spans.size();
             throw std::logic_error(oss.str());
         }
-        _socket.send_to(boost::asio::buffer(data, size), _serverEndpoint);
+        const auto numWritten = ::write(_socketFD, data, size);
+        if (numWritten != size) {
+            throw std::system_error(errno,
+                                    std::generic_category(),
+                                    "Failed to write message");
+        }
     }
 
     int maxPacketSize() const { return _maxPacketSize; }
@@ -108,16 +89,16 @@ class UDPClient : public agent::thrift::AgentIf {
 
     void close()
     {
-        boost::system::error_code err;
-        _socket.shutdown(udp::socket::shutdown_both, err);
-        _socket.close(err);
+        if (_socketFD >= 0) {
+            ::close(_socketFD);
+        }
     }
 
   private:
     int _maxPacketSize;
     boost::shared_ptr<apache::thrift::transport::TMemoryBuffer> _buffer;
-    udp::socket _socket;
-    udp::endpoint _serverEndpoint;
+    int _socketFD;
+    ::sockaddr_in _serverAddr;
     std::unique_ptr<agent::thrift::AgentClient> _client;
 };
 
