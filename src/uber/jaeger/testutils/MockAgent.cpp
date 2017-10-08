@@ -73,10 +73,11 @@ void MockAgent::emitBatch(const thrift::Batch& batch)
     _batches.push_back(batch);
 }
 
-::sockaddr_in MockAgent::samplingServerAddr() const
+const ::sockaddr& MockAgent::samplingServerAddr() const
 {
     // TODO
-    return ::sockaddr_in();
+    static ::sockaddr x;
+    return x;
 }
 
 MockAgent::MockAgent()

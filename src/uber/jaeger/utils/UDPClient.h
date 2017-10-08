@@ -44,7 +44,7 @@ class UDPClient : public agent::thrift::AgentIf {
     {
     }
 
-    UDPClient(const ::sockaddr_in& serverAddr, int maxPacketSize);
+    UDPClient(const ::sockaddr& serverAddr, int maxPacketSize);
 
     ~UDPClient()
     {
@@ -97,7 +97,7 @@ class UDPClient : public agent::thrift::AgentIf {
     int _maxPacketSize;
     boost::shared_ptr<apache::thrift::transport::TMemoryBuffer> _buffer;
     net::Socket _socket;
-    ::sockaddr_in _serverAddr;
+    ::sockaddr& _serverAddr;
     std::unique_ptr<agent::thrift::AgentClient> _client;
 };
 

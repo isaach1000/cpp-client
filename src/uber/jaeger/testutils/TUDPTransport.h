@@ -39,7 +39,7 @@ class TUDPTransport
     {
     }
 
-    TUDPTransport(const ::sockaddr_in& addr)
+    TUDPTransport(const ::sockaddr& addr)
         : _socket()
         , _serverAddr(addr)
     {
@@ -58,7 +58,10 @@ class TUDPTransport
         _socket.close();
     }
 
-    const ::sockaddr_in& addr() const { return _serverAddr; }
+    const ::sockaddr& addr() const
+    {
+        return reinterpret_cast<const ::sockaddr&>(_serverAddr);
+    }
 
     uint32_t read(uint8_t* buf, uint32_t len)
     {
@@ -66,19 +69,24 @@ class TUDPTransport
                           buf,
                           len,
                           0,
-                          &_clientAddr,
+                          reinterpret_cast<::sockaddr*>(&_clientAddr),
                           &_clientAddrLen);
     }
 
     void write(const uint8_t* buf, uint32_t len)
     {
-        ::sendto(_socket.handle(), buf, len, 0, &_clientAddr, _clientAddrLen);
+        ::sendto(_socket.handle(),
+                 buf,
+                 len,
+                 0,
+                 reinterpret_cast<::sockaddr*>(&_clientAddr),
+                 _clientAddrLen);
     }
 
   private:
     utils::net::Socket _socket;
-    ::sockaddr_in _serverAddr;
-    ::sockaddr _clientAddr;
+    ::sockaddr_storage _serverAddr;
+    ::sockaddr_storage _clientAddr;
     ::socklen_t _clientAddrLen;
 };
 
