@@ -73,15 +73,14 @@ void MockAgent::emitBatch(const thrift::Batch& batch)
     _batches.push_back(batch);
 }
 
-const ::sockaddr& MockAgent::samplingServerAddr() const
+utils::net::IPAddress MockAgent::samplingServerAddr() const
 {
     // TODO
-    static ::sockaddr x;
-    return x;
+    return utils::net::IPAddress();
 }
 
 MockAgent::MockAgent()
-    : _transport("127.0.0.1", 0)
+    : _transport(utils::net::IPAddress::v4("127.0.0.1", 0))
     , _batches()
     , _servingUDP(false)
     , _samplingMgr()

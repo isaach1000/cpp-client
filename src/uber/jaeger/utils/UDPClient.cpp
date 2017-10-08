@@ -26,7 +26,7 @@ namespace uber {
 namespace jaeger {
 namespace utils {
 
-UDPClient::UDPClient(const ::sockaddr_in& serverAddr, int maxPacketSize)
+UDPClient::UDPClient(const net::IPAddress& serverAddr, int maxPacketSize)
     : _maxPacketSize(maxPacketSize == 0 ? net::kUDPPacketMaxLength
                                         : maxPacketSize)
     , _buffer(new apache::thrift::transport::TMemoryBuffer(_maxPacketSize))

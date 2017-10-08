@@ -75,24 +75,12 @@ class HTTPSamplingManager : public thrift::sampling_manager::SamplingManagerIf {
         : _serverURI(utils::net::URI::parse(serverURL))
         , _serverAddr()
     {
-        auto addressInfo =
-            utils::net::resolveAddress(_serverURI._host, AF_INET);
-        for (auto itr = addressInfo.get(); itr; itr = itr->ai_next) {
-            try {
-                utils::net::Socket socket;
-                socket.open(AF_INET);
-                socket.connect(*reinterpret_cast<::sockaddr_in*>(itr->ai_addr));
-                socket.close();
-                std::memcpy(&_serverAddr,
-                            itr->ai_addr,
-                            itr->ai_addrlen);
-                break;
-            } catch (...) {
-                if (!itr->ai_next) {
-                    throw;
-                }
-            }
+        utils::net::Socket socket;
+        auto serverAddr = _serverURI._host;
+        if (_serverURI._port != 0) {
+            serverAddr += ':' + std::to_string(_serverURI._port);
         }
+        _serverAddr = socket.connect(serverAddr);
     }
 
     void getSamplingStrategy(SamplingStrategyResponse& result,
@@ -107,7 +95,7 @@ class HTTPSamplingManager : public thrift::sampling_manager::SamplingManagerIf {
             << "\r\n\r\n";
         utils::net::Socket socket;
         socket.open(AF_INET);
-        socket.connect(*reinterpret_cast<::sockaddr_in*>(&_serverAddr));;
+        socket.connect(_serverAddr);;
         const auto request = oss.str();
         ::write(socket.handle(), request.c_str(), request.size());
         constexpr auto kBufferSize = 256;
@@ -127,7 +115,7 @@ class HTTPSamplingManager : public thrift::sampling_manager::SamplingManagerIf {
 
   private:
     utils::net::URI _serverURI;
-    ::sockaddr _serverAddr;
+    utils::net::IPAddress _serverAddr;
 };
 
 }  // anonymous namespace

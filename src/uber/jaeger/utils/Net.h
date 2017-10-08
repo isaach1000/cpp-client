@@ -29,29 +29,126 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <cassert>
+#include <cstring>
 #include <array>
+#include <memory>
 #include <sstream>
 #include <stdexcept>
 #include <system_error>
 #include <vector>
 
-inline std::ostream& operator<<(std::ostream& out, const ::sockaddr_in& addr)
-{
-    std::array<char, INET6_ADDRSTRLEN> buffer;
-    const auto* addrStr =
-        ::inet_ntop(addr.sin_family, &addr.sin_addr, &buffer[0], buffer.size());
-    out << "{ family=" << static_cast<int>(addr.sin_family);
-    if (addrStr) {
-        out << ", addr=" << addrStr;
-    }
-    out << ", port=" << ntohs(addr.sin_port) << " }";
-    return out;
-}
-
 namespace uber {
 namespace jaeger {
 namespace utils {
 namespace net {
+
+class IPAddress {
+  public:
+    static IPAddress v4(const std::string& ip, int port)
+    {
+        ::sockaddr_in addr;
+        std::memset(&addr, 0, sizeof(addr));
+        addr.sin_family = AF_INET;
+        addr.sin_port = htons(port);
+        const auto returnCode =
+            inet_pton(addr.sin_family, ip.c_str(), &addr.sin_addr);
+        if (returnCode < 0) {
+            if (returnCode == 0) {
+                std::ostringstream oss;
+                oss << "Invalid IP address"
+                       ", ip=" << ip
+                    << ", port=" << port;
+                throw std::invalid_argument(oss.str());
+            }
+            std::ostringstream oss;
+            oss << "Failed to parse IP address (inet_pton)"
+                   ", ip=" << ip
+                << ", port=" << port;
+            throw std::system_error(errno,
+                                    std::generic_category(),
+                                    oss.str());
+        }
+        return IPAddress(addr);
+    }
+
+    IPAddress()
+        : _addr()
+        , _addrLen(sizeof(::sockaddr_in))
+    {
+        std::memset(&_addr, 0, sizeof(_addr));
+    }
+
+    IPAddress(const ::sockaddr_storage& addr, ::socklen_t addrLen)
+        : _addr(addr)
+        , _addrLen(addrLen)
+    {
+    }
+
+    IPAddress(const ::sockaddr& addr, ::socklen_t addrLen)
+        : IPAddress(reinterpret_cast<const ::sockaddr_storage&>(addr), addrLen)
+    {
+    }
+
+    explicit IPAddress(const ::sockaddr_in& addr)
+        : IPAddress(reinterpret_cast<const ::sockaddr&>(addr), sizeof(addr))
+    {
+    }
+
+    explicit IPAddress(const ::sockaddr_in6& addr)
+        : IPAddress(reinterpret_cast<const ::sockaddr&>(addr), sizeof(addr))
+    {
+    }
+
+    const ::sockaddr_storage& addr() const { return _addr; }
+
+    ::socklen_t addrLen() const { return _addrLen; }
+
+    void print(std::ostream& out) const
+    {
+        std::array<char, INET6_ADDRSTRLEN> buffer;
+        const auto af = family();
+        const auto* addrStr =
+            ::inet_ntop(af,
+                        af == AF_INET
+                            ? static_cast<const void*>(
+                                &reinterpret_cast<const ::sockaddr_in&>(
+                                    _addr).sin_addr)
+                            : static_cast<const void*>(
+                                &reinterpret_cast<const ::sockaddr_in6&>(
+                                    _addr).sin6_addr),
+                        &buffer[0],
+                        buffer.size());
+        out << "{ family=" << af;
+        if (addrStr) {
+            out << ", addr=" << addrStr;
+        }
+        out << ", port=" << port() << " }";
+    }
+
+    int port() const
+    {
+        if (family() == AF_INET) {
+            return ::ntohs(reinterpret_cast<const ::sockaddr_in&>(
+                _addr).sin_port);
+        }
+        return ::ntohs(reinterpret_cast<const ::sockaddr_in6&>(
+            _addr).sin6_port);
+    }
+
+    int family() const
+    {
+        if (_addrLen == sizeof(::sockaddr_in)) {
+            return AF_INET;
+        }
+        assert(_addrLen == sizeof(::sockaddr_in6));
+        return AF_INET6;
+    }
+
+  private:
+    ::sockaddr_storage _addr;
+    ::socklen_t _addrLen;
+};
 
 struct URI {
     static URI parse(const std::string& uriStr);
@@ -71,33 +168,6 @@ struct URI {
     std::string _path;
     std::string _query;
 };
-
-inline ::sockaddr_in makeAddress(const std::string& ip, int port)
-{
-    ::sockaddr_in addr;
-    std::memset(&addr, 0, sizeof(addr));
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(port);
-    const auto returnCode =
-        inet_pton(addr.sin_family, ip.c_str(), &addr.sin_addr);
-    if (returnCode < 0) {
-        if (returnCode == 0) {
-            std::ostringstream oss;
-            oss << "Invalid IP address"
-                   ", ip=" << ip
-                << ", port=" << port;
-            throw std::invalid_argument(oss.str());
-        }
-        std::ostringstream oss;
-        oss << "Failed to parse IP address (inet_pton)"
-               ", ip=" << ip
-            << ", port=" << port;
-        throw std::system_error(errno,
-                                std::generic_category(),
-                                oss.str());
-    }
-    return addr;
-}
 
 struct AddrInfoDeleter : public std::function<void(::addrinfo*)> {
     void operator()(::addrinfo* addrInfo) const
@@ -141,16 +211,17 @@ class Socket {
         _type = type;
     }
 
-    void bind(const ::sockaddr_in& addr)
+    void bind(const IPAddress& addr)
     {
         const auto returnCode =
             ::bind(_handle,
-                   reinterpret_cast<const ::sockaddr*>(&addr),
-                   sizeof(addr));
+                   reinterpret_cast<const ::sockaddr*>(&addr.addr()),
+                   addr.addrLen());
         if (returnCode != 0) {
             std::ostringstream oss;
             oss << "Failed to bind socket to address"
-                   ", addr=" << addr;
+                   ", addr=";
+            addr.print(oss);
             throw std::system_error(errno,
                                     std::generic_category(),
                                     oss.str());
@@ -159,32 +230,32 @@ class Socket {
 
     void bind(const std::string& ip, int port)
     {
-        const auto addr = makeAddress(ip, port);
+        const auto addr = IPAddress::v4(ip, port);
         bind(addr);
     }
 
-    void connect(const ::sockaddr_in& serverAddr)
+    void connect(const IPAddress& serverAddr)
     {
         const auto returnCode =
             ::connect(_handle,
-                      reinterpret_cast<const ::sockaddr*>(&serverAddr),
-                      sizeof(serverAddr));
+                      reinterpret_cast<const ::sockaddr*>(&serverAddr.addr()),
+                      serverAddr.addrLen());
         if (returnCode != 0) {
             std::ostringstream oss;
-            oss << "Cannot connect socket to remote address "
-                << serverAddr;
+            oss << "Cannot connect socket to remote address ";
+            serverAddr.print(oss);
             throw std::runtime_error(oss.str());
         }
     }
 
-    void connect(const std::string& serverAddr)
+    IPAddress connect(const std::string& serverAddr)
     {
         auto result = resolveAddress(serverAddr, _type);
         for (const auto* itr = result.get(); itr; itr = itr->ai_next) {
             const auto returnCode =
                 ::connect(_handle, itr->ai_addr, itr->ai_addrlen);
             if (returnCode == 0) {
-                return;
+                return IPAddress(*itr->ai_addr, itr->ai_addrlen);
             }
         }
         std::ostringstream oss;
@@ -214,5 +285,12 @@ static constexpr auto kUDPPacketMaxLength = 65000;
 }  // namespace utils
 }  // namespace jaeger
 }  // namespace uber
+
+inline std::ostream& operator<<(
+    std::ostream& out, const uber::jaeger::utils::net::IPAddress& addr)
+{
+    addr.print(out);
+    return out;
+}
 
 #endif  // UBER_JAEGER_UTILS_NET_H

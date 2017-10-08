@@ -34,12 +34,7 @@ namespace testutils {
 class TUDPTransport
     : public apache::thrift::transport::TVirtualTransport<TUDPTransport> {
   public:
-    TUDPTransport(const std::string& ip, int port)
-        : TUDPTransport(utils::net::makeAddress(ip, port))
-    {
-    }
-
-    TUDPTransport(const ::sockaddr& addr)
+    explicit TUDPTransport(const utils::net::IPAddress& addr)
         : _socket()
         , _serverAddr(addr)
     {
@@ -58,19 +53,24 @@ class TUDPTransport
         _socket.close();
     }
 
-    const ::sockaddr& addr() const
+    utils::net::IPAddress addr() const
     {
-        return reinterpret_cast<const ::sockaddr&>(_serverAddr);
+        return _serverAddr;
     }
 
     uint32_t read(uint8_t* buf, uint32_t len)
     {
-        return ::recvfrom(_socket.handle(),
-                          buf,
-                          len,
-                          0,
-                          reinterpret_cast<::sockaddr*>(&_clientAddr),
-                          &_clientAddrLen);
+        ::sockaddr_storage clientAddr;
+        auto clientAddrLen = static_cast<::socklen_t>(sizeof(clientAddr));
+        const auto numRead =
+            ::recvfrom(_socket.handle(),
+                       buf,
+                       len,
+                       0,
+                       reinterpret_cast<::sockaddr*>(&clientAddr),
+                       &clientAddrLen);
+        _clientAddr = utils::net::IPAddress(clientAddr, clientAddrLen);
+        return numRead;
     }
 
     void write(const uint8_t* buf, uint32_t len)
@@ -79,14 +79,15 @@ class TUDPTransport
                  buf,
                  len,
                  0,
-                 reinterpret_cast<::sockaddr*>(&_clientAddr),
-                 _clientAddrLen);
+                 reinterpret_cast<const ::sockaddr*>(&_clientAddr.addr()),
+                 _clientAddr.addrLen());
+        std::cout << "WRITE TO " << _clientAddr << '\n';
     }
 
   private:
     utils::net::Socket _socket;
-    ::sockaddr_storage _serverAddr;
-    ::sockaddr_storage _clientAddr;
+    utils::net::IPAddress _serverAddr;
+    utils::net::IPAddress _clientAddr;
     ::socklen_t _clientAddrLen;
 };
 

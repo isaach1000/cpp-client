@@ -40,11 +40,11 @@ namespace utils {
 class UDPClient : public agent::thrift::AgentIf {
   public:
     UDPClient(const std::string& ip, int port, int maxPacketSize)
-        : UDPClient(net::makeAddress(ip, port), maxPacketSize)
+        : UDPClient(net::IPAddress::v4(ip, port), maxPacketSize)
     {
     }
 
-    UDPClient(const ::sockaddr& serverAddr, int maxPacketSize);
+    UDPClient(const net::IPAddress& serverAddr, int maxPacketSize);
 
     ~UDPClient()
     {
@@ -97,7 +97,7 @@ class UDPClient : public agent::thrift::AgentIf {
     int _maxPacketSize;
     boost::shared_ptr<apache::thrift::transport::TMemoryBuffer> _buffer;
     net::Socket _socket;
-    ::sockaddr& _serverAddr;
+    net::IPAddress _serverAddr;
     std::unique_ptr<agent::thrift::AgentClient> _client;
 };
 

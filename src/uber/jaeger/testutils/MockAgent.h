@@ -79,7 +79,10 @@ class MockAgent : public agent::thrift::AgentIf,
         return _batches;
     }
 
-    const ::sockaddr& spanServerAddress() const { return _transport.addr(); }
+    utils::net::IPAddress spanServerAddress() const
+    {
+        return _transport.addr();
+    }
 
     std::unique_ptr<agent::thrift::AgentIf> spanServerClient()
     {
@@ -87,7 +90,7 @@ class MockAgent : public agent::thrift::AgentIf,
             new utils::UDPClient(spanServerAddress(), 0));
     }
 
-    const ::sockaddr& samplingServerAddr() const;
+    utils::net::IPAddress samplingServerAddr() const;
 
     void resetBatches()
     {
