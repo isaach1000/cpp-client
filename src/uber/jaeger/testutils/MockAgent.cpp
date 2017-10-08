@@ -25,19 +25,12 @@
 #include <regex>
 #include <thread>
 
-#include <beast/core.hpp>
-#include <beast/http.hpp>
-#include <boost/asio.hpp>
-#include <boost/tokenizer.hpp>
 #include <thrift/protocol/TCompactProtocol.h>
 #include <thrift/protocol/TJSONProtocol.h>
 #include <thrift/transport/TBufferTransports.h>
 
 #include "uber/jaeger/Logging.h"
 #include "uber/jaeger/utils/UDPClient.h"
-
-namespace http = beast::http;
-using tcp = boost::asio::ip::tcp;
 
 namespace uber {
 namespace jaeger {
@@ -50,17 +43,27 @@ MockAgent::~MockAgent()
 
 void MockAgent::start()
 {
-    std::promise<void> started;
-    _udpThread = std::thread([this, &started]() { serve(started); });
-    started.get_future().wait();
+    std::promise<void> startedUDP;
+    std::promise<void> startedHTTP;
+    _udpThread = std::thread([this, &startedUDP]() { serveUDP(startedUDP); });
+    _httpThread = std::thread([this, &startedHTTP]() {
+                                  serveHTTP(startedHTTP);
+                              });
+    startedUDP.get_future().wait();
+    startedHTTP.get_future().wait();
 }
 
 void MockAgent::close()
 {
-    if (_serving) {
-        _serving = false;
+    if (_servingUDP) {
+        _servingUDP = false;
         _transport.close();
         _udpThread.join();
+    }
+
+    if (_servingHTTP) {
+        _servingHTTP = false;
+        _httpThread.join();
     }
 }
 
@@ -79,7 +82,7 @@ void MockAgent::emitBatch(const thrift::Batch& batch)
 MockAgent::MockAgent()
     : _transport("127.0.0.1", 0)
     , _batches()
-    , _serving(false)
+    , _servingUDP(false)
     , _samplingMgr()
     , _mutex()
     , _udpThread()
@@ -87,7 +90,7 @@ MockAgent::MockAgent()
 {
 }
 
-void MockAgent::serve(std::promise<void>& started)
+void MockAgent::serveUDP(std::promise<void>& started)
 {
     using TCompactProtocolFactory
         = apache::thrift::protocol::TCompactProtocolFactory;
@@ -104,11 +107,11 @@ void MockAgent::serve(std::promise<void>& started)
         new TMemoryBuffer(utils::net::kUDPPacketMaxLength));
 
     // Notify main thread that setup is done.
-    _serving = true;
+    _servingUDP = true;
     started.set_value();
 
     std::array<uint8_t, utils::net::kUDPPacketMaxLength> buffer;
-    while (isServing()) {
+    while (isServingUDP()) {
         try {
             const auto numRead
                 = _transport.read(&buffer[0], utils::net::kUDPPacketMaxLength);
@@ -120,6 +123,13 @@ void MockAgent::serve(std::promise<void>& started)
                 "An error occurred in MockAgent, {0}", ex.what());
         }
     }
+}
+
+void MockAgent::serveHTTP(std::promise<void>& started)
+{
+    // TODO
+    _servingHTTP = true;
+    started.set_value();
 }
 
 }  // namespace testutils

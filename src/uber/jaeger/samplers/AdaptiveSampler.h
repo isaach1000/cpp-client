@@ -23,10 +23,9 @@
 #ifndef UBER_JAEGER_SAMPLERS_ADAPTIVESAMPLER_H
 #define UBER_JAEGER_SAMPLERS_ADAPTIVESAMPLER_H
 
+#include <mutex>
 #include <string>
 #include <unordered_map>
-
-#include <boost/thread/shared_mutex.hpp>
 
 #include "uber/jaeger/Constants.h"
 #include "uber/jaeger/samplers/GuaranteedThroughputProbabilisticSampler.h"
@@ -66,7 +65,7 @@ class AdaptiveSampler : public Sampler {
     ProbabilisticSampler _defaultSampler;
     double _lowerBound;
     size_t _maxOperations;
-    boost::upgrade_mutex _rwMutex;
+    std::mutex _mutex;
 };
 
 }  // namespace samplers

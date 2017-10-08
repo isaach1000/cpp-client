@@ -37,48 +37,52 @@ constexpr auto kBufferSize = 256;
 
 TEST(TUDPTransport, testUDPTransport)
 {
-    const std::string message("test");
+    try {
+        const std::string message("test");
 
-    TUDPTransport server("127.0.0.1", 12345);
-    server.open();  // Not necessary. Just making sure this is called.
-    ASSERT_TRUE(server.isOpen());
+        TUDPTransport server("127.0.0.1", 12345);
+        server.open();  // Not necessary. Just making sure this is called.
+        ASSERT_TRUE(server.isOpen());
 
-    const auto serverAddr = server.addr();
-    std::thread clientThread([serverAddr, message]() {
-        utils::net::Socket connUDP;
-        connUDP.open(SOCK_DGRAM);
-        std::cout << serverAddr << std::endl;
-        const auto numWritten =
-            ::sendto(connUDP.handle(),
-                     message.c_str(),
-                     message.size(),
-                     0,
-                     reinterpret_cast<const ::sockaddr*>(&serverAddr),
-                     sizeof(serverAddr));
-        ASSERT_EQ(numWritten, message.size());
+        const auto serverAddr = server.addr();
+        std::thread clientThread([serverAddr, message]() {
+            utils::net::Socket connUDP;
+            connUDP.open(SOCK_DGRAM);
+            std::cout << serverAddr << std::endl;
+            const auto numWritten =
+                ::sendto(connUDP.handle(),
+                         message.c_str(),
+                         message.size(),
+                         0,
+                         reinterpret_cast<const ::sockaddr*>(&serverAddr),
+                         sizeof(serverAddr));
+            ASSERT_EQ(numWritten, message.size());
 
-        std::array<char, kBufferSize> buffer;
-        const auto numRead =
-            ::recvfrom(connUDP.handle(),
-                       &buffer[0],
-                       buffer.size(),
-                       0,
-                       nullptr,
-                       0);
-        const std::string received(&buffer[0], &buffer[numRead]);
-        ASSERT_EQ(message.size(), numRead);
-        ASSERT_EQ(message, received);
+            std::array<char, kBufferSize> buffer;
+            const auto numRead =
+                ::recvfrom(connUDP.handle(),
+                           &buffer[0],
+                           buffer.size(),
+                           0,
+                           nullptr,
+                           0);
+            const std::string received(&buffer[0], &buffer[numRead]);
+            ASSERT_EQ(message.size(), numRead);
+            ASSERT_EQ(message, received);
 
-        connUDP.close();
-    });
+            connUDP.close();
+        });
 
-    std::array<uint8_t, kBufferSize> buffer;
-    const auto numRead = server.readAll(&buffer[0], message.size());
-    ASSERT_LT(0, numRead);
-    server.write(&buffer[0], numRead);
+        std::array<uint8_t, kBufferSize> buffer;
+        const auto numRead = server.readAll(&buffer[0], message.size());
+        ASSERT_LT(0, numRead);
+        server.write(&buffer[0], numRead);
 
-    clientThread.join();
-    server.close();
+        clientThread.join();
+        server.close();
+    } catch (const std::exception& ex) {
+        ASSERT_TRUE(false) << ex.what();
+    }
 }
 
 }  // namespace testutils

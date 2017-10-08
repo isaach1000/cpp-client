@@ -49,14 +49,14 @@ AdaptiveSampler::AdaptiveSampler(
     , _defaultSampler(strategies.defaultSamplingProbability)
     , _lowerBound(strategies.defaultLowerBoundTracesPerSecond)
     , _maxOperations(maxOperations)
-    , _rwMutex()
+    , _mutex()
 {
 }
 
 SamplingStatus AdaptiveSampler::isSampled(const TraceID& id,
                                           const std::string& operation)
 {
-    boost::upgrade_lock<boost::upgrade_mutex> readLock(_rwMutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     auto samplerItr = _samplers.find(operation);
     if (samplerItr != std::end(_samplers)) {
         return samplerItr->second->isSampled(id, operation);
@@ -65,7 +65,6 @@ SamplingStatus AdaptiveSampler::isSampled(const TraceID& id,
         return _defaultSampler.isSampled(id, operation);
     }
 
-    boost::upgrade_to_unique_lock<boost::upgrade_mutex> writeLock(readLock);
     auto newSampler
         = std::make_shared<GuaranteedThroughputProbabilisticSampler>(
             _lowerBound, _defaultSampler.samplingRate());
@@ -75,7 +74,7 @@ SamplingStatus AdaptiveSampler::isSampled(const TraceID& id,
 
 void AdaptiveSampler::close()
 {
-    std::lock_guard<boost::upgrade_mutex> writeLock(_rwMutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     for (auto&& pair : _samplers) {
         pair.second->close();
     }
@@ -84,7 +83,7 @@ void AdaptiveSampler::close()
 void AdaptiveSampler::update(const PerOperationSamplingStrategies& strategies)
 {
     const auto lowerBound = strategies.defaultLowerBoundTracesPerSecond;
-    std::lock_guard<boost::upgrade_mutex> writeLock(_rwMutex);
+    std::lock_guard<std::mutex> lock(_mutex);
     for (auto&& strategy : strategies.perOperationStrategies) {
         auto& sampler = _samplers[strategy.operation];
         const auto samplingRate = strategy.probabilisticSampling.samplingRate;

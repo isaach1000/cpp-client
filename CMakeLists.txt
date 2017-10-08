@@ -18,18 +18,8 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR
     set(CMAKE_EXPORT_COMPILE_COMMANDS true)
 endif()
 
-# Soon to be Boost component.
-hunter_add_package(Beast)
-find_package(Beast CONFIG REQUIRED)
-list(APPEND LIBS Beast::Beast)
-
-hunter_add_package(Boost COMPONENTS system thread)
-find_package(Boost CONFIG REQUIRED COMPONENTS system thread)
-list(APPEND LIBS Boost::system Boost::thread)
-
-hunter_add_package(nlohmann_json)
-find_package(nlohmann_json CONFIG REQUIRED)
-list(APPEND LIBS nlohmann_json)
+hunter_add_package(Boost)
+find_package(Boost CONFIG REQUIRED)
 
 hunter_add_package(thrift)
 find_package(thrift CONFIG REQUIRED)

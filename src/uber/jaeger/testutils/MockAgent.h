@@ -63,7 +63,9 @@ class MockAgent : public agent::thrift::AgentIf,
 
     void emitBatch(const thrift::Batch& batch) override;
 
-    bool isServing() const { return _serving; }
+    bool isServingUDP() const { return _servingUDP; }
+
+    bool isServingHTTP() const { return _servingHTTP; }
 
     template <typename... Args>
     void addSamplingStrategy(Args&&... args)
@@ -98,11 +100,14 @@ class MockAgent : public agent::thrift::AgentIf,
 
     MockAgent();
 
-    void serve(std::promise<void>& started);
+    void serveUDP(std::promise<void>& started);
+
+    void serveHTTP(std::promise<void>& started);
 
     TUDPTransport _transport;
     std::vector<thrift::Batch> _batches;
-    std::atomic<bool> _serving;
+    std::atomic<bool> _servingUDP;
+    std::atomic<bool> _servingHTTP;
     SamplingManager _samplingMgr;
     mutable std::mutex _mutex;
     std::thread _udpThread;

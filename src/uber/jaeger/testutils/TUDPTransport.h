@@ -47,8 +47,6 @@ class TUDPTransport
         _socket.bind(_serverAddr);
     }
 
-    virtual ~TUDPTransport() = default;
-
     bool isOpen() override { return _socket.handle() >= 0; }
 
     void open() override
@@ -68,19 +66,19 @@ class TUDPTransport
                           buf,
                           len,
                           0,
-                          _clientAddr,
+                          &_clientAddr,
                           &_clientAddrLen);
     }
 
     void write(const uint8_t* buf, uint32_t len)
     {
-        ::sendto(_socket.handle(), buf, len, 0, _clientAddr, _clientAddrLen);
+        ::sendto(_socket.handle(), buf, len, 0, &_clientAddr, _clientAddrLen);
     }
 
   private:
     utils::net::Socket _socket;
     ::sockaddr_in _serverAddr;
-    ::sockaddr* _clientAddr;
+    ::sockaddr _clientAddr;
     ::socklen_t _clientAddrLen;
 };
 
