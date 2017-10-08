@@ -4,8 +4,9 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
 include(HunterGate)
 HunterGate(
-    URL "https://github.com/ruslo/hunter/archive/v0.19.115.tar.gz"
-    SHA1 "aeb37c4b667c4201837bcac38702f3ce8b4a9b44")
+    URL "https://github.com/ruslo/hunter/archive/v0.19.117.tar.gz"
+    SHA1 "6681cc2f0b49b1173aa8ba94b8056aaa8119fb2f"
+)
 
 project(jaegerclient)
 
@@ -27,6 +28,10 @@ find_package(thrift CONFIG REQUIRED)
 hunter_add_package(spdlog)
 find_package(spdlog CONFIG REQUIRED)
 list(APPEND LIBS spdlog::spdlog)
+
+hunter_add_package(opentracing-cpp)
+find_package(OpenTracing CONFIG REQUIRED)
+list(APPEND LIBS OpenTracing::opentracing-static)
 
 include(CTest)
 if(BUILD_TESTING)

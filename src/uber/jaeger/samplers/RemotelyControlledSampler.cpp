@@ -23,84 +23,15 @@
 #include "uber/jaeger/samplers/RemotelyControlledSampler.h"
 
 #include <cassert>
-
-#include <nlohmann/json.hpp>
+#include <sstream>
 
 #include "uber/jaeger/metrics/Counter.h"
 #include "uber/jaeger/metrics/Gauge.h"
 #include "uber/jaeger/samplers/AdaptiveSampler.h"
+#include "uber/jaeger/utils/Net.h"
 
 namespace uber {
 namespace jaeger {
-
-namespace thrift {
-namespace sampling_manager {
-
-#define DECODE_FIELD(field)                                                    \
-    {                                                                          \
-        result.__set_##field(                                                  \
-            jsonValue.at(#field).get<decltype(result.field)>());               \
-    }
-
-void from_json(const nlohmann::json& jsonValue,
-               ProbabilisticSamplingStrategy& result)
-{
-    DECODE_FIELD(samplingRate);
-}
-
-void from_json(const nlohmann::json& jsonValue,
-               RateLimitingSamplingStrategy& result)
-{
-    DECODE_FIELD(maxTracesPerSecond);
-}
-
-void from_json(const nlohmann::json& jsonValue,
-               OperationSamplingStrategy& result)
-{
-    DECODE_FIELD(operation);
-    DECODE_FIELD(probabilisticSampling);
-}
-
-void from_json(const nlohmann::json& jsonValue,
-               PerOperationSamplingStrategies& result)
-{
-    DECODE_FIELD(defaultSamplingProbability);
-    DECODE_FIELD(defaultLowerBoundTracesPerSecond);
-    DECODE_FIELD(perOperationStrategies);
-    DECODE_FIELD(defaultUpperBoundTracesPerSecond);
-}
-
-void from_json(const nlohmann::json& jsonValue,
-               SamplingStrategyResponse& result)
-{
-    auto operationSamplingItr = jsonValue.find("operationSampling");
-    if (operationSamplingItr != std::end(jsonValue)) {
-        result.operationSampling
-            = operationSamplingItr->get<PerOperationSamplingStrategies>();
-    }
-
-    result.strategyType = static_cast<SamplingStrategyType::type>(
-        jsonValue.at("strategyType").get<int>());
-    switch (result.strategyType) {
-    case SamplingStrategyType::PROBABILISTIC: {
-        DECODE_FIELD(probabilisticSampling);
-    } break;
-    case SamplingStrategyType::RATE_LIMITING: {
-        DECODE_FIELD(rateLimitingSampling);
-    } break;
-    default: {
-        std::ostringstream oss;
-        oss << "Invalid strategy type" << result.strategyType;
-        throw std::runtime_error(oss.str());
-    } break;
-    }
-}
-
-#undef DECODE_FIELD
-
-}  // namespace sampling_manager
-}  // namespace thrift
-
 namespace samplers {
 namespace {
 
@@ -141,24 +72,62 @@ class HTTPSamplingManager : public thrift::sampling_manager::SamplingManagerIf {
         = thrift::sampling_manager::SamplingStrategyResponse;
 
     explicit HTTPSamplingManager(const std::string& serverURL)
-        : _serverURL(serverURL)
+        : _serverURI(utils::net::URI::parse(serverURL))
+        , _serverAddr()
     {
+        auto addressInfo =
+            utils::net::resolveAddress(_serverURI._host, AF_INET);
+        for (auto itr = addressInfo.get(); itr; itr = itr->ai_next) {
+            try {
+                utils::net::Socket socket;
+                socket.open(AF_INET);
+                socket.connect(*reinterpret_cast<::sockaddr_in*>(itr->ai_addr));
+                socket.close();
+                std::memcpy(&_serverAddr,
+                            itr->ai_addr,
+                            itr->ai_addrlen);
+                break;
+            } catch (...) {
+                if (!itr->ai_next) {
+                    throw;
+                }
+            }
+        }
     }
 
     void getSamplingStrategy(SamplingStrategyResponse& result,
                              const std::string& serviceName) override
     {
-        const auto uriStr =
-            _serverURL + "?service=" + percentEncode(serviceName);
+        const auto target =
+            _serverURI._path + "?service=" + percentEncode(serviceName);
+        std::ostringstream oss;
+        oss << "GET " << target << " HTTP/1.1\r\n"
+            << "Host: " << _serverURI._host << "\r\n"
+            // TODO: << "User-Agent: jaeger/" << kJaegerClientVersion
+            << "\r\n\r\n";
+        utils::net::Socket socket;
+        socket.open(AF_INET);
+        socket.connect(*reinterpret_cast<::sockaddr_in*>(&_serverAddr));;
+        const auto request = oss.str();
+        ::write(socket.handle(), request.c_str(), request.size());
+        constexpr auto kBufferSize = 256;
+        std::array<char, kBufferSize> buffer;
+        std::string response;
+        for (auto numRead = 0;
+             numRead > 0;
+             numRead = ::read(socket.handle(), &buffer[0], kBufferSize)) {
+            response += std::string(&buffer[0], &buffer[numRead]);
+        }
+        std::cout << response << '\n';
         /* TODO:
-        const auto uri = parseURI(uriStr);
         const auto response = httpGetRequest(uri);
         const auto jsonValue = nlohmann::json::parse(response);
         result = jsonValue.get<SamplingStrategyResponse>();*/
     }
 
   private:
-    std::string _serverURL;
+    utils::net::URI _serverURI;
+    ::sockaddr _serverAddr;
 };
 
 }  // anonymous namespace
