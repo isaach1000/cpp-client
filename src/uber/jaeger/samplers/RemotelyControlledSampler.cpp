@@ -25,6 +25,8 @@
 #include <cassert>
 #include <sstream>
 
+#include <thrift/protocol/TJSONProtocol.h>
+
 #include "uber/jaeger/metrics/Counter.h"
 #include "uber/jaeger/metrics/Gauge.h"
 #include "uber/jaeger/samplers/AdaptiveSampler.h"
@@ -83,31 +85,19 @@ class HTTPSamplingManager : public thrift::sampling_manager::SamplingManagerIf {
     void getSamplingStrategy(SamplingStrategyResponse& result,
                              const std::string& serviceName) override
     {
-        const auto target =
-            _serverURI._path + "?service=" + percentEncode(serviceName);
-        std::ostringstream oss;
-        oss << "GET " << target << " HTTP/1.1\r\n"
-            << "Host: " << _serverURI._host << "\r\n"
-            // TODO: << "User-Agent: jaeger/" << kJaegerClientVersion
-            << "\r\n\r\n";
-        utils::net::Socket socket;
-        socket.open(AF_INET, SOCK_STREAM);
-        socket.connect(_serverAddr);
-        ;
-        const auto request = oss.str();
-        ::write(socket.handle(), request.c_str(), request.size());
-        constexpr auto kBufferSize = 256;
-        std::array<char, kBufferSize> buffer;
-        std::string response;
-        for (auto numRead = 0; numRead > 0;
-             numRead = ::read(socket.handle(), &buffer[0], kBufferSize)) {
-            response += std::string(&buffer[0], &buffer[numRead]);
-        }
-        std::cout << response << '\n';
-        /* TODO:
-        const auto response = httpGetRequest(uri);
-        const auto jsonValue = nlohmann::json::parse(response);
-        result = jsonValue.get<SamplingStrategyResponse>();*/
+        auto uri = _serverURI;
+        uri._query = "?service=" + percentEncode(serviceName);
+        const auto responseHTTP = utils::net::http::get(uri);
+        boost::shared_ptr<apache::thrift::transport::TMemoryBuffer> transport(
+            new apache::thrift::transport::TMemoryBuffer());
+        apache::thrift::protocol::TJSONProtocol protocol(transport);
+        std::vector<uint8_t> buffer;
+        buffer.reserve(responseHTTP.body().size());
+        buffer.insert(std::end(buffer),
+                      std::begin(responseHTTP.body()),
+                      std::end(responseHTTP.body()));
+        transport->write(&buffer[0], buffer.size());
+        result.read(&protocol);
     }
 
   private:
