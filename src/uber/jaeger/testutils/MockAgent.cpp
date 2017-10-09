@@ -171,7 +171,8 @@ void MockAgent::serveHTTP(std::promise<void>& started)
             const auto responseJSON =
                 apache::thrift::ThriftJSONString(response);
             std::ostringstream oss;
-            oss << "HTTP/1.1 200 OK\r\n\r\n"
+            oss << "HTTP/1.1 200 OK\r\n"
+                   "Content-Type: application/json\r\n\r\n"
                 << responseJSON;
             const auto responseStr = oss.str();
             ::write(clientSocket.handle(),
