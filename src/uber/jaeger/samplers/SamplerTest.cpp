@@ -48,11 +48,12 @@ constexpr auto kTestDefaultSamplingProbability = 0.5;
 constexpr auto kTestMaxID = std::numeric_limits<uint64_t>::max() / 2 + 1;
 constexpr auto kTestDefaultMaxOperations = 10;
 
-const Tag testProbablisticExpectedTags[]
-    = { { "sampler.type", "probabilistic" }, { "sampler.param", 0.5 } };
+const Tag testProbablisticExpectedTags[] = {
+    { "sampler.type", "probabilistic" }, { "sampler.param", 0.5 }
+};
 
-const Tag testLowerBoundExpectedTags[]
-    = { { "sampler.type", "lowerbound" }, { "sampler.param", 0.5 } };
+const Tag testLowerBoundExpectedTags[] = { { "sampler.type", "lowerbound" },
+                                           { "sampler.param", 0.5 } };
 
 #define CMP_TAGS(tagArr, tagVec)                                               \
     {                                                                          \
@@ -82,11 +83,11 @@ TEST(Sampler, testSamplerTags)
                   { constFalse, "const", false },
                   { prob, "probabilistic", 0.1 },
                   { rate, "ratelimiting", 0.1 } };
-                  // TODO: { remote, "const", true } };
+    // TODO: { remote, "const", true } };
 
     for (auto&& test : tests) {
-        const auto tags
-            = test._sampler.isSampled(TraceID(), kTestOperationName).tags();
+        const auto tags =
+            test._sampler.isSampled(TraceID(), kTestOperationName).tags();
         auto count = 0;
         for (auto&& tag : tags) {
             if (tag.key() == kSamplerTypeTagKey) {
@@ -106,8 +107,8 @@ TEST(Sampler, testSamplerOptions)
 {
     SamplerOptions options;
     ASSERT_EQ(Sampler::Type::kProbabilisticSampler, options.sampler()->type());
-    auto sampler
-        = std::static_pointer_cast<ProbabilisticSampler>(options.sampler());
+    auto sampler =
+        std::static_pointer_cast<ProbabilisticSampler>(options.sampler());
     ASSERT_EQ(0.001, sampler->samplingRate());
     ASSERT_NE(0, options.maxOperations());
     ASSERT_FALSE(options.samplingServerURL().empty());
@@ -128,8 +129,8 @@ TEST(Sampler, testProbabilisticSamplerErrors)
 TEST(Sampler, testProbabilisticSampler)
 {
     ProbabilisticSampler sampler(0.5);
-    auto result
-        = sampler.isSampled(TraceID(0, kTestMaxID + 10), kTestOperationName);
+    auto result =
+        sampler.isSampled(TraceID(0, kTestMaxID + 10), kTestOperationName);
     ASSERT_FALSE(result.isSampled());
     CMP_TAGS(testProbablisticExpectedTags, result.tags());
 
@@ -214,8 +215,8 @@ TEST(Sampler, testAdaptiveSampler)
     strategies.__set_perOperationStrategies({ strategy });
 
     AdaptiveSampler sampler(strategies, kTestDefaultMaxOperations);
-    auto result
-        = sampler.isSampled(TraceID(0, kTestMaxID + 10), kTestOperationName);
+    auto result =
+        sampler.isSampled(TraceID(0, kTestMaxID + 10), kTestOperationName);
     ASSERT_TRUE(result.isSampled());
     CMP_TAGS(testLowerBoundExpectedTags, result.tags());
 
@@ -226,8 +227,8 @@ TEST(Sampler, testAdaptiveSampler)
     result = sampler.isSampled(TraceID(0, kTestMaxID + 10), kTestOperationName);
     ASSERT_FALSE(result.isSampled());
 
-    result = sampler.isSampled(TraceID(0, kTestMaxID),
-                               kTestFirstTimeOperationName);
+    result =
+        sampler.isSampled(TraceID(0, kTestMaxID), kTestFirstTimeOperationName);
     ASSERT_TRUE(result.isSampled());
     CMP_TAGS(testProbablisticExpectedTags, result.tags());
 }

@@ -34,8 +34,8 @@ namespace HexParsing {
 
 inline bool isHex(char ch)
 {
-    return (ch >= '0' && ch <= '9') || (ch >= 'A' && ch <= 'F')
-           || (ch >= 'a' && ch <= 'f');
+    return (ch >= '0' && ch <= '9') || (ch >= 'A' && ch <= 'F') ||
+           (ch >= 'a' && ch <= 'f');
 }
 
 inline std::string readSegment(std::istream& in, size_t maxChars, char delim)

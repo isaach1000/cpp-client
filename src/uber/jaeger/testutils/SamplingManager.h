@@ -41,10 +41,10 @@ class SamplingManager : public thrift::sampling_manager::SamplingManagerIf {
     void getSamplingStrategy(Response& response,
                              const std::string& service) override
     {
-        using ProbabilisticSamplingStrategy
-            = thrift::sampling_manager::ProbabilisticSamplingStrategy;
-        using SamplingStrategyType
-            = thrift::sampling_manager::SamplingStrategyType;
+        using ProbabilisticSamplingStrategy =
+            thrift::sampling_manager::ProbabilisticSamplingStrategy;
+        using SamplingStrategyType =
+            thrift::sampling_manager::SamplingStrategyType;
 
         std::lock_guard<std::mutex> lock(_mutex);
         auto responseItr = _sampling.find(service);

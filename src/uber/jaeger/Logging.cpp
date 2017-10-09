@@ -32,8 +32,8 @@ namespace logging {
 
 std::shared_ptr<spdlog::logger> nullLogger()
 {
-    static auto logger = spdlog::create(
-        "null", std::make_shared<spdlog::sinks::null_sink_mt>());
+    static auto logger =
+        spdlog::create("null", std::make_shared<spdlog::sinks::null_sink_mt>());
     return logger;
 }
 

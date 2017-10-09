@@ -57,19 +57,11 @@ class TUDPTransport
 
     bool isOpen() override { return _socket.handle() >= 0; }
 
-    void open() override
-    {
-    }
+    void open() override {}
 
-    void close() override
-    {
-        _socket.close();
-    }
+    void close() override { _socket.close(); }
 
-    utils::net::IPAddress addr() const
-    {
-        return _serverAddr;
-    }
+    utils::net::IPAddress addr() const { return _serverAddr; }
 
     uint32_t read(uint8_t* buf, uint32_t len)
     {

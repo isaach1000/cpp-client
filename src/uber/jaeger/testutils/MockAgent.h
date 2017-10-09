@@ -90,10 +90,7 @@ class MockAgent : public agent::thrift::AgentIf,
             new utils::UDPClient(spanServerAddress(), 0));
     }
 
-    utils::net::IPAddress samplingServerAddr() const
-    {
-        return _httpAddress;
-    }
+    utils::net::IPAddress samplingServerAddr() const { return _httpAddress; }
 
     void resetBatches()
     {

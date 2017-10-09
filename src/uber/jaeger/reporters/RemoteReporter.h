@@ -42,9 +42,9 @@ class RemoteReporter : public Reporter {
   public:
     using Clock = ReporterOptions::Clock;
 
-    explicit RemoteReporter(std::unique_ptr<Transport> sender,
-                            const ReporterOptions& reporterOptions
-                            = ReporterOptions());
+    explicit RemoteReporter(
+        std::unique_ptr<Transport> sender,
+        const ReporterOptions& reporterOptions = ReporterOptions());
 
     void report(const Span& span) override;
 
@@ -59,8 +59,8 @@ class RemoteReporter : public Reporter {
 
     bool bufferFlushIntervalExpired() const
     {
-        return (_lastFlush - Clock::now())
-               >= _reporterOptions.bufferFlushInterval();
+        return (_lastFlush - Clock::now()) >=
+               _reporterOptions.bufferFlushInterval();
     }
 
     ReporterOptions _reporterOptions;

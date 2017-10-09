@@ -37,20 +37,17 @@ class StatsReporter {
     virtual void
     incCounter(const std::string& name,
                int64_t delta,
-               const std::unordered_map<std::string, std::string>& tags)
-        = 0;
+               const std::unordered_map<std::string, std::string>& tags) = 0;
 
     virtual void
     recordTimer(const std::string& name,
                 int64_t time,
-                const std::unordered_map<std::string, std::string>& tags)
-        = 0;
+                const std::unordered_map<std::string, std::string>& tags) = 0;
 
     virtual void
     updateGauge(const std::string& name,
                 int64_t amount,
-                const std::unordered_map<std::string, std::string>& tags)
-        = 0;
+                const std::unordered_map<std::string, std::string>& tags) = 0;
 };
 
 }  // namespace metrics

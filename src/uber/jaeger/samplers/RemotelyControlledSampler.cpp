@@ -68,8 +68,8 @@ std::string percentEncode(const std::string& input)
 
 class HTTPSamplingManager : public thrift::sampling_manager::SamplingManagerIf {
   public:
-    using SamplingStrategyResponse
-        = thrift::sampling_manager::SamplingStrategyResponse;
+    using SamplingStrategyResponse =
+        thrift::sampling_manager::SamplingStrategyResponse;
 
     explicit HTTPSamplingManager(const std::string& serverURL)
         : _serverURI(utils::net::URI::parse(serverURL))
@@ -92,14 +92,14 @@ class HTTPSamplingManager : public thrift::sampling_manager::SamplingManagerIf {
             << "\r\n\r\n";
         utils::net::Socket socket;
         socket.open(AF_INET, SOCK_STREAM);
-        socket.connect(_serverAddr);;
+        socket.connect(_serverAddr);
+        ;
         const auto request = oss.str();
         ::write(socket.handle(), request.c_str(), request.size());
         constexpr auto kBufferSize = 256;
         std::array<char, kBufferSize> buffer;
         std::string response;
-        for (auto numRead = 0;
-             numRead > 0;
+        for (auto numRead = 0; numRead > 0;
              numRead = ::read(socket.handle(), &buffer[0], kBufferSize)) {
             response += std::string(&buffer[0], &buffer[numRead]);
         }

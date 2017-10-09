@@ -59,10 +59,10 @@ class RemotelyControlledSampler : public Sampler {
     Type type() const override { return Type::kRemotelyControlledSampler; }
 
   private:
-    using PerOperationSamplingStrategies
-        = thrift::sampling_manager::PerOperationSamplingStrategies;
-    using SamplingStrategyResponse
-        = thrift::sampling_manager::SamplingStrategyResponse;
+    using PerOperationSamplingStrategies =
+        thrift::sampling_manager::PerOperationSamplingStrategies;
+    using SamplingStrategyResponse =
+        thrift::sampling_manager::SamplingStrategyResponse;
 
     void pollController();
 

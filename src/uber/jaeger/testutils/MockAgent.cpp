@@ -37,19 +37,15 @@ namespace uber {
 namespace jaeger {
 namespace testutils {
 
-MockAgent::~MockAgent()
-{
-    close();
-}
+MockAgent::~MockAgent() { close(); }
 
 void MockAgent::start()
 {
     std::promise<void> startedUDP;
     std::promise<void> startedHTTP;
     _udpThread = std::thread([this, &startedUDP]() { serveUDP(startedUDP); });
-    _httpThread = std::thread([this, &startedHTTP]() {
-                                  serveHTTP(startedHTTP);
-                              });
+    _httpThread =
+        std::thread([this, &startedHTTP]() { serveHTTP(startedHTTP); });
     startedUDP.get_future().wait();
     startedHTTP.get_future().wait();
 }
@@ -88,8 +84,8 @@ MockAgent::MockAgent()
 
 void MockAgent::serveUDP(std::promise<void>& started)
 {
-    using TCompactProtocolFactory
-        = apache::thrift::protocol::TCompactProtocolFactory;
+    using TCompactProtocolFactory =
+        apache::thrift::protocol::TCompactProtocolFactory;
     using TMemoryBuffer = apache::thrift::transport::TMemoryBuffer;
 
     // Trick for converting `std::shared_ptr` into `boost::shared_ptr`. See
@@ -109,8 +105,8 @@ void MockAgent::serveUDP(std::promise<void>& started)
     std::array<uint8_t, utils::net::kUDPPacketMaxLength> buffer;
     while (isServingUDP()) {
         try {
-            const auto numRead
-                = _transport.read(&buffer[0], utils::net::kUDPPacketMaxLength);
+            const auto numRead =
+                _transport.read(&buffer[0], utils::net::kUDPPacketMaxLength);
             trans->write(&buffer[0], numRead);
             auto protocol = protocolFactory.getProtocol(trans);
             handler.process(protocol, protocol, nullptr);
@@ -129,15 +125,12 @@ void MockAgent::serveHTTP(std::promise<void>& started)
     socket.listen();
     ::sockaddr_storage addrStorage;
     ::socklen_t addrLen = sizeof(addrStorage);
-    const auto returnCode =
-        ::getsockname(socket.handle(),
-                      reinterpret_cast<sockaddr*>(&addrStorage),
-                      &addrLen);
+    const auto returnCode = ::getsockname(
+        socket.handle(), reinterpret_cast<sockaddr*>(&addrStorage), &addrLen);
     if (returnCode != 0) {
-        throw std::system_error(
-            errno,
-            std::generic_category(),
-            "Failed to get HTTP address from socket");
+        throw std::system_error(errno,
+                                std::generic_category(),
+                                "Failed to get HTTP address from socket");
     }
     _httpAddress = utils::net::IPAddress(addrStorage, addrLen);
 
@@ -149,14 +142,10 @@ void MockAgent::serveHTTP(std::promise<void>& started)
         std::array<char, kBufferSize> buffer;
         std::string request;
         auto&& clientSocket = socket.accept();
-        auto numRead = ::read(clientSocket.handle(),
-                              &buffer[0],
-                              buffer.size());
+        auto numRead = ::read(clientSocket.handle(), &buffer[0], buffer.size());
         while (numRead > 0) {
             request.append(&buffer[0], numRead);
-            numRead = ::read(clientSocket.handle(),
-                             &buffer[0],
-                             buffer.size());
+            numRead = ::read(clientSocket.handle(), &buffer[0], buffer.size());
         }
         std::cout << "REQUEST: " << request << '\n';
     }

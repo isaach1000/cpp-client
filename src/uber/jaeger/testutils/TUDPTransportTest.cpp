@@ -52,19 +52,13 @@ TEST(TUDPTransport, testUDPTransport)
                      message.c_str(),
                      message.size(),
                      0,
-                     reinterpret_cast<const ::sockaddr*>(
-                        &serverAddr.addr()),
+                     reinterpret_cast<const ::sockaddr*>(&serverAddr.addr()),
                      serverAddr.addrLen());
         ASSERT_EQ(numWritten, message.size());
 
         std::array<char, kBufferSize> buffer;
-        const auto numRead =
-            ::recvfrom(connUDP.handle(),
-                       &buffer[0],
-                       buffer.size(),
-                       0,
-                       nullptr,
-                       0);
+        const auto numRead = ::recvfrom(
+            connUDP.handle(), &buffer[0], buffer.size(), 0, nullptr, 0);
         const std::string received(&buffer[0], &buffer[numRead]);
         ASSERT_EQ(message.size(), numRead);
         ASSERT_EQ(message, received);

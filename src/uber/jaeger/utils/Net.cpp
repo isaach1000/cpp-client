@@ -83,8 +83,8 @@ URI URI::parse(const std::string& uriStr)
     return uri;
 }
 
-std::unique_ptr<::addrinfo, AddrInfoDeleter> resolveAddress(
-    const std::string& uriStr, int socketType)
+std::unique_ptr<::addrinfo, AddrInfoDeleter>
+resolveAddress(const std::string& uriStr, int socketType)
 {
     const auto uri = URI::parse(uriStr);
 
@@ -103,15 +103,11 @@ std::unique_ptr<::addrinfo, AddrInfoDeleter> resolveAddress(
 
     auto* servInfoPtr = static_cast<::addrinfo*>(nullptr);
     const auto returnCode =
-        getaddrinfo(uri._host.c_str(),
-                    service.c_str(),
-                    &hints,
-                    &servInfoPtr);
+        getaddrinfo(uri._host.c_str(), service.c_str(), &hints, &servInfoPtr);
     std::unique_ptr<::addrinfo, AddrInfoDeleter> servInfo(servInfoPtr);
     if (returnCode != 0) {
         std::ostringstream oss;
-        oss << "Error resolving address: "
-            << gai_strerror(returnCode);
+        oss << "Error resolving address: " << gai_strerror(returnCode);
         throw std::runtime_error(oss.str());
     }
 

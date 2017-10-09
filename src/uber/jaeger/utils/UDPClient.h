@@ -46,10 +46,7 @@ class UDPClient : public agent::thrift::AgentIf {
 
     UDPClient(const net::IPAddress& serverAddr, int maxPacketSize);
 
-    ~UDPClient()
-    {
-        close();
-    }
+    ~UDPClient() { close(); }
 
     void emitZipkinBatch(
         const std::vector<twitter::zipkin::thrift::Span>& spans) override
@@ -74,9 +71,8 @@ class UDPClient : public agent::thrift::AgentIf {
         }
         const auto numWritten = ::write(_socket.handle(), data, size);
         if (numWritten != size) {
-            throw std::system_error(errno,
-                                    std::generic_category(),
-                                    "Failed to write message");
+            throw std::system_error(
+                errno, std::generic_category(), "Failed to write message");
         }
     }
 
@@ -88,10 +84,7 @@ class UDPClient : public agent::thrift::AgentIf {
         return protocolFactory.getProtocol(_buffer);
     }
 
-    void close()
-    {
-        _socket.close();
-    }
+    void close() { _socket.close(); }
 
   private:
     int _maxPacketSize;

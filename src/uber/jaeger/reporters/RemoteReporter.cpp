@@ -45,8 +45,8 @@ RemoteReporter::RemoteReporter(std::unique_ptr<Transport> sender,
 void RemoteReporter::report(const Span& span)
 {
     std::unique_lock<std::mutex> lock(_mutex);
-    const auto pushed
-        = (static_cast<int>(_queue.size()) < _reporterOptions.queueSize());
+    const auto pushed =
+        (static_cast<int>(_queue.size()) < _reporterOptions.queueSize());
     if (pushed) {
         _queue.push_back(span);
         lock.unlock();
@@ -79,8 +79,8 @@ void RemoteReporter::sweepQueue()
         }
 
         _cv.wait(lock, [this]() {
-            return !_running || !_queue.empty() || bufferFlushIntervalExpired()
-                   || _forceFlush;
+            return !_running || !_queue.empty() ||
+                   bufferFlushIntervalExpired() || _forceFlush;
         });
 
         if (!_running) {

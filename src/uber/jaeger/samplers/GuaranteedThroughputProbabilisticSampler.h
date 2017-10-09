@@ -50,14 +50,14 @@ class GuaranteedThroughputProbabilisticSampler : public Sampler {
     SamplingStatus isSampled(const TraceID& id,
                              const std::string& operation) override
     {
-        const auto samplingStatus
-            = _probabilisticSampler.isSampled(id, operation);
+        const auto samplingStatus =
+            _probabilisticSampler.isSampled(id, operation);
         if (samplingStatus.isSampled()) {
             _lowerBoundSampler->isSampled(id, operation);
             return samplingStatus;
         }
-        const auto sampled
-            = _lowerBoundSampler->isSampled(id, operation).isSampled();
+        const auto sampled =
+            _lowerBoundSampler->isSampled(id, operation).isSampled();
         return SamplingStatus(sampled, _tags);
     }
 

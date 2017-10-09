@@ -190,8 +190,8 @@ class Span : public opentracing::Span {
         return "";
     }
 
-    void Log(std::initializer_list<std::pair<opentracing::string_view,
-                                             opentracing::Value>>
+    void Log(std::initializer_list<
+             std::pair<opentracing::string_view, opentracing::Value>>
                  fields) noexcept override
     {
         // TODO

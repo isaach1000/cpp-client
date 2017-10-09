@@ -47,8 +47,8 @@ class RateLimiter {
     {
         std::lock_guard<std::mutex> lock(_mutex);
         const auto currentTime = Clock::now();
-        const auto elapsedTime
-            = std::chrono::duration<double>(currentTime - _lastTick);
+        const auto elapsedTime =
+            std::chrono::duration<double>(currentTime - _lastTick);
         _lastTick = currentTime;
 
         _balance += elapsedTime.count() * _creditsPerSecond;

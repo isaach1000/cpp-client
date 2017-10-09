@@ -29,9 +29,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <array>
 #include <cassert>
 #include <cstring>
-#include <array>
 #include <memory>
 #include <sstream>
 #include <stdexcept>
@@ -57,17 +57,15 @@ class IPAddress {
             if (returnCode == 0) {
                 std::ostringstream oss;
                 oss << "Invalid IP address"
-                       ", ip=" << ip
-                    << ", port=" << port;
+                       ", ip="
+                    << ip << ", port=" << port;
                 throw std::invalid_argument(oss.str());
             }
             std::ostringstream oss;
             oss << "Failed to parse IP address (inet_pton)"
-                   ", ip=" << ip
-                << ", port=" << port;
-            throw std::system_error(errno,
-                                    std::generic_category(),
-                                    oss.str());
+                   ", ip="
+                << ip << ", port=" << port;
+            throw std::system_error(errno, std::generic_category(), oss.str());
         }
         return IPAddress(addr);
     }
@@ -108,17 +106,16 @@ class IPAddress {
     {
         std::array<char, INET6_ADDRSTRLEN> buffer;
         const auto af = family();
-        const auto* addrStr =
-            ::inet_ntop(af,
-                        af == AF_INET
-                            ? static_cast<const void*>(
-                                &reinterpret_cast<const ::sockaddr_in&>(
-                                    _addr).sin_addr)
-                            : static_cast<const void*>(
-                                &reinterpret_cast<const ::sockaddr_in6&>(
-                                    _addr).sin6_addr),
-                        &buffer[0],
-                        buffer.size());
+        const auto* addrStr = ::inet_ntop(
+            af,
+            af == AF_INET
+                ? static_cast<const void*>(
+                      &reinterpret_cast<const ::sockaddr_in&>(_addr).sin_addr)
+                : static_cast<const void*>(
+                      &reinterpret_cast<const ::sockaddr_in6&>(_addr)
+                           .sin6_addr),
+            &buffer[0],
+            buffer.size());
         out << "{ family=" << af;
         if (addrStr) {
             out << ", addr=" << addrStr;
@@ -129,11 +126,11 @@ class IPAddress {
     int port() const
     {
         if (family() == AF_INET) {
-            return ::ntohs(reinterpret_cast<const ::sockaddr_in&>(
-                _addr).sin_port);
+            return ::ntohs(
+                reinterpret_cast<const ::sockaddr_in&>(_addr).sin_port);
         }
-        return ::ntohs(reinterpret_cast<const ::sockaddr_in6&>(
-            _addr).sin6_port);
+        return ::ntohs(
+            reinterpret_cast<const ::sockaddr_in6&>(_addr).sin6_port);
     }
 
     int family() const
@@ -170,10 +167,7 @@ struct URI {
 };
 
 struct AddrInfoDeleter : public std::function<void(::addrinfo*)> {
-    void operator()(::addrinfo* addrInfo) const
-    {
-        ::freeaddrinfo(addrInfo);
-    }
+    void operator()(::addrinfo* addrInfo) const { ::freeaddrinfo(addrInfo); }
 };
 
 std::unique_ptr<::addrinfo, AddrInfoDeleter>
@@ -192,10 +186,7 @@ class Socket {
 
     Socket& operator=(const Socket&) = delete;
 
-    ~Socket()
-    {
-        close();
-    }
+    ~Socket() { close(); }
 
     void open(int family, int type)
     {
@@ -203,11 +194,9 @@ class Socket {
         if (handle < 0) {
             std::ostringstream oss;
             oss << "Failed to open socket"
-                   ", family=" << family
-                << ", type=" << type;
-            throw std::system_error(errno,
-                                    std::generic_category(),
-                                    oss.str());
+                   ", family="
+                << family << ", type=" << type;
+            throw std::system_error(errno, std::generic_category(), oss.str());
         }
         _handle = handle;
         _family = family;
@@ -225,9 +214,7 @@ class Socket {
             oss << "Failed to bind socket to address"
                    ", addr=";
             addr.print(oss);
-            throw std::system_error(errno,
-                                    std::generic_category(),
-                                    oss.str());
+            throw std::system_error(errno, std::generic_category(), oss.str());
         }
     }
 
@@ -262,8 +249,7 @@ class Socket {
             }
         }
         std::ostringstream oss;
-        oss << "Cannot connect socket to remote address "
-            << serverAddr;
+        oss << "Cannot connect socket to remote address " << serverAddr;
         throw std::runtime_error(oss.str());
     }
 
@@ -273,9 +259,8 @@ class Socket {
     {
         const auto returnCode = ::listen(_handle, backlog);
         if (returnCode != 0) {
-            throw std::system_error(errno,
-                                    std::generic_category(),
-                                    "Failed to listen on socket");
+            throw std::system_error(
+                errno, std::generic_category(), "Failed to listen on socket");
         }
     }
 
@@ -283,14 +268,11 @@ class Socket {
     {
         ::sockaddr_storage addrStorage;
         ::socklen_t addrLen = sizeof(addrStorage);
-        const auto clientHandle =
-            ::accept(_handle,
-                     reinterpret_cast<::sockaddr*>(&addrStorage),
-                     &addrLen);
+        const auto clientHandle = ::accept(
+            _handle, reinterpret_cast<::sockaddr*>(&addrStorage), &addrLen);
         if (clientHandle < 0) {
-            throw std::system_error(errno,
-                                    std::generic_category(),
-                                    "Failed to accept on socket");
+            throw std::system_error(
+                errno, std::generic_category(), "Failed to accept on socket");
         }
 
         Socket clientSocket;
@@ -324,8 +306,8 @@ static constexpr auto kUDPPacketMaxLength = 65000;
 }  // namespace jaeger
 }  // namespace uber
 
-inline std::ostream& operator<<(
-    std::ostream& out, const uber::jaeger::utils::net::IPAddress& addr)
+inline std::ostream& operator<<(std::ostream& out,
+                                const uber::jaeger::utils::net::IPAddress& addr)
 {
     addr.print(out);
     return out;
