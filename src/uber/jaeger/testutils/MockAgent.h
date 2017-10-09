@@ -79,7 +79,7 @@ class MockAgent : public agent::thrift::AgentIf,
         return _batches;
     }
 
-    utils::net::IPAddress spanServerAddress() const
+    net::IPAddress spanServerAddress() const
     {
         return _transport.addr();
     }
@@ -90,7 +90,7 @@ class MockAgent : public agent::thrift::AgentIf,
             new utils::UDPClient(spanServerAddress(), 0));
     }
 
-    utils::net::IPAddress samplingServerAddr() const { return _httpAddress; }
+    net::IPAddress samplingServerAddr() const { return _httpAddress; }
 
     void resetBatches()
     {
@@ -113,7 +113,7 @@ class MockAgent : public agent::thrift::AgentIf,
     mutable std::mutex _mutex;
     std::thread _udpThread;
     std::thread _httpThread;
-    utils::net::IPAddress _httpAddress;
+    net::IPAddress _httpAddress;
 };
 
 }  // namespace testutils

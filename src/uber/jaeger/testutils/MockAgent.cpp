@@ -30,6 +30,9 @@
 #include <thrift/transport/TBufferTransports.h>
 
 #include "uber/jaeger/Logging.h"
+#include "uber/jaeger/net/http/Error.h"
+#include "uber/jaeger/net/http/Request.h"
+#include "uber/jaeger/net/http/Response.h"
 #include "uber/jaeger/utils/UDPClient.h"
 
 namespace uber {
@@ -70,7 +73,7 @@ void MockAgent::emitBatch(const thrift::Batch& batch)
 }
 
 MockAgent::MockAgent()
-    : _transport(utils::net::IPAddress::v4("127.0.0.1", 0))
+    : _transport(net::IPAddress::v4("127.0.0.1", 0))
     , _batches()
     , _servingUDP(false)
     , _samplingMgr()
@@ -95,17 +98,17 @@ void MockAgent::serveUDP(std::promise<void>& started)
     agent::thrift::AgentProcessor handler(iface);
     TCompactProtocolFactory protocolFactory;
     boost::shared_ptr<TMemoryBuffer> trans(
-        new TMemoryBuffer(utils::net::kUDPPacketMaxLength));
+        new TMemoryBuffer(net::kUDPPacketMaxLength));
 
     // Notify main thread that setup is done.
     _servingUDP = true;
     started.set_value();
 
-    std::array<uint8_t, utils::net::kUDPPacketMaxLength> buffer;
+    std::array<uint8_t, net::kUDPPacketMaxLength> buffer;
     while (isServingUDP()) {
         try {
             const auto numRead =
-                _transport.read(&buffer[0], utils::net::kUDPPacketMaxLength);
+                _transport.read(&buffer[0], net::kUDPPacketMaxLength);
             trans->write(&buffer[0], numRead);
             auto protocol = protocolFactory.getProtocol(trans);
             handler.process(protocol, protocol, nullptr);
@@ -118,9 +121,9 @@ void MockAgent::serveUDP(std::promise<void>& started)
 
 void MockAgent::serveHTTP(std::promise<void>& started)
 {
-    utils::net::Socket socket;
+    net::Socket socket;
     socket.open(AF_INET, SOCK_STREAM);
-    socket.bind(utils::net::IPAddress::v4("127.0.0.1", 0));
+    socket.bind(net::IPAddress::v4("127.0.0.1", 0));
     socket.listen();
     ::sockaddr_storage addrStorage;
     ::socklen_t addrLen = sizeof(addrStorage);
@@ -131,7 +134,7 @@ void MockAgent::serveHTTP(std::promise<void>& started)
                                 std::generic_category(),
                                 "Failed to get HTTP address from socket");
     }
-    _httpAddress = utils::net::IPAddress(addrStorage, addrLen);
+    _httpAddress = net::IPAddress(addrStorage, addrLen);
 
     _servingHTTP = true;
     started.set_value();
@@ -153,16 +156,16 @@ void MockAgent::serveHTTP(std::promise<void>& started)
 
         try {
             std::istringstream iss(requestStr);
-            const auto request = utils::net::http::Request::parse(iss);
+            const auto request = net::http::Request::parse(iss);
             const auto target = request.target();
             std::smatch match;
             if (!std::regex_search(target, match, servicePattern)) {
-                throw utils::net::http::ParseError(
+                throw net::http::ParseError(
                     "no 'service' parameter");
             }
             if (std::regex_search(match.suffix().str(),
                                   servicePattern)) {
-                throw utils::net::http::ParseError(
+                throw net::http::ParseError(
                     "'service' parameter must occur only once");
             }
             const auto serviceName = match[1].str();
@@ -178,7 +181,7 @@ void MockAgent::serveHTTP(std::promise<void>& started)
             ::write(clientSocket.handle(),
                     responseStr.c_str(),
                     responseStr.size());
-        } catch (const utils::net::http::ParseError& ex) {
+        } catch (const net::http::ParseError& ex) {
             std::ostringstream oss;
             oss << "HTTP/1.1 400 Bad Request\r\n\r\n"
                 << ex.what();

@@ -36,7 +36,7 @@ namespace testutils {
 class TUDPTransport
     : public apache::thrift::transport::TVirtualTransport<TUDPTransport> {
   public:
-    explicit TUDPTransport(const utils::net::IPAddress& addr)
+    explicit TUDPTransport(const net::IPAddress& addr)
         : _socket()
         , _serverAddr(addr)
     {
@@ -50,7 +50,7 @@ class TUDPTransport
                               reinterpret_cast<::sockaddr*>(&addrStorage),
                               &addrLen);
             if (returnCode == 0) {
-                _serverAddr = utils::net::IPAddress(addrStorage, addrLen);
+                _serverAddr = net::IPAddress(addrStorage, addrLen);
             }
         }
     }
@@ -61,7 +61,7 @@ class TUDPTransport
 
     void close() override { _socket.close(); }
 
-    utils::net::IPAddress addr() const { return _serverAddr; }
+    net::IPAddress addr() const { return _serverAddr; }
 
     uint32_t read(uint8_t* buf, uint32_t len)
     {
@@ -74,7 +74,7 @@ class TUDPTransport
                        0,
                        reinterpret_cast<::sockaddr*>(&clientAddr),
                        &clientAddrLen);
-        _clientAddr = utils::net::IPAddress(clientAddr, clientAddrLen);
+        _clientAddr = net::IPAddress(clientAddr, clientAddrLen);
         return numRead;
     }
 
@@ -89,9 +89,9 @@ class TUDPTransport
     }
 
   private:
-    utils::net::Socket _socket;
-    utils::net::IPAddress _serverAddr;
-    utils::net::IPAddress _clientAddr;
+    net::Socket _socket;
+    net::IPAddress _serverAddr;
+    net::IPAddress _clientAddr;
     ::socklen_t _clientAddrLen;
 };
 

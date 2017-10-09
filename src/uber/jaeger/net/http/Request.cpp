@@ -20,46 +20,34 @@
  * THE SOFTWARE.
  */
 
-#ifndef UBER_JAEGER_UDPTRANSPORT_H
-#define UBER_JAEGER_UDPTRANSPORT_H
-
-#include "uber/jaeger/Span.h"
-#include "uber/jaeger/Transport.h"
-#include "uber/jaeger/thrift-gen/jaeger_types.h"
-#include "uber/jaeger/utils/UDPClient.h"
+#include "uber/jaeger/net/http/Request.h"
 
 namespace uber {
 namespace jaeger {
+namespace net {
+namespace http {
 
-class UDPTransport : public Transport {
-  public:
-    UDPTransport(const net::IPAddress& ip, int maxPacketSize);
-
-    int append(const Span& span) override;
-
-    int flush() override;
-
-    void close() override { _client->close(); }
-
-  private:
-    static constexpr auto kEmitBatchOverhead = 30;
-
-    void resetBuffers()
-    {
-        _spanBuffer.clear();
-        _byteBufferSize = _processByteSize;
+Request Request::parse(std::istream& in)
+{
+    const std::regex requestLinePattern(
+            "([A-Z]+) ([^ ]+) HTTP/([0-9]\\.[0-9])$");
+    std::string line;
+    std::smatch match;
+    if (!readLineCRLF(in, line) ||
+        !std::regex_match(line, match, requestLinePattern) ||
+        match.size() < 4) {
+        throw ParseError::make("request line", line);
     }
+    Request request;
 
-    std::unique_ptr<utils::UDPClient> _client;
-    int _maxSpanBytes;
-    int _byteBufferSize;
-    std::vector<thrift::Span> _spanBuffer;
-    boost::shared_ptr<apache::thrift::protocol::TProtocol> _protocol;
-    thrift::Process _process;
-    int _processByteSize;
-};
+    request._method = parseMethod(match[1]);
+    request._target = match[2];
+    request._version = match[3];
 
+    return request;
+}
+
+}  // namespace http
+}  // namespace net
 }  // namespace jaeger
 }  // namespace uber
-
-#endif  // UBER_JAEGER_UDPTRANSPORT_H

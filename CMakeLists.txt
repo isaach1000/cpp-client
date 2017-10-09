@@ -52,7 +52,7 @@ if(BUILD_TESTING)
     endif()
 endif()
 
-set(SUBDIRS metrics net propagation reporters samplers utils)
+set(SUBDIRS metrics net net/http propagation reporters samplers utils)
 
 file(GLOB SRC "src/uber/jaeger/*.cpp")
 foreach(SUBDIR IN LISTS SUBDIRS)

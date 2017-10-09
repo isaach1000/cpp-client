@@ -42,8 +42,8 @@ int calcSizeOfSerializedThrift(
 
 }  // anonymous namespace
 
-UDPTransport::UDPTransport(const char* ip, int port, int maxPacketSize)
-    : _client(new utils::UDPClient(ip, port, maxPacketSize))
+UDPTransport::UDPTransport(const net::IPAddress& ip, int maxPacketSize)
+    : _client(new utils::UDPClient(ip, maxPacketSize))
     , _maxSpanBytes(maxPacketSize - kEmitBatchOverhead)
     , _byteBufferSize(0)
     , _spanBuffer()

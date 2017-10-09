@@ -29,8 +29,11 @@
 
 #include "uber/jaeger/metrics/Counter.h"
 #include "uber/jaeger/metrics/Gauge.h"
+#include "uber/jaeger/net/IPAddress.h"
+#include "uber/jaeger/net/Socket.h"
+#include "uber/jaeger/net/URI.h"
+#include "uber/jaeger/net/http/Response.h"
 #include "uber/jaeger/samplers/AdaptiveSampler.h"
-#include "uber/jaeger/utils/Net.h"
 
 namespace uber {
 namespace jaeger {
@@ -74,10 +77,10 @@ class HTTPSamplingManager : public thrift::sampling_manager::SamplingManagerIf {
         thrift::sampling_manager::SamplingStrategyResponse;
 
     explicit HTTPSamplingManager(const std::string& serverURL)
-        : _serverURI(utils::net::URI::parse(serverURL))
+        : _serverURI(net::URI::parse(serverURL))
         , _serverAddr()
     {
-        utils::net::Socket socket;
+        net::Socket socket;
         socket.open(AF_INET, SOCK_STREAM);
         _serverAddr = socket.connect(serverURL);
     }
@@ -87,7 +90,7 @@ class HTTPSamplingManager : public thrift::sampling_manager::SamplingManagerIf {
     {
         auto uri = _serverURI;
         uri._query = "?service=" + percentEncode(serviceName);
-        const auto responseHTTP = utils::net::http::get(uri);
+        const auto responseHTTP = net::http::get(uri);
         boost::shared_ptr<apache::thrift::transport::TMemoryBuffer> transport(
             new apache::thrift::transport::TMemoryBuffer());
         apache::thrift::protocol::TJSONProtocol protocol(transport);
@@ -101,8 +104,8 @@ class HTTPSamplingManager : public thrift::sampling_manager::SamplingManagerIf {
     }
 
   private:
-    utils::net::URI _serverURI;
-    utils::net::IPAddress _serverAddr;
+    net::URI _serverURI;
+    net::IPAddress _serverAddr;
 };
 
 }  // anonymous namespace

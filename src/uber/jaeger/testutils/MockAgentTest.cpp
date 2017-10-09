@@ -25,7 +25,7 @@
 #include <thrift/protocol/TJSONProtocol.h>
 
 #include "uber/jaeger/testutils/MockAgent.h"
-#include "uber/jaeger/utils/Net.h"
+#include "uber/jaeger/net/http/Response.h"
 
 namespace uber {
 namespace jaeger {
@@ -81,8 +81,8 @@ TEST(MockAgent, testSamplingManager)
         std::ostringstream oss;
         oss << "http://" << mockAgent->samplingServerAddr().authority() << '/';
         const auto uriStr = oss.str();
-        const auto uri = utils::net::URI::parse(uriStr);
-        const auto response = utils::net::http::get(uri);
+        const auto uri = net::URI::parse(uriStr);
+        const auto response = net::http::get(uri);
         ASSERT_EQ("no 'service' parameter", response.body());
     }
     {
@@ -90,8 +90,8 @@ TEST(MockAgent, testSamplingManager)
         oss << "http://" << mockAgent->samplingServerAddr().authority()
             << "/?service=a&service=b";
         const auto uriStr = oss.str();
-        const auto uri = utils::net::URI::parse(uriStr);
-        const auto response = utils::net::http::get(uri);
+        const auto uri = net::URI::parse(uriStr);
+        const auto response = net::http::get(uri);
         ASSERT_EQ("'service' parameter must occur only once", response.body());
     }
     {
@@ -99,8 +99,8 @@ TEST(MockAgent, testSamplingManager)
         oss << "http://" << mockAgent->samplingServerAddr().authority()
             << "/?service=something";
         const auto uriStr = oss.str();
-        const auto uri = utils::net::URI::parse(uriStr);
-        const auto responseHTTP = utils::net::http::get(uri);
+        const auto uri = net::URI::parse(uriStr);
+        const auto responseHTTP = net::http::get(uri);
         thrift::sampling_manager::SamplingStrategyResponse response;
         boost::shared_ptr<apache::thrift::transport::TMemoryBuffer> transport(
             new apache::thrift::transport::TMemoryBuffer());
@@ -128,8 +128,8 @@ TEST(MockAgent, testSamplingManager)
         oss << "http://" << mockAgent->samplingServerAddr().authority()
             << "/?service=service123";
         const auto uriStr = oss.str();
-        const auto uri = utils::net::URI::parse(uriStr);
-        const auto responseHTTP = utils::net::http::get(uri);
+        const auto uri = net::URI::parse(uriStr);
+        const auto responseHTTP = net::http::get(uri);
         thrift::sampling_manager::SamplingStrategyResponse response;
         boost::shared_ptr<apache::thrift::transport::TMemoryBuffer> transport(
             new apache::thrift::transport::TMemoryBuffer());

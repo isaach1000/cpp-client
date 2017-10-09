@@ -30,8 +30,9 @@
 #include <thrift/protocol/TCompactProtocol.h>
 #include <thrift/transport/TBufferTransports.h>
 
+#include "uber/jaeger/net/IPAddress.h"
+#include "uber/jaeger/net/Socket.h"
 #include "uber/jaeger/thrift-gen/Agent.h"
-#include "uber/jaeger/utils/Net.h"
 
 namespace uber {
 namespace jaeger {

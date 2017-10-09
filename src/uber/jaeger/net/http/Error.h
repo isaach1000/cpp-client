@@ -20,46 +20,34 @@
  * THE SOFTWARE.
  */
 
-#ifndef UBER_JAEGER_UDPTRANSPORT_H
-#define UBER_JAEGER_UDPTRANSPORT_H
+#ifndef UBER_JAEGER_NET_HTTP_ERROR_H
+#define UBER_JAEGER_NET_HTTP_ERROR_H
 
-#include "uber/jaeger/Span.h"
-#include "uber/jaeger/Transport.h"
-#include "uber/jaeger/thrift-gen/jaeger_types.h"
-#include "uber/jaeger/utils/UDPClient.h"
+#include <sstream>
+#include <stdexcept>
 
 namespace uber {
 namespace jaeger {
+namespace net {
+namespace http {
 
-class UDPTransport : public Transport {
+class ParseError : public std::invalid_argument {
   public:
-    UDPTransport(const net::IPAddress& ip, int maxPacketSize);
+    using invalid_argument::invalid_argument;
 
-    int append(const Span& span) override;
-
-    int flush() override;
-
-    void close() override { _client->close(); }
-
-  private:
-    static constexpr auto kEmitBatchOverhead = 30;
-
-    void resetBuffers()
+    static ParseError make(
+        const std::string& expected, const std::string& actual)
     {
-        _spanBuffer.clear();
-        _byteBufferSize = _processByteSize;
+        std::ostringstream oss;
+        oss << "Parse error, expected " << expected
+            << ", encountered \"" << actual << '"';
+        return ParseError(oss.str());
     }
-
-    std::unique_ptr<utils::UDPClient> _client;
-    int _maxSpanBytes;
-    int _byteBufferSize;
-    std::vector<thrift::Span> _spanBuffer;
-    boost::shared_ptr<apache::thrift::protocol::TProtocol> _protocol;
-    thrift::Process _process;
-    int _processByteSize;
 };
 
+}  // namespace http
+}  // namespace net
 }  // namespace jaeger
 }  // namespace uber
 
-#endif  // UBER_JAEGER_UDPTRANSPORT_H
+#endif  // UBER_JAEGER_NET_HTTP_ERROR_H

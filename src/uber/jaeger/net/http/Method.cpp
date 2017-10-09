@@ -20,46 +20,36 @@
  * THE SOFTWARE.
  */
 
-#ifndef UBER_JAEGER_UDPTRANSPORT_H
-#define UBER_JAEGER_UDPTRANSPORT_H
-
-#include "uber/jaeger/Span.h"
-#include "uber/jaeger/Transport.h"
-#include "uber/jaeger/thrift-gen/jaeger_types.h"
-#include "uber/jaeger/utils/UDPClient.h"
+#include "uber/jaeger/net/http/Method.h"
 
 namespace uber {
 namespace jaeger {
+namespace net {
+namespace http {
 
-class UDPTransport : public Transport {
-  public:
-    UDPTransport(const net::IPAddress& ip, int maxPacketSize);
+Method parseMethod(const std::string& methodName)
+{
+    static constexpr auto kMethodNames = {
+        "OPTIONS",
+        "GET",
+        "HEAD",
+        "POST",
+        "PUT",
+        "DELETE",
+        "TRACE",
+        "CONNECT"
+    };
 
-    int append(const Span& span) override;
-
-    int flush() override;
-
-    void close() override { _client->close(); }
-
-  private:
-    static constexpr auto kEmitBatchOverhead = 30;
-
-    void resetBuffers()
-    {
-        _spanBuffer.clear();
-        _byteBufferSize = _processByteSize;
+    auto itr = std::find(std::begin(kMethodNames),
+                         std::end(kMethodNames),
+                         methodName);
+    if (itr == std::end(kMethodNames)) {
+        return Method::EXTENSION;
     }
+    return static_cast<Method>(std::distance(std::begin(kMethodNames), itr));
+}
 
-    std::unique_ptr<utils::UDPClient> _client;
-    int _maxSpanBytes;
-    int _byteBufferSize;
-    std::vector<thrift::Span> _spanBuffer;
-    boost::shared_ptr<apache::thrift::protocol::TProtocol> _protocol;
-    thrift::Process _process;
-    int _processByteSize;
-};
-
+}  // namespace http
+}  // namespace net
 }  // namespace jaeger
 }  // namespace uber
-
-#endif  // UBER_JAEGER_UDPTRANSPORT_H

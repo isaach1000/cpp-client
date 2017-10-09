@@ -24,6 +24,8 @@
 
 #include <gtest/gtest.h>
 
+#include "uber/jaeger/net/IPAddress.h"
+#include "uber/jaeger/net/Socket.h"
 #include "uber/jaeger/testutils/TUDPTransport.h"
 
 namespace uber {
@@ -39,13 +41,13 @@ TEST(TUDPTransport, testUDPTransport)
 {
     const std::string message("test");
 
-    TUDPTransport server(utils::net::IPAddress::v4("127.0.0.1", 0));
+    TUDPTransport server(net::IPAddress::v4("127.0.0.1", 0));
     server.open();  // Not necessary. Just making sure this is called.
     ASSERT_TRUE(server.isOpen());
 
     const auto serverAddr = server.addr();
     std::thread clientThread([serverAddr, message]() {
-        utils::net::Socket connUDP;
+        net::Socket connUDP;
         connUDP.open(AF_INET, SOCK_DGRAM);
         const auto numWritten =
             ::sendto(connUDP.handle(),
