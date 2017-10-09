@@ -196,12 +196,13 @@ class Socket {
         close();
     }
 
-    void open(int type)
+    void open(int family, int type)
     {
-        const auto handle = ::socket(AF_INET, type, 0);
+        const auto handle = ::socket(family, type, 0);
         if (handle < 0) {
             std::ostringstream oss;
             oss << "Failed to open socket"
+                   ", family=" << family
                 << ", type=" << type;
             throw std::system_error(errno,
                                     std::generic_category(),

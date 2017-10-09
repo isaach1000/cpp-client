@@ -38,7 +38,7 @@ UDPClient::UDPClient(const net::IPAddress& serverAddr, int maxPacketSize)
     using TCompactProtocolFactory =
         apache::thrift::protocol::TCompactProtocolFactory;
 
-    _socket.open(SOCK_DGRAM);
+    _socket.open(AF_INET, SOCK_DGRAM);
     _socket.connect(_serverAddr);
     boost::shared_ptr<TProtocolFactory> protocolFactory(
         new TCompactProtocolFactory());

@@ -76,11 +76,8 @@ class HTTPSamplingManager : public thrift::sampling_manager::SamplingManagerIf {
         , _serverAddr()
     {
         utils::net::Socket socket;
-        auto serverAddr = _serverURI._host;
-        if (_serverURI._port != 0) {
-            serverAddr += ':' + std::to_string(_serverURI._port);
-        }
-        _serverAddr = socket.connect(serverAddr);
+        socket.open(AF_INET, SOCK_STREAM);
+        _serverAddr = socket.connect(serverURL);
     }
 
     void getSamplingStrategy(SamplingStrategyResponse& result,
@@ -94,7 +91,7 @@ class HTTPSamplingManager : public thrift::sampling_manager::SamplingManagerIf {
             // TODO: << "User-Agent: jaeger/" << kJaegerClientVersion
             << "\r\n\r\n";
         utils::net::Socket socket;
-        socket.open(AF_INET);
+        socket.open(AF_INET, SOCK_STREAM);
         socket.connect(_serverAddr);;
         const auto request = oss.str();
         ::write(socket.handle(), request.c_str(), request.size());

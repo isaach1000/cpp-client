@@ -46,7 +46,7 @@ TEST(TUDPTransport, testUDPTransport)
     const auto serverAddr = server.addr();
     std::thread clientThread([serverAddr, message]() {
         utils::net::Socket connUDP;
-        connUDP.open(SOCK_DGRAM);
+        connUDP.open(AF_INET, SOCK_DGRAM);
         const auto numWritten =
             ::sendto(connUDP.handle(),
                      message.c_str(),

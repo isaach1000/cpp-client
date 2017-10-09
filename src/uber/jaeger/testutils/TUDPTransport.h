@@ -23,6 +23,8 @@
 #ifndef UBER_JAEGER_TESTUTILS_TUDPTRANSPORT_H
 #define UBER_JAEGER_TESTUTILS_TUDPTRANSPORT_H
 
+#include <sys/socket.h>
+
 #include <thrift/transport/TVirtualTransport.h>
 
 #include "uber/jaeger/utils/UDPClient.h"
@@ -38,8 +40,19 @@ class TUDPTransport
         : _socket()
         , _serverAddr(addr)
     {
-        _socket.open(SOCK_DGRAM);
+        _socket.open(AF_INET, SOCK_DGRAM);
         _socket.bind(_serverAddr);
+        if (_serverAddr.port() == 0) {
+            ::sockaddr_storage addrStorage;
+            ::socklen_t addrLen = sizeof(addrStorage);
+            const auto returnCode =
+                ::getsockname(_socket.handle(),
+                              reinterpret_cast<::sockaddr*>(&addrStorage),
+                              &addrLen);
+            if (returnCode == 0) {
+                _serverAddr = utils::net::IPAddress(addrStorage, addrLen);
+            }
+        }
     }
 
     bool isOpen() override { return _socket.handle() >= 0; }
@@ -81,7 +94,6 @@ class TUDPTransport
                  0,
                  reinterpret_cast<const ::sockaddr*>(&_clientAddr.addr()),
                  _clientAddr.addrLen());
-        std::cout << "WRITE TO " << _clientAddr << '\n';
     }
 
   private:

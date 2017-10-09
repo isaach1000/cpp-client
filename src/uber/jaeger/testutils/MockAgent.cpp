@@ -22,6 +22,7 @@
 
 #include "uber/jaeger/testutils/MockAgent.h"
 
+#include <iostream>
 #include <regex>
 #include <thread>
 
