@@ -26,6 +26,8 @@
 #include <sstream>
 #include <stdexcept>
 
+#include "uber/jaeger/Constants.h"
+
 namespace uber {
 namespace jaeger {
 namespace utils {
@@ -84,10 +86,8 @@ URI URI::parse(const std::string& uriStr)
 }
 
 std::unique_ptr<::addrinfo, AddrInfoDeleter>
-resolveAddress(const std::string& uriStr, int socketType)
+resolveAddress(const URI& uri, int socketType)
 {
-    const auto uri = URI::parse(uriStr);
-
     ::addrinfo hints;
     std::memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_INET;
@@ -114,6 +114,97 @@ resolveAddress(const std::string& uriStr, int socketType)
     return servInfo;
 }
 
+namespace http {
+namespace {
+
+std::invalid_argument parseError(
+    const std::string& actual, const std::string& expected)
+{
+    std::ostringstream oss;
+    oss << "Parse error, expected " << expected << ", encountered " << actual;
+    return std::invalid_argument(oss.str());
+}
+
+}  // anonymous namespace
+
+Response Response::parse(std::istream& in)
+{
+    enum class State {
+        kFirstLine,
+        kHeaders
+    };
+
+    const std::regex firstLinePattern("HTTP/([0-9]\\.[0-9]) ([0-9]+) (.+)$");
+    const std::regex headerPattern("([^:]+):(.+)$");
+
+    Response response;
+    std::string line;
+    std::smatch match;
+    auto state = State::kFirstLine;
+    while (std::getline(in, line)) {
+        switch (state) {
+        case State::kFirstLine: {
+            if (!std::regex_match(line, match, firstLinePattern) ||
+                match.size() < 4) {
+                throw parseError("status line", line);
+            }
+            response._version = match[1];
+            std::istringstream iss(match[2]);
+            iss >> response._statusCode;
+            response._reason = match[3];
+            state = State::kHeaders;
+        } break;
+        default: {
+            assert(state == State::kHeaders);
+            if (line.empty()) {
+                break;
+            }
+        } break;
+        }
+    }
+
+    response._body = std::string(std::istreambuf_iterator<char>(in),
+                                 std::istreambuf_iterator<char>{});
+
+    return response;
+}
+
+Response get(const URI& uri)
+{
+    Socket socket;
+    socket.open(AF_INET, SOCK_STREAM);
+    socket.connect(uri);
+    std::ostringstream requestStream;
+    requestStream
+        << "GET " << uri._path << "HTTP/1.1\r\n"
+           "Host: " << uri.authority() << "\r\n"
+           "User-Agent: jaeger/" << kJaegerClientVersion << "\r\n\r\n";
+    const auto request = requestStream.str();
+    const auto numWritten =
+        ::write(socket.handle(), request.c_str(), request.size());
+    if (numWritten != request.size()) {
+        std::ostringstream oss;
+        oss << "Failed to write entire HTTP request"
+            << ", uri=" << uri
+            << ", request=" << request;
+        throw std::system_error(errno,
+                                std::generic_category(),
+                                oss.str());
+    }
+
+    constexpr auto kBufferSize = 256;
+    std::array<char, kBufferSize> buffer;
+    auto numRead = ::read(socket.handle(), &buffer[0], buffer.size());
+    std::string response;
+    while (numRead > 0) {
+        response.append(&buffer[0], numRead);
+        numRead = ::read(socket.handle(), &buffer[0], buffer.size());
+    }
+    std::istringstream responseStream(response);
+    return Response::parse(responseStream);
+}
+
+}  // namespace http
 }  // namespace net
 }  // namespace utils
 }  // namespace jaeger

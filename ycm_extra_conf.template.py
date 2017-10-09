@@ -39,6 +39,8 @@ flags = [
 '/usr/local/include',
 '-I',
 os.path.join(project_dir, 'src')
+'-I',
+os.path.join(project_dir, 'build')
 ]
 
 compilation_database_folder = 'build'

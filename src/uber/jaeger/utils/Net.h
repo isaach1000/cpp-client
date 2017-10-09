@@ -159,6 +159,24 @@ struct URI {
     {
     }
 
+    std::string authority() const
+    {
+        if (_port != 0) {
+            return _host + ':' + std::to_string(_port);
+        }
+        return _host;
+    }
+
+    void print(std::ostream& out) const
+    {
+        out << "{ scheme=\"" << _scheme << '"'
+            << ", host=\"" << _host << '"'
+            << ", port=" << _port
+            << ", path=\"" << _path << '"'
+            << ", query=\"" << _query << '"'
+            << " }";
+    }
+
     std::string _scheme;
     std::string _host;
     int _port;
@@ -171,7 +189,13 @@ struct AddrInfoDeleter : public std::function<void(::addrinfo*)> {
 };
 
 std::unique_ptr<::addrinfo, AddrInfoDeleter>
-resolveAddress(const std::string& uriStr, int socketType);
+resolveAddress(const URI& uri, int socketType);
+
+std::unique_ptr<::addrinfo, AddrInfoDeleter>
+resolveAddress(const std::string& uriStr, int socketType)
+{
+    return resolveAddress(URI::parse(uriStr), socketType);
+}
 
 class Socket {
   public:
@@ -238,9 +262,14 @@ class Socket {
         }
     }
 
-    IPAddress connect(const std::string& serverAddr)
+    IPAddress connect(const std::string& serverURIStr)
     {
-        auto result = resolveAddress(serverAddr, _type);
+        return connect(URI::parse(serverURIStr));
+    }
+
+    IPAddress connect(const URI& serverURI)
+    {
+        auto result = resolveAddress(serverURI, _type);
         for (const auto* itr = result.get(); itr; itr = itr->ai_next) {
             const auto returnCode =
                 ::connect(_handle, itr->ai_addr, itr->ai_addrlen);
@@ -249,7 +278,8 @@ class Socket {
             }
         }
         std::ostringstream oss;
-        oss << "Cannot connect socket to remote address " << serverAddr;
+        oss << "Cannot connect socket to remote address ";
+        serverURI.print(oss);
         throw std::runtime_error(oss.str());
     }
 
@@ -301,6 +331,54 @@ class Socket {
 
 static constexpr auto kUDPPacketMaxLength = 65000;
 
+namespace http {
+
+class Header {
+  public:
+    Header() = default;
+
+    Header(const std::string& key,
+           const std::string& value)
+        : _key(key)
+        , _value(value)
+    {
+    }
+
+  private:
+    std::string _key;
+    std::string _value;
+};
+
+class Response {
+  public:
+    static Response parse(std::istream& in);
+
+    Response()
+        : _statusCode(0)
+        , _headers()
+        , _body()
+    {
+    }
+
+    int statusCode() const { return _statusCode; }
+
+    const std::string& reason() const { return _reason; }
+
+    const std::vector<Header>& headers() const { return _headers; }
+
+    const std::string& body() const { return _body; }
+
+  private:
+    std::string _version;
+    int _statusCode;
+    std::string _reason;
+    std::vector<Header> _headers;
+    std::string _body;
+};
+
+Response get(const URI& uri);
+
+}  // namespace http
 }  // namespace net
 }  // namespace utils
 }  // namespace jaeger
@@ -310,6 +388,13 @@ inline std::ostream& operator<<(std::ostream& out,
                                 const uber::jaeger::utils::net::IPAddress& addr)
 {
     addr.print(out);
+    return out;
+}
+
+inline std::ostream& operator<<(std::ostream& out,
+                                const uber::jaeger::utils::net::URI& uri)
+{
+    uri.print(out);
     return out;
 }
 

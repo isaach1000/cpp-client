@@ -8,16 +8,21 @@ HunterGate(
     SHA1 "6681cc2f0b49b1173aa8ba94b8056aaa8119fb2f"
 )
 
-project(jaegerclient)
+project(jaegerclient VERSION 0.0.1)
 
 set(CMAKE_CXX_STANDARD_REQUIRED true)
 set(CMAKE_CXX_STANDARD 11)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR
    CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -pedantic -Wno-unused-private-field")
-    set(CMAKE_EXPORT_COMPILE_COMMANDS true)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -pedantic")
 endif()
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-private-field")
+endif()
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS true)
 
 hunter_add_package(Boost)
 find_package(Boost CONFIG REQUIRED)
@@ -47,7 +52,6 @@ if(BUILD_TESTING)
     endif()
 endif()
 
-
 set(SUBDIRS metrics net propagation reporters samplers utils)
 
 file(GLOB SRC "src/uber/jaeger/*.cpp")
@@ -61,8 +65,12 @@ add_subdirectory("src/uber/jaeger/thrift-gen")
 list(APPEND LIBS thriftgen thrift::thrift_static)
 
 add_library(jaeger ${SRC})
+configure_file(src/uber/jaeger/Constants.h.in
+               src/uber/jaeger/Constants.h
+               @ONLY)
 target_include_directories(jaeger PUBLIC
-    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>)
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>
+    $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/src>)
 target_link_libraries(jaeger ${LIBS})
 
 if(BUILD_TESTING)

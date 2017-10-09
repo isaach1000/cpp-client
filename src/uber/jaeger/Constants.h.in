@@ -26,22 +26,22 @@
 namespace uber {
 namespace jaeger {
 
-// TODO: kJaegerVersionClientVersion
-static const auto kJaegerClientVersionTagKey = "jaeger.version";
-static const auto kJaegerDebugHeader = "jaeger-debug-id";
-static const auto kJaegerBaggageHeader = "jaeger-baggage";
-static const auto kTracerHostnameTagKey = "hostname";
-static const auto kTracerIPTagKey = "ip";
-static const auto kSamplerTypeTagKey = "sampler.type";
-static const auto kSamplerParamTagKey = "sampler.param";
-static const auto kTraceContextHeaderName = "uber-trace-id";
-static const auto kTracerStateHeaderName = kTraceContextHeaderName;
-static const auto kTraceBaggageHeaderPrefix = "uberctx-";
-static const auto kSamplerTypeConst = "const";
-static const auto kSamplerTypeRemote = "remote";
-static const auto kSamplerTypeProbabilistic = "probabilistic";
-static const auto kSamplerTypeRateLimiting = "ratelimiting";
-static const auto kSamplerTypeLowerBound = "lowerbound";
+static constexpr auto kJaegerClientVersion = "@PROJECT_VERSION@";
+static constexpr auto kJaegerClientVersionTagKey = "jaeger.version";
+static constexpr auto kJaegerDebugHeader = "jaeger-debug-id";
+static constexpr auto kJaegerBaggageHeader = "jaeger-baggage";
+static constexpr auto kTracerHostnameTagKey = "hostname";
+static constexpr auto kTracerIPTagKey = "ip";
+static constexpr auto kSamplerTypeTagKey = "sampler.type";
+static constexpr auto kSamplerParamTagKey = "sampler.param";
+static constexpr auto kTraceContextHeaderName = "uber-trace-id";
+static constexpr auto kTracerStateHeaderName = kTraceContextHeaderName;
+static constexpr auto kTraceBaggageHeaderPrefix = "uberctx-";
+static constexpr auto kSamplerTypeConst = "constexpr";
+static constexpr auto kSamplerTypeRemote = "remote";
+static constexpr auto kSamplerTypeProbabilistic = "probabilistic";
+static constexpr auto kSamplerTypeRateLimiting = "ratelimiting";
+static constexpr auto kSamplerTypeLowerBound = "lowerbound";
 
 }  // namespace jaeger
 }  // namespace uber

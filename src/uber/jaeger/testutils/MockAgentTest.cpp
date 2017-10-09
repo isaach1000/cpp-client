@@ -78,10 +78,9 @@ TEST(MockAgent, testSamplingManager)
     std::ostringstream oss;
     oss << "http://" << mockAgent->samplingServerAddr() << '/';
     auto uriStr = oss.str();
-    // TODO
-    /* auto uri = */ utils::net::URI::parse(uriStr);
-    /*auto response = utils::net::httpGetRequest(uri);
-    ASSERT_EQ("no 'service' parameter", response);*/
+    utils::net::URI::parse(uriStr);
+    const auto response = utils::net::http::get(uri);
+    ASSERT_EQ("no 'service' parameter", response);
 }
 
 }  // namespace testutils
