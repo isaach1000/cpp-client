@@ -90,7 +90,10 @@ class MockAgent : public agent::thrift::AgentIf,
             new utils::UDPClient(spanServerAddress(), 0));
     }
 
-    utils::net::IPAddress samplingServerAddr() const;
+    utils::net::IPAddress samplingServerAddr() const
+    {
+        return _httpAddress;
+    }
 
     void resetBatches()
     {
@@ -99,8 +102,6 @@ class MockAgent : public agent::thrift::AgentIf,
     }
 
   private:
-    class HTTPServer;
-
     MockAgent();
 
     void serveUDP(std::promise<void>& started);
@@ -115,6 +116,7 @@ class MockAgent : public agent::thrift::AgentIf,
     mutable std::mutex _mutex;
     std::thread _udpThread;
     std::thread _httpThread;
+    utils::net::IPAddress _httpAddress;
 };
 
 }  // namespace testutils

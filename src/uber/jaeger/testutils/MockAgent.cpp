@@ -74,12 +74,6 @@ void MockAgent::emitBatch(const thrift::Batch& batch)
     _batches.push_back(batch);
 }
 
-utils::net::IPAddress MockAgent::samplingServerAddr() const
-{
-    // TODO
-    return utils::net::IPAddress();
-}
-
 MockAgent::MockAgent()
     : _transport(utils::net::IPAddress::v4("127.0.0.1", 0))
     , _batches()
@@ -88,6 +82,7 @@ MockAgent::MockAgent()
     , _mutex()
     , _udpThread()
     , _httpThread()
+    , _httpAddress()
 {
 }
 
@@ -128,9 +123,43 @@ void MockAgent::serveUDP(std::promise<void>& started)
 
 void MockAgent::serveHTTP(std::promise<void>& started)
 {
-    // TODO
+    utils::net::Socket socket;
+    socket.open(AF_INET, SOCK_STREAM);
+    socket.bind(utils::net::IPAddress::v4("127.0.0.1", 0));
+    socket.listen();
+    ::sockaddr_storage addrStorage;
+    ::socklen_t addrLen = sizeof(addrStorage);
+    const auto returnCode =
+        ::getsockname(socket.handle(),
+                      reinterpret_cast<sockaddr*>(&addrStorage),
+                      &addrLen);
+    if (returnCode != 0) {
+        throw std::system_error(
+            errno,
+            std::generic_category(),
+            "Failed to get HTTP address from socket");
+    }
+    _httpAddress = utils::net::IPAddress(addrStorage, addrLen);
+
     _servingHTTP = true;
     started.set_value();
+
+    while (isServingHTTP()) {
+        constexpr auto kBufferSize = 256;
+        std::array<char, kBufferSize> buffer;
+        std::string request;
+        auto&& clientSocket = socket.accept();
+        auto numRead = ::read(clientSocket.handle(),
+                              &buffer[0],
+                              buffer.size());
+        while (numRead > 0) {
+            request.append(&buffer[0], numRead);
+            numRead = ::read(clientSocket.handle(),
+                             &buffer[0],
+                             buffer.size());
+        }
+        std::cout << "REQUEST: " << request << '\n';
+    }
 }
 
 }  // namespace testutils

@@ -183,6 +183,7 @@ class Socket {
   public:
     Socket()
         : _handle(-1)
+        , _family(-1)
         , _type(-1)
     {
     }
@@ -209,6 +210,7 @@ class Socket {
                                     oss.str());
         }
         _handle = handle;
+        _family = family;
         _type = type;
     }
 
@@ -265,6 +267,40 @@ class Socket {
         throw std::runtime_error(oss.str());
     }
 
+    static constexpr auto kDefaultBacklog = 128;
+
+    void listen(int backlog = kDefaultBacklog)
+    {
+        const auto returnCode = ::listen(_handle, backlog);
+        if (returnCode != 0) {
+            throw std::system_error(errno,
+                                    std::generic_category(),
+                                    "Failed to listen on socket");
+        }
+    }
+
+    Socket&& accept()
+    {
+        ::sockaddr_storage addrStorage;
+        ::socklen_t addrLen = sizeof(addrStorage);
+        const auto clientHandle =
+            ::accept(_handle,
+                     reinterpret_cast<::sockaddr*>(&addrStorage),
+                     &addrLen);
+        if (clientHandle < 0) {
+            throw std::system_error(errno,
+                                    std::generic_category(),
+                                    "Failed to accept on socket");
+        }
+
+        Socket clientSocket;
+        clientSocket._handle = clientHandle;
+        clientSocket._family =
+            (addrLen == sizeof(::sockaddr_in)) ? AF_INET : AF_INET6;
+        clientSocket._type = SOCK_STREAM;
+        return std::move(clientSocket);
+    }
+
     void close()
     {
         if (_handle >= 0) {
@@ -277,6 +313,7 @@ class Socket {
 
   private:
     int _handle;
+    int _family;
     int _type;
 };
 

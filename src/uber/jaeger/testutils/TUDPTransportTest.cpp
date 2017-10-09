@@ -39,7 +39,7 @@ TEST(TUDPTransport, testUDPTransport)
 {
     const std::string message("test");
 
-    TUDPTransport server(utils::net::IPAddress::v4("127.0.0.1", 12345));
+    TUDPTransport server(utils::net::IPAddress::v4("127.0.0.1", 0));
     server.open();  // Not necessary. Just making sure this is called.
     ASSERT_TRUE(server.isOpen());
 
@@ -56,8 +56,6 @@ TEST(TUDPTransport, testUDPTransport)
                         &serverAddr.addr()),
                      serverAddr.addrLen());
         ASSERT_EQ(numWritten, message.size());
-        std::cout << "CLIENT WROTE " << numWritten << " TO " << serverAddr
-                  << '\n';
 
         std::array<char, kBufferSize> buffer;
         const auto numRead =
@@ -70,7 +68,6 @@ TEST(TUDPTransport, testUDPTransport)
         const std::string received(&buffer[0], &buffer[numRead]);
         ASSERT_EQ(message.size(), numRead);
         ASSERT_EQ(message, received);
-        std::cout << "CLIENT READ " << numRead << '\n';
 
         connUDP.close();
     });
