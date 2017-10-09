@@ -104,6 +104,25 @@ class IPAddress {
 
     void print(std::ostream& out) const
     {
+        out << "{ family=" << family();
+        const auto addrStr = host();
+        if (!addrStr.empty()) {
+            out << ", addr=" << addrStr;
+        }
+        out << ", port=" << port() << " }";
+    }
+
+    std::string authority() const
+    {
+        const auto portNum = port();
+        if (portNum != 0) {
+            return host() + ':' + std::to_string(portNum);
+        }
+        return host();
+    }
+
+    std::string host() const
+    {
         std::array<char, INET6_ADDRSTRLEN> buffer;
         const auto af = family();
         const auto* addrStr = ::inet_ntop(
@@ -116,20 +135,16 @@ class IPAddress {
                            .sin6_addr),
             &buffer[0],
             buffer.size());
-        out << "{ family=" << af;
-        if (addrStr) {
-            out << ", addr=" << addrStr;
-        }
-        out << ", port=" << port() << " }";
+        return addrStr ? addrStr : "";
     }
 
     int port() const
     {
         if (family() == AF_INET) {
-            return ::ntohs(
+            return ntohs(
                 reinterpret_cast<const ::sockaddr_in&>(_addr).sin_port);
         }
-        return ::ntohs(
+        return ntohs(
             reinterpret_cast<const ::sockaddr_in6&>(_addr).sin6_port);
     }
 
@@ -167,6 +182,14 @@ struct URI {
         return _host;
     }
 
+    std::string target() const
+    {
+        if (!_query.empty()) {
+            return _path + '?' + _query;
+        }
+        return _path;
+    }
+
     void print(std::ostream& out) const
     {
         out << "{ scheme=\"" << _scheme << '"'
@@ -191,7 +214,7 @@ struct AddrInfoDeleter : public std::function<void(::addrinfo*)> {
 std::unique_ptr<::addrinfo, AddrInfoDeleter>
 resolveAddress(const URI& uri, int socketType);
 
-std::unique_ptr<::addrinfo, AddrInfoDeleter>
+inline std::unique_ptr<::addrinfo, AddrInfoDeleter>
 resolveAddress(const std::string& uriStr, int socketType)
 {
     return resolveAddress(URI::parse(uriStr), socketType);
@@ -209,6 +232,21 @@ class Socket {
     Socket(const Socket&) = delete;
 
     Socket& operator=(const Socket&) = delete;
+
+    Socket(Socket&& socket)
+        : _handle(socket._handle)
+        , _family(socket._family)
+        , _type(socket._type)
+    {
+    }
+
+    Socket& operator=(Socket&& rhs)
+    {
+        _handle = rhs._handle;
+        _family = rhs._family;
+        _type = rhs._type;
+        return *this;
+    }
 
     ~Socket() { close(); }
 
@@ -294,7 +332,7 @@ class Socket {
         }
     }
 
-    Socket&& accept()
+    Socket accept()
     {
         ::sockaddr_storage addrStorage;
         ::socklen_t addrLen = sizeof(addrStorage);
@@ -310,7 +348,7 @@ class Socket {
         clientSocket._family =
             (addrLen == sizeof(::sockaddr_in)) ? AF_INET : AF_INET6;
         clientSocket._type = SOCK_STREAM;
-        return std::move(clientSocket);
+        return clientSocket;
     }
 
     void close()
@@ -333,6 +371,10 @@ static constexpr auto kUDPPacketMaxLength = 65000;
 
 namespace http {
 
+class ParseError : public std::invalid_argument {
+    using invalid_argument::invalid_argument;
+};
+
 class Header {
   public:
     Header() = default;
@@ -349,12 +391,55 @@ class Header {
     std::string _value;
 };
 
+enum class Method {
+    OPTIONS,
+    GET,
+    HEAD,
+    POST,
+    PUT,
+    DELETE,
+    TRACE,
+    CONNECT,
+    EXTENSION
+};
+
+Method parseMethod(const std::string& methodName);
+
+class Request {
+  public:
+    static Request parse(std::istream& in);
+
+    Request()
+        : _method()
+        , _target()
+        , _version()
+        , _headers()
+    {
+    }
+
+    Method method() const { return _method; }
+
+    const std::string& target() const { return _target; }
+
+    const std::string& version() const { return _version; }
+
+    const std::vector<Header>& headers() const { return _headers; }
+
+  private:
+    Method _method;
+    std::string _target;
+    std::string _version;
+    std::vector<Header> _headers;
+};
+
 class Response {
   public:
     static Response parse(std::istream& in);
 
     Response()
-        : _statusCode(0)
+        : _version()
+        , _statusCode(0)
+        , _reason()
         , _headers()
         , _body()
     {

@@ -117,51 +117,122 @@ resolveAddress(const URI& uri, int socketType)
 namespace http {
 namespace {
 
+std::istream& readLineCRLF(std::istream& in, std::string& line)
+{
+    line.clear();
+    auto ch = '\0';
+    auto sawCR = false;
+    while (in.get(ch)) {
+        if (sawCR) {
+            if (ch == '\n') {
+                return in;
+            }
+            else {
+                line.push_back('\r');
+                line.push_back(ch);
+                sawCR = false;
+            }
+        }
+        else {
+            if (ch == '\r') {
+                sawCR = true;
+            }
+            else {
+                line.push_back(ch);
+            }
+        }
+    }
+
+    return in;
+}
+
 std::invalid_argument parseError(
-    const std::string& actual, const std::string& expected)
+    const std::string& expected, const std::string& actual)
 {
     std::ostringstream oss;
-    oss << "Parse error, expected " << expected << ", encountered " << actual;
-    return std::invalid_argument(oss.str());
+    oss << "Parse error, expected " << expected
+        << ", encountered \"" << actual << '"';
+    return ParseError(oss.str());
+}
+
+void readHeaders(std::istream& in, std::vector<Header>& headers)
+{
+    const std::regex headerPattern("([^:]+):(.+)$");
+    std::string line;
+    std::smatch match;
+    while (readLineCRLF(in, line)) {
+        if (line.empty()) {
+            break;
+        }
+        if (!std::regex_match(line, match, headerPattern) ||
+            match.size() < 3) {
+            throw parseError("header", line);
+        }
+        headers.emplace_back(Header(match[1], match[2]));
+    }
 }
 
 }  // anonymous namespace
 
-Response Response::parse(std::istream& in)
+Method parseMethod(const std::string& methodName)
 {
-    enum class State {
-        kFirstLine,
-        kHeaders
+    static constexpr auto kMethodNames = {
+        "OPTIONS",
+        "GET",
+        "HEAD",
+        "POST",
+        "PUT",
+        "DELETE",
+        "TRACE",
+        "CONNECT"
     };
 
-    const std::regex firstLinePattern("HTTP/([0-9]\\.[0-9]) ([0-9]+) (.+)$");
-    const std::regex headerPattern("([^:]+):(.+)$");
+    auto itr = std::find(std::begin(kMethodNames),
+                         std::end(kMethodNames),
+                         methodName);
+    if (itr == std::end(kMethodNames)) {
+        return Method::EXTENSION;
+    }
+    return static_cast<Method>(std::distance(std::begin(kMethodNames), itr));
+}
 
-    Response response;
+Request Request::parse(std::istream& in)
+{
+    const std::regex requestLinePattern(
+            "([A-Z]+) ([^ ]+) HTTP/([0-9]\\.[0-9])$");
     std::string line;
     std::smatch match;
-    auto state = State::kFirstLine;
-    while (std::getline(in, line)) {
-        switch (state) {
-        case State::kFirstLine: {
-            if (!std::regex_match(line, match, firstLinePattern) ||
-                match.size() < 4) {
-                throw parseError("status line", line);
-            }
-            response._version = match[1];
-            std::istringstream iss(match[2]);
-            iss >> response._statusCode;
-            response._reason = match[3];
-            state = State::kHeaders;
-        } break;
-        default: {
-            assert(state == State::kHeaders);
-            if (line.empty()) {
-                break;
-            }
-        } break;
-        }
+    if (!readLineCRLF(in, line) ||
+        !std::regex_match(line, match, requestLinePattern) ||
+        match.size() < 4) {
+        throw parseError("request line", line);
     }
+    Request request;
+
+    request._method = parseMethod(match[1]);
+    request._target = match[2];
+    request._version = match[3];
+
+    return request;
+}
+
+Response Response::parse(std::istream& in)
+{
+    const std::regex statusLinePattern("HTTP/([0-9]\\.[0-9]) ([0-9]+) (.+)$");
+    std::string line;
+    std::smatch match;
+    if (!readLineCRLF(in, line) ||
+        !std::regex_match(line, match, statusLinePattern) ||
+        match.size() < 4) {
+        throw parseError("status line", line);
+    }
+    Response response;
+    response._version = match[1];
+    std::istringstream iss(match[2]);
+    iss >> response._statusCode;
+    response._reason = match[3];
+
+    readHeaders(in, response._headers);
 
     response._body = std::string(std::istreambuf_iterator<char>(in),
                                  std::istreambuf_iterator<char>{});
@@ -176,7 +247,7 @@ Response get(const URI& uri)
     socket.connect(uri);
     std::ostringstream requestStream;
     requestStream
-        << "GET " << uri._path << "HTTP/1.1\r\n"
+        << "GET " << uri.target() << " HTTP/1.1\r\n"
            "Host: " << uri.authority() << "\r\n"
            "User-Agent: jaeger/" << kJaegerClientVersion << "\r\n\r\n";
     const auto request = requestStream.str();
@@ -198,6 +269,9 @@ Response get(const URI& uri)
     std::string response;
     while (numRead > 0) {
         response.append(&buffer[0], numRead);
+        if (numRead < buffer.size()) {
+            break;
+        }
         numRead = ::read(socket.handle(), &buffer[0], buffer.size());
     }
     std::istringstream responseStream(response);

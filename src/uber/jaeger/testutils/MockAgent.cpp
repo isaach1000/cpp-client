@@ -22,7 +22,6 @@
 
 #include "uber/jaeger/testutils/MockAgent.h"
 
-#include <iostream>
 #include <regex>
 #include <thread>
 
@@ -137,17 +136,60 @@ void MockAgent::serveHTTP(std::promise<void>& started)
     _servingHTTP = true;
     started.set_value();
 
+    const std::regex servicePattern("[?&]service=([^?&]+)");
     while (isServingHTTP()) {
         constexpr auto kBufferSize = 256;
         std::array<char, kBufferSize> buffer;
-        std::string request;
-        auto&& clientSocket = socket.accept();
+        std::string requestStr;
+        auto clientSocket = socket.accept();
         auto numRead = ::read(clientSocket.handle(), &buffer[0], buffer.size());
         while (numRead > 0) {
-            request.append(&buffer[0], numRead);
+            requestStr.append(&buffer[0], numRead);
+            if (numRead < buffer.size()) {
+                break;
+            }
             numRead = ::read(clientSocket.handle(), &buffer[0], buffer.size());
         }
-        std::cout << "REQUEST: " << request << '\n';
+
+        try {
+            std::istringstream iss(requestStr);
+            const auto request = utils::net::http::Request::parse(iss);
+            const auto target = request.target();
+            std::smatch match;
+            if (!std::regex_search(target, match, servicePattern)) {
+                throw utils::net::http::ParseError(
+                    "no 'service' parameter");
+            }
+            if (std::regex_search(match.suffix().str(),
+                                  servicePattern)) {
+                throw utils::net::http::ParseError(
+                    "'service' parameter must occur only once");
+            }
+            const auto serviceName = match[1].str();
+            thrift::sampling_manager::SamplingStrategyResponse response;
+            _samplingMgr.getSamplingStrategy(response, serviceName);
+            const auto responseJSON =
+                apache::thrift::ThriftJSONString(response);
+            std::ostringstream oss;
+            oss << "HTTP/1.1 200 OK\r\n\r\n"
+                << responseJSON;
+            const auto responseStr = oss.str();
+            ::write(clientSocket.handle(),
+                    responseStr.c_str(),
+                    responseStr.size());
+        } catch (const utils::net::http::ParseError& ex) {
+            std::ostringstream oss;
+            oss << "HTTP/1.1 400 Bad Request\r\n\r\n"
+                << ex.what();
+            const auto response = oss.str();
+            ::write(clientSocket.handle(), response.c_str(), response.size());
+        } catch (const std::exception& ex) {
+            std::ostringstream oss;
+            oss << "HTTP/1.1 500 Internal Server Error\r\n\r\n"
+                << ex.what();
+            const auto response = oss.str();
+            ::write(clientSocket.handle(), response.c_str(), response.size());
+        }
     }
 }
 
