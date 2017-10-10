@@ -148,7 +148,7 @@ void MockAgent::serveHTTP(std::promise<void>& started)
         auto numRead = ::read(clientSocket.handle(), &buffer[0], buffer.size());
         while (numRead > 0) {
             requestStr.append(&buffer[0], numRead);
-            if (numRead < buffer.size()) {
+            if (numRead < static_cast<int>(buffer.size())) {
                 break;
             }
             numRead = ::read(clientSocket.handle(), &buffer[0], buffer.size());

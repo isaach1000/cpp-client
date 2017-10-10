@@ -22,6 +22,8 @@
 
 #include "uber/jaeger/net/http/Method.h"
 
+#include <algorithm>
+
 namespace uber {
 namespace jaeger {
 namespace net {

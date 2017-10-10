@@ -26,6 +26,7 @@
 #include <netdb.h>
 
 #include <functional>
+#include <memory>
 #include <sstream>
 #include <string>
 

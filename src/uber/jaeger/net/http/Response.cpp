@@ -73,7 +73,7 @@ Response get(const URI& uri)
     const auto request = requestStream.str();
     const auto numWritten =
         ::write(socket.handle(), request.c_str(), request.size());
-    if (numWritten != request.size()) {
+    if (numWritten != static_cast<int>(request.size())) {
         std::ostringstream oss;
         oss << "Failed to write entire HTTP request"
             << ", uri=" << uri
@@ -89,7 +89,7 @@ Response get(const URI& uri)
     std::string response;
     while (numRead > 0) {
         response.append(&buffer[0], numRead);
-        if (numRead < buffer.size()) {
+        if (numRead < static_cast<int>(buffer.size())) {
             break;
         }
         numRead = ::read(socket.handle(), &buffer[0], buffer.size());
