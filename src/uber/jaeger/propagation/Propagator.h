@@ -23,6 +23,7 @@
 #ifndef UBER_JAEGER_PROPAGATION_PROPAGATOR_H
 #define UBER_JAEGER_PROPAGATION_PROPAGATOR_H
 
+#include <cctype>
 #include <sstream>
 
 #include <opentracing/propagation.h>
@@ -42,6 +43,7 @@ class Propagator : public Extractor<ReaderType>, public Injector<WriterType> {
   public:
     using Reader = ReaderType;
     using Writer = WriterType;
+    using StrMap = SpanContext::StrMap;
 
     Propagator(const HeadersConfig& headerKeys,
                metrics::Metrics& metrics)
@@ -55,18 +57,45 @@ class Propagator : public Extractor<ReaderType>, public Injector<WriterType> {
     SpanContext extract(const Reader& reader) const override
     {
         SpanContext ctx;
-        auto found = false;
-        const auto result = reader.ForeachKey([this, &reader, &ctx, &found](
-            const std::string& key,
+        StrMap baggage;
+        const auto err = reader.ForeachKey([this, &reader, &ctx, &baggage](
+            const std::string& rawKey,
             const std::string& value) {
-                if (!found && key == _headerKeys.traceContextHeaderName()) {
-                    found = true;
-                    std::istringstream iss(value);
+                const auto key = normalizeKey(rawKey);
+                if (key == _headerKeys.traceContextHeaderName()) {
+                    const auto safeValue = decodeValue(value);
+                    std::istringstream iss(safeValue);
                     if (!(iss >> ctx)) {
                         return opentracing::span_context_corrupted_error;
                     }
                 }
+                else if (key == _headerKeys.jaegerDebugHeader()) {
+                    ctx.setDebug();
+                }
+                else if (key == _headerKeys.jaegerBaggageHeader()) {
+                    for (auto&& pair : parseCommaSeparatedMap(value)) {
+                        baggage[pair.first] = pair.second;
+                    }
+                }
+                else {
+                    const auto prefix = _headerKeys.traceBaggageHeaderPrefix();
+                    if (key.size() >= prefix.size() &&
+                        key.substr(0, prefix.size()) == prefix) {
+                        const auto safeKey = removeBaggageKeyPrefix(key);
+                        const auto safeValue = decodeValue(value);
+                        baggage[safeKey] = safeValue;
+                    }
+                }
             });
+        if (err) {
+            _metrics.decodingErrors()->inc(1);
+            return SpanContext();
+        }
+        if (!ctx.traceID().isValid() && !ctx.isDebug() && baggage.empty()) {
+            return SpanContext();
+        }
+        ctx.setBaggage(baggage);
+        return ctx;
     }
 
     void inject(const SpanContext& ctx, const Writer& writer) const override
@@ -94,7 +123,30 @@ class Propagator : public Extractor<ReaderType>, public Injector<WriterType> {
         return str;
     }
 
+    virtual std::string normalizeKey(const std::string& rawKey) const
+    {
+        return rawKey;
+    }
+
   private:
+    static StrMap parseCommaSeparatedMap(const std::string& escapedValue)
+    {
+        StrMap map;
+        const auto value = net::URI::queryUnescape(escapedValue);
+        for (auto pos = value.find(','), prev = static_cast<size_t>(0);
+             pos != std::string::npos;
+             prev = pos, pos = value.find(',', pos + 1)) {
+            const auto piece = value.substr(prev, pos);
+            const auto eqPos = piece.find('=');
+            if (eqPos != std::string::npos) {
+                const auto key = piece.substr(0, eqPos);
+                const auto value = piece.substr(eqPos + 1);
+                map[key] = value;
+            }
+        }
+        return map;
+    }
+
     std::string addBaggageKeyPrefix(const std::string& key) const
     {
         return _headerKeys.traceBaggageHeaderPrefix() + key;
@@ -127,6 +179,17 @@ class HTTPHeaderPropagator :
     std::string decodeValue(const std::string& str) const override
     {
         return net::URI::queryUnescape(str);
+    }
+
+    std::string normalizeKey(const std::string& rawKey) const override
+    {
+        std::string key;
+        key.reserve(rawKey.size());
+        std::transform(std::begin(rawKey),
+                       std::end(rawKey),
+                       std::back_inserter(key),
+                       [](char ch) { return std::tolower(ch); });
+        return key;
     }
 };
 

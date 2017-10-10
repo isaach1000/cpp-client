@@ -37,6 +37,8 @@ namespace jaeger {
 
 class SpanContext : public opentracing::SpanContext {
   public:
+    using StrMap = std::unordered_map<std::string, std::string>;
+
     static SpanContext fromStream(std::istream& in);
 
     SpanContext() = default;
@@ -45,7 +47,7 @@ class SpanContext : public opentracing::SpanContext {
                 uint64_t spanID,
                 uint64_t parentID,
                 bool sampled,
-                const std::unordered_map<std::string, std::string>& baggage)
+                const StrMap& baggage)
         : _traceID(traceID)
         , _spanID(spanID)
         , _parentID(parentID)
@@ -60,6 +62,10 @@ class SpanContext : public opentracing::SpanContext {
     uint64_t spanID() const { return _spanID; }
 
     uint64_t parentID() const { return _parentID; }
+
+    const StrMap& baggage() const { return _baggage; }
+
+    void setBaggage(const StrMap& baggage) { _baggage = baggage; }
 
     template <typename Function>
     void forEachBaggageItem(Function f) const
@@ -88,10 +94,14 @@ class SpanContext : public opentracing::SpanContext {
         return _flags & static_cast<unsigned char>(Flag::kSampled);
     }
 
+    void setSampled() { _flags |= static_cast<unsigned char>(Flag::kSampled); }
+
     bool isDebug() const
     {
         return _flags & static_cast<unsigned char>(Flag::kDebug);
     }
+
+    void setDebug() { _flags |= static_cast<unsigned char>(Flag::kDebug); }
 
     bool isValid() const { return _traceID.isValid() && _spanID != 0; }
 
@@ -112,8 +122,6 @@ class SpanContext : public opentracing::SpanContext {
 
   private:
     enum class Flag : unsigned char { kSampled = 1, kDebug = 2 };
-
-    using StrMap = std::unordered_map<std::string, std::string>;
 
     TraceID _traceID;
     uint64_t _spanID;
