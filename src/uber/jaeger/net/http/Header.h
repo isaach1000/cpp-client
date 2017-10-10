@@ -23,6 +23,7 @@
 #ifndef UBER_JAEGER_NET_HTTP_HEADER_H
 #define UBER_JAEGER_NET_HTTP_HEADER_H
 
+#include <cassert>
 #include <regex>
 #include <string>
 
@@ -57,7 +58,7 @@ inline std::istream& readLineCRLF(std::istream& in, std::string& line)
     while (in.get(ch)) {
         if (sawCR) {
             if (ch == '\n') {
-                return in;
+                break;
             }
             else {
                 line.push_back('\r');

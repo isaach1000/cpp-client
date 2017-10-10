@@ -22,6 +22,7 @@
 
 #include "uber/jaeger/net/URI.h"
 
+#include <cassert>
 #include <regex>
 
 namespace uber {
@@ -36,25 +37,17 @@ URI URI::parse(const std::string& uriStr)
         "^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\\?([^#]*))?(#(.*))?",
         std::regex::extended);
     std::smatch match;
-    if (!std::regex_match(uriStr, match, uriRegex)) {
-        return uri;
-    }
+    std::regex_match(uriStr, match, uriRegex);
 
     constexpr auto kSchemeIndex = 2;
     constexpr auto kAuthorityIndex = 4;
     constexpr auto kPathIndex = 5;
     constexpr auto kQueryIndex = 7;
 
-    const auto numMatchingGroups = match.size();
+    assert(match.size() >= kQueryIndex);
 
-    if (numMatchingGroups < kSchemeIndex) {
-        return uri;
-    }
     uri._scheme = match[kSchemeIndex].str();
 
-    if (numMatchingGroups < kAuthorityIndex) {
-        return uri;
-    }
     const auto authority = match[kAuthorityIndex].str();
     const auto colonPos = authority.find(':');
     if (colonPos == std::string::npos) {
@@ -67,14 +60,7 @@ URI URI::parse(const std::string& uriStr)
         iss >> uri._port;
     }
 
-    if (numMatchingGroups < kPathIndex) {
-        return uri;
-    }
     uri._path = match[kPathIndex].str();
-
-    if (numMatchingGroups < kQueryIndex) {
-        return uri;
-    }
     uri._query = match[kQueryIndex].str();
 
     return uri;

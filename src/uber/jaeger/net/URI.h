@@ -56,10 +56,14 @@ struct URI {
 
     std::string target() const
     {
-        if (!_query.empty()) {
-            return _path + '?' + _query;
+        auto result = _path;
+        if (result.empty()) {
+            result = "/";
         }
-        return _path;
+        if (!_query.empty()) {
+            result += '?' + _query;
+        }
+        return result;
     }
 
     template <typename Stream>
