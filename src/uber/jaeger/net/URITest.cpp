@@ -53,6 +53,24 @@ TEST(URI, testPrint)
         oss.str());
 }
 
+TEST(URI, queryEscape)
+{
+    ASSERT_EQ("hello%20world", URI::queryEscape("hello world"));
+    ASSERT_EQ("hello-world", URI::queryEscape("hello-world"));
+    ASSERT_EQ("hello.world", URI::queryEscape("hello.world"));
+    ASSERT_EQ("hello_world", URI::queryEscape("hello_world"));
+    ASSERT_EQ("hello~world", URI::queryEscape("hello~world"));
+}
+
+TEST(URI, queryUnescape)
+{
+    ASSERT_EQ("hello world", URI::queryUnescape("hello%20world"));
+    ASSERT_EQ("hello%2world", URI::queryUnescape("hello%2world"));
+    ASSERT_EQ("hello%world", URI::queryUnescape("hello%world"));
+    ASSERT_EQ("hello world", URI::queryUnescape("hello w%6Frld"));
+    ASSERT_EQ("hello world", URI::queryUnescape("hello w%6frld"));
+}
+
 TEST(URI, testResolveAddress)
 {
     ASSERT_NO_THROW(resolveAddress("http://localhost", SOCK_STREAM));

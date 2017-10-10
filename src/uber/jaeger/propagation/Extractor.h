@@ -20,4 +20,27 @@
  * THE SOFTWARE.
  */
 
-#include "uber/jaeger/propagation/TextMapPropagator.h"
+#ifndef UBER_JAEGER_PROPAGATION_EXTRACTOR_H
+#define UBER_JAEGER_PROPAGATION_EXTRACTOR_H
+
+#include <opentracing/propagation.h>
+
+#include "uber/jaeger/SpanContext.h"
+
+namespace uber {
+namespace jaeger {
+namespace propagation {
+
+template <typename Reader>
+class Extractor {
+  public:
+    virtual ~Extractor() = default;
+
+    virtual SpanContext extract(const Reader& reader) const = 0;
+};
+
+}  // namespace propagation
+}  // namespace jaeger
+}  // namespace uber
+
+#endif  // UBER_JAEGER_PROPAGATION_EXTRACTOR_H

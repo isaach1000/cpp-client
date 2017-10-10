@@ -20,42 +20,4 @@
  * THE SOFTWARE.
  */
 
-#ifndef UBER_JAEGER_PROPAGATION_TEXTMAPPROPAGATOR_H
-#define UBER_JAEGER_PROPAGATION_TEXTMAPPROPAGATOR_H
-
-#include <opentracing/propagation.h>
-
-namespace uber {
-namespace jaeger {
-namespace propagation {
-
-class TextMapPropagator : public opentracing::TextMapReader,
-                          public opentracing::TextMapWriter {
-  public:
-    using expected_void = opentracing::expected<void>;
-    using string_view = opentracing::string_view;
-
-    template <typename... Args>
-    expected_void forEachKey(Args&&... args)
-    {
-        return ForeachKey(std::forward<Args>(args)...);
-    }
-
-    expected_void ForeachKey(
-        std::function<expected_void(string_view key, string_view value)> f)
-        const override;
-
-    template <typename... Args>
-    expected_void set(Args&&... args)
-    {
-        return Set(std::forward<Args>(args)...);
-    }
-
-    expected_void Set(string_view key, string_view value) const override;
-};
-
-}  // namespace propagation
-}  // namespace jaeger
-}  // namespace uber
-
-#endif  // UBER_JAEGER_PROPAGATION_TEXTMAPPROPAGATOR_H
+#include "uber/jaeger/propagation/Propagator.h"

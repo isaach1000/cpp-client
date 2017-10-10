@@ -23,11 +23,52 @@
 #include "uber/jaeger/net/URI.h"
 
 #include <cassert>
+#include <iomanip>
+#include <iostream>
 #include <regex>
 
 namespace uber {
 namespace jaeger {
 namespace net {
+namespace {
+
+bool isHex(char ch)
+{
+    return (ch >= '0' && ch <= '9') ||
+           (ch >= 'A' && ch <= 'F') ||
+           (ch >= 'a' && ch <= 'f');
+}
+
+int decodeHex(char ch)
+{
+    if (ch >= '0' && ch <= '9') {
+        return ch - '0';
+    }
+    if (ch >= 'A' && ch <= 'F') {
+        return ch - 'A' + 10;
+    }
+    assert(ch >= 'a' && ch <= 'f');
+    return ch - 'a' + 10;
+}
+
+bool isUnreserved(char ch)
+{
+    if (std::isalpha(ch) || std::isdigit(ch)) {
+        return true;
+    }
+
+    switch (ch) {
+    case '-':
+    case '.':
+    case '_':
+    case '~':
+        return true;
+    default:
+        return false;
+    }
+}
+
+}  // anonymous namespace
 
 URI URI::parse(const std::string& uriStr)
 {
@@ -64,6 +105,72 @@ URI URI::parse(const std::string& uriStr)
     uri._query = match[kQueryIndex].str();
 
     return uri;
+}
+
+std::string URI::queryEscape(const std::string& input)
+{
+    std::ostringstream oss;
+    for (auto&& ch : input) {
+        if (isUnreserved(ch)) {
+            oss << ch;
+        }
+        else {
+            oss << '%' << std::uppercase << std::hex << static_cast<int>(ch);
+        }
+    }
+    return oss.str();
+}
+
+std::string URI::queryUnescape(const std::string& input)
+{
+    enum class State {
+        kDefault,
+        kPercent,
+        kFirstHex
+    };
+
+    std::ostringstream oss;
+    auto hex = 0;
+    auto state = State::kDefault;
+    for (auto&& ch : input) {
+        switch (state) {
+        case State::kDefault: {
+            if (ch == '%') {
+                state = State::kPercent;
+            }
+            else {
+                oss.put(ch);
+            }
+        } break;
+        case State::kPercent: {
+            if (isHex(ch)) {
+                state = State::kFirstHex;
+                hex = (decodeHex(ch) & 0xff);
+            }
+            else {
+                state = State::kDefault;
+                oss.put('%');
+                oss.put(ch);
+            }
+        } break;
+        default: {
+            assert(state == State::kFirstHex);
+            if (isHex(ch)) {
+                hex <<= 4;
+                hex |= (decodeHex(ch) & 0xff);
+                oss.put(static_cast<char>(hex));
+            }
+            else {
+                oss.put('%');
+                oss << std::hex << hex;
+                oss.put(ch);
+            }
+            state = State::kDefault;
+            hex = 0;
+        } break;
+        }
+    }
+    return oss.str();
 }
 
 std::unique_ptr<::addrinfo, AddrInfoDeleter> resolveAddress(const URI& uri,

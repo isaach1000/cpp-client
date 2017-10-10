@@ -134,4 +134,12 @@ inline Stream& operator<<(Stream& out,
     return out;
 }
 
+template <typename Stream>
+inline Stream& operator>>(Stream& in,
+                          uber::jaeger::SpanContext& spanContext)
+{
+    spanContext = uber::jaeger::SpanContext::fromStream(in);
+    return in;
+}
+
 #endif  // UBER_JAEGER_SPANCONTEXT_H

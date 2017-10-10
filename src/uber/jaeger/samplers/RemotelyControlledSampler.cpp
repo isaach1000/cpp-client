@@ -40,37 +40,6 @@ namespace jaeger {
 namespace samplers {
 namespace {
 
-bool isUnreserved(char ch)
-{
-    if (std::isalpha(ch) || std::isdigit(ch)) {
-        return true;
-    }
-
-    switch (ch) {
-    case '-':
-    case '.':
-    case '_':
-    case '~':
-        return true;
-    default:
-        return false;
-    }
-}
-
-std::string percentEncode(const std::string& input)
-{
-    std::ostringstream oss;
-    for (auto&& ch : input) {
-        if (isUnreserved(ch)) {
-            oss << ch;
-        }
-        else {
-            oss << '%' << std::uppercase << std::hex << static_cast<int>(ch);
-        }
-    }
-    return oss.str();
-}
-
 class HTTPSamplingManager : public thrift::sampling_manager::SamplingManagerIf {
   public:
     using SamplingStrategyResponse =
@@ -89,7 +58,7 @@ class HTTPSamplingManager : public thrift::sampling_manager::SamplingManagerIf {
                              const std::string& serviceName) override
     {
         auto uri = _serverURI;
-        uri._query = "?service=" + percentEncode(serviceName);
+        uri._query = "?service=" + net::URI::queryEscape(serviceName);
         const auto responseHTTP = net::http::get(uri);
         boost::shared_ptr<apache::thrift::transport::TMemoryBuffer> transport(
             new apache::thrift::transport::TMemoryBuffer());

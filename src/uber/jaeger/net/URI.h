@@ -37,6 +37,10 @@ namespace net {
 struct URI {
     static URI parse(const std::string& uriStr);
 
+    static std::string queryEscape(const std::string& input);
+
+    static std::string queryUnescape(const std::string& input);
+
     URI()
         : _scheme()
         , _host()
