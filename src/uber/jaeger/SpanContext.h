@@ -103,7 +103,6 @@ class SpanContext : public opentracing::SpanContext {
             << std::hex << static_cast<size_t>(_flags);
     }
 
-  protected:
     void ForeachBaggageItem(
         std::function<bool(const std::string& key, const std::string& value)> f)
         const override

@@ -155,7 +155,6 @@ class Span : public opentracing::Span {
         SetOperationName(std::forward<Arg>(args)...);
     }
 
-  protected:
     void FinishWithOptions(const opentracing::FinishSpanOptions&
                                finishSpanOptions) noexcept override
     {
@@ -197,6 +196,7 @@ class Span : public opentracing::Span {
         // TODO
     }
 
+  protected:
     const opentracing::SpanContext& context() const noexcept override
     {
         std::lock_guard<std::mutex> lock(_mutex);
