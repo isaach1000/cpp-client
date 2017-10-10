@@ -31,20 +31,12 @@ namespace http {
 
 Method parseMethod(const std::string& methodName)
 {
-    static constexpr auto kMethodNames = {
-        "OPTIONS",
-        "GET",
-        "HEAD",
-        "POST",
-        "PUT",
-        "DELETE",
-        "TRACE",
-        "CONNECT"
-    };
+    static constexpr auto kMethodNames = { "OPTIONS", "GET",    "HEAD",
+                                           "POST",    "PUT",    "DELETE",
+                                           "TRACE",   "CONNECT" };
 
-    auto itr = std::find(std::begin(kMethodNames),
-                         std::end(kMethodNames),
-                         methodName);
+    auto itr =
+        std::find(std::begin(kMethodNames), std::end(kMethodNames), methodName);
     if (itr == std::end(kMethodNames)) {
         return Method::EXTENSION;
     }

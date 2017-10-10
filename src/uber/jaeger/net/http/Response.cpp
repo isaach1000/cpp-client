@@ -42,8 +42,7 @@ Response Response::parse(std::istream& in)
     std::string line;
     std::smatch match;
     if (!readLineCRLF(in, line) ||
-        !std::regex_match(line, match, statusLinePattern) ||
-        match.size() < 4) {
+        !std::regex_match(line, match, statusLinePattern) || match.size() < 4) {
         throw ParseError::make("status line", line);
     }
     Response response;
@@ -66,21 +65,21 @@ Response get(const URI& uri)
     socket.open(AF_INET, SOCK_STREAM);
     socket.connect(uri);
     std::ostringstream requestStream;
-    requestStream
-        << "GET " << uri.target() << " HTTP/1.1\r\n"
-           "Host: " << uri.authority() << "\r\n"
-           "User-Agent: jaeger/" << kJaegerClientVersion << "\r\n\r\n";
+    requestStream << "GET " << uri.target()
+                  << " HTTP/1.1\r\n"
+                     "Host: "
+                  << uri.authority()
+                  << "\r\n"
+                     "User-Agent: jaeger/"
+                  << kJaegerClientVersion << "\r\n\r\n";
     const auto request = requestStream.str();
     const auto numWritten =
         ::write(socket.handle(), request.c_str(), request.size());
     if (numWritten != static_cast<int>(request.size())) {
         std::ostringstream oss;
         oss << "Failed to write entire HTTP request"
-            << ", uri=" << uri
-            << ", request=" << request;
-        throw std::system_error(errno,
-                                std::generic_category(),
-                                oss.str());
+            << ", uri=" << uri << ", request=" << request;
+        throw std::system_error(errno, std::generic_category(), oss.str());
     }
 
     constexpr auto kBufferSize = 256;

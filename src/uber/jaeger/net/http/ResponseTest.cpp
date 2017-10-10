@@ -51,10 +51,8 @@ TEST(Response, get)
 
     ::sockaddr_storage addrStorage;
     ::socklen_t addrLen = sizeof(addrStorage);
-    const auto returnCode =
-        ::getsockname(socket.handle(),
-                      reinterpret_cast<::sockaddr*>(&addrStorage),
-                      &addrLen);
+    const auto returnCode = ::getsockname(
+        socket.handle(), reinterpret_cast<::sockaddr*>(&addrStorage), &addrLen);
     ASSERT_EQ(0, returnCode);
     serverAddress = IPAddress(addrStorage, addrLen);
 
@@ -67,7 +65,8 @@ TEST(Response, get)
 
     std::ostringstream oss;
     oss << "GET / HTTP/1.1\r\n"
-           "Host: 127.0.0.1:" << serverAddress.port() << "\r\n"
+           "Host: 127.0.0.1:"
+        << serverAddress.port() << "\r\n"
         << "User-Agent: jaeger/" << kJaegerClientVersion << "\r\n\r\n";
     ASSERT_EQ(oss.str(), std::string(&buffer[0], numRead));
 

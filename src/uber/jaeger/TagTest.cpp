@@ -29,15 +29,13 @@ namespace jaeger {
 
 TEST(Tag, testThriftConversion)
 {
-    const Tag tags[] = {
-        { "testBool", true },
-        { "testDouble", 0.0 },
-        { "testInt64", 0LL },
-        { "testUint64", 0ULL },
-        { "testStr", std::string{"test"} },
-        { "testNull", nullptr },
-        { "testCStr", "test" }
-    };
+    const Tag tags[] = { { "testBool", true },
+                         { "testDouble", 0.0 },
+                         { "testInt64", 0LL },
+                         { "testUint64", 0ULL },
+                         { "testStr", std::string{ "test" } },
+                         { "testNull", nullptr },
+                         { "testCStr", "test" } };
 
     for (auto&& tag : tags) {
         ASSERT_NO_THROW(tag.thrift());

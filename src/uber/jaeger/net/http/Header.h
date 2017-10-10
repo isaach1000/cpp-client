@@ -38,8 +38,7 @@ class Header {
   public:
     Header() = default;
 
-    Header(const std::string& key,
-           const std::string& value)
+    Header(const std::string& key, const std::string& value)
         : _key(key)
         , _value(value)
     {
@@ -88,8 +87,7 @@ inline void readHeaders(std::istream& in, std::vector<Header>& headers)
         if (line.empty()) {
             break;
         }
-        if (!std::regex_match(line, match, headerPattern) ||
-            match.size() < 3) {
+        if (!std::regex_match(line, match, headerPattern) || match.size() < 3) {
             throw ParseError::make("header", line);
         }
         headers.emplace_back(Header(match[1], match[2]));

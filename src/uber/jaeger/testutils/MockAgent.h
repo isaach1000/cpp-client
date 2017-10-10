@@ -79,10 +79,7 @@ class MockAgent : public agent::thrift::AgentIf,
         return _batches;
     }
 
-    net::IPAddress spanServerAddress() const
-    {
-        return _transport.addr();
-    }
+    net::IPAddress spanServerAddress() const { return _transport.addr(); }
 
     std::unique_ptr<agent::thrift::AgentIf> spanServerClient()
     {

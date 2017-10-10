@@ -24,8 +24,8 @@
 
 #include <thrift/protocol/TJSONProtocol.h>
 
-#include "uber/jaeger/testutils/MockAgent.h"
 #include "uber/jaeger/net/http/Response.h"
+#include "uber/jaeger/testutils/MockAgent.h"
 
 namespace uber {
 namespace jaeger {

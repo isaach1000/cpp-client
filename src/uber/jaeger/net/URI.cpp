@@ -66,8 +66,8 @@ URI URI::parse(const std::string& uriStr)
     return uri;
 }
 
-std::unique_ptr<::addrinfo, AddrInfoDeleter>
-resolveAddress(const URI& uri, int socketType)
+std::unique_ptr<::addrinfo, AddrInfoDeleter> resolveAddress(const URI& uri,
+                                                            int socketType)
 {
     ::addrinfo hints;
     std::memset(&hints, 0, sizeof(hints));

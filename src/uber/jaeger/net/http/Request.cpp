@@ -30,7 +30,7 @@ namespace http {
 Request Request::parse(std::istream& in)
 {
     const std::regex requestLinePattern(
-            "([A-Z]+) ([^ ]+) HTTP/([0-9]\\.[0-9])$");
+        "([A-Z]+) ([^ ]+) HTTP/([0-9]\\.[0-9])$");
     std::string line;
     std::smatch match;
     if (!readLineCRLF(in, line) ||

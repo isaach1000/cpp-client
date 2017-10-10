@@ -160,11 +160,9 @@ void MockAgent::serveHTTP(std::promise<void>& started)
             const auto target = request.target();
             std::smatch match;
             if (!std::regex_search(target, match, servicePattern)) {
-                throw net::http::ParseError(
-                    "no 'service' parameter");
+                throw net::http::ParseError("no 'service' parameter");
             }
-            if (std::regex_search(match.suffix().str(),
-                                  servicePattern)) {
+            if (std::regex_search(match.suffix().str(), servicePattern)) {
                 throw net::http::ParseError(
                     "'service' parameter must occur only once");
             }
@@ -178,19 +176,16 @@ void MockAgent::serveHTTP(std::promise<void>& started)
                    "Content-Type: application/json\r\n\r\n"
                 << responseJSON;
             const auto responseStr = oss.str();
-            ::write(clientSocket.handle(),
-                    responseStr.c_str(),
-                    responseStr.size());
+            ::write(
+                clientSocket.handle(), responseStr.c_str(), responseStr.size());
         } catch (const net::http::ParseError& ex) {
             std::ostringstream oss;
-            oss << "HTTP/1.1 400 Bad Request\r\n\r\n"
-                << ex.what();
+            oss << "HTTP/1.1 400 Bad Request\r\n\r\n" << ex.what();
             const auto response = oss.str();
             ::write(clientSocket.handle(), response.c_str(), response.size());
         } catch (const std::exception& ex) {
             std::ostringstream oss;
-            oss << "HTTP/1.1 500 Internal Server Error\r\n\r\n"
-                << ex.what();
+            oss << "HTTP/1.1 500 Internal Server Error\r\n\r\n" << ex.what();
             const auto response = oss.str();
             ::write(clientSocket.handle(), response.c_str(), response.size());
         }

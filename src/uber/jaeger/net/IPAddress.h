@@ -127,8 +127,7 @@ class IPAddress {
             return ntohs(
                 reinterpret_cast<const ::sockaddr_in&>(_addr).sin_port);
         }
-        return ntohs(
-            reinterpret_cast<const ::sockaddr_in6&>(_addr).sin6_port);
+        return ntohs(reinterpret_cast<const ::sockaddr_in6&>(_addr).sin6_port);
     }
 
     int family() const
@@ -141,9 +140,8 @@ class IPAddress {
     }
 
   private:
-    static IPAddress versionFromString(const std::string& ip,
-                                       int port,
-                                       int family)
+    static IPAddress
+    versionFromString(const std::string& ip, int port, int family)
     {
         ::sockaddr_storage addrStorage;
         std::memset(&addrStorage, 0, sizeof(addrStorage));
@@ -174,9 +172,8 @@ class IPAddress {
             throw std::invalid_argument(oss.str());
         }
         return IPAddress(addrStorage,
-                         family == AF_INET
-                            ? sizeof(::sockaddr_in)
-                            : sizeof(::sockaddr_in6));
+                         family == AF_INET ? sizeof(::sockaddr_in)
+                                           : sizeof(::sockaddr_in6));
     }
 
     ::sockaddr_storage _addr;

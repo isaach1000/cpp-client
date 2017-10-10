@@ -35,12 +35,12 @@ class ParseError : public std::invalid_argument {
   public:
     using invalid_argument::invalid_argument;
 
-    static ParseError make(
-        const std::string& expected, const std::string& actual)
+    static ParseError make(const std::string& expected,
+                           const std::string& actual)
     {
         std::ostringstream oss;
-        oss << "Parse error, expected " << expected
-            << ", encountered \"" << actual << '"';
+        oss << "Parse error, expected " << expected << ", encountered \""
+            << actual << '"';
         return ParseError(oss.str());
     }
 };

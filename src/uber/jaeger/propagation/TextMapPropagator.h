@@ -41,8 +41,7 @@ class TextMapPropagator : public opentracing::TextMapReader,
         return ForeachKey(std::forward<Args>(args)...);
     }
 
-    expected_void
-    ForeachKey(
+    expected_void ForeachKey(
         std::function<expected_void(string_view key, string_view value)> f)
         const override;
 
@@ -52,8 +51,7 @@ class TextMapPropagator : public opentracing::TextMapReader,
         return Set(std::forward<Args>(args)...);
     }
 
-    expected_void
-    Set(string_view key, string_view value) const override;
+    expected_void Set(string_view key, string_view value) const override;
 };
 
 }  // namespace propagation

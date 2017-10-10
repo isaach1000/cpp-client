@@ -69,12 +69,9 @@ struct URI {
     template <typename Stream>
     void print(Stream& out) const
     {
-        out << "{ scheme=\"" << _scheme << '"'
-            << ", host=\"" << _host << '"'
-            << ", port=" << _port
-            << ", path=\"" << _path << '"'
-            << ", query=\"" << _query << '"'
-            << " }";
+        out << "{ scheme=\"" << _scheme << '"' << ", host=\"" << _host << '"'
+            << ", port=" << _port << ", path=\"" << _path << '"' << ", query=\""
+            << _query << '"' << " }";
     }
 
     std::string _scheme;
@@ -88,8 +85,8 @@ struct AddrInfoDeleter : public std::function<void(::addrinfo*)> {
     void operator()(::addrinfo* addrInfo) const { ::freeaddrinfo(addrInfo); }
 };
 
-std::unique_ptr<::addrinfo, AddrInfoDeleter>
-resolveAddress(const URI& uri, int socketType);
+std::unique_ptr<::addrinfo, AddrInfoDeleter> resolveAddress(const URI& uri,
+                                                            int socketType);
 
 inline std::unique_ptr<::addrinfo, AddrInfoDeleter>
 resolveAddress(const std::string& uriStr, int socketType)

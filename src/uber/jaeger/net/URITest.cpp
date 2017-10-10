@@ -44,11 +44,13 @@ TEST(URI, testPrint)
 {
     std::ostringstream oss;
     oss << URI::parse("localhost");
-    ASSERT_EQ("{ scheme=\"\""
-              ", host=\"\""
-              ", port=0"
-              ", path=\"localhost\""
-              ", query=\"\" }", oss.str());
+    ASSERT_EQ(
+        "{ scheme=\"\""
+        ", host=\"\""
+        ", port=0"
+        ", path=\"localhost\""
+        ", query=\"\" }",
+        oss.str());
 }
 
 TEST(URI, testResolveAddress)
