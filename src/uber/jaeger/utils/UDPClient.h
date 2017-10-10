@@ -40,11 +40,6 @@ namespace utils {
 
 class UDPClient : public agent::thrift::AgentIf {
   public:
-    UDPClient(const std::string& ip, int port, int maxPacketSize)
-        : UDPClient(net::IPAddress::v4(ip, port), maxPacketSize)
-    {
-    }
-
     UDPClient(const net::IPAddress& serverAddr, int maxPacketSize);
 
     ~UDPClient() { close(); }
