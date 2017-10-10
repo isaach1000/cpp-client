@@ -45,27 +45,12 @@ class IPAddress {
   public:
     static IPAddress v4(const std::string& ip, int port)
     {
-        ::sockaddr_in addr;
-        std::memset(&addr, 0, sizeof(addr));
-        addr.sin_family = AF_INET;
-        addr.sin_port = htons(port);
-        const auto returnCode =
-            inet_pton(addr.sin_family, ip.c_str(), &addr.sin_addr);
-        if (returnCode < 0) {
-            if (returnCode == 0) {
-                std::ostringstream oss;
-                oss << "Invalid IP address"
-                       ", ip="
-                    << ip << ", port=" << port;
-                throw std::invalid_argument(oss.str());
-            }
-            std::ostringstream oss;
-            oss << "Failed to parse IP address (inet_pton)"
-                   ", ip="
-                << ip << ", port=" << port;
-            throw std::system_error(errno, std::generic_category(), oss.str());
-        }
-        return IPAddress(addr);
+        return versionFromString(ip, port, AF_INET);
+    }
+
+    static IPAddress v6(const std::string& ip, int port)
+    {
+        return versionFromString(ip, port, AF_INET6);
     }
 
     IPAddress()
@@ -156,6 +141,44 @@ class IPAddress {
     }
 
   private:
+    static IPAddress versionFromString(const std::string& ip,
+                                       int port,
+                                       int family)
+    {
+        ::sockaddr_storage addrStorage;
+        std::memset(&addrStorage, 0, sizeof(addrStorage));
+
+        auto* addrBuffer = static_cast<void*>(nullptr);
+        if (family == AF_INET) {
+            ::sockaddr_in& addr =
+                *reinterpret_cast<::sockaddr_in*>(&addrStorage);
+            addr.sin_family = family;
+            addr.sin_port = htons(port);
+            addrBuffer = &addr.sin_addr;
+        }
+        else {
+            assert(family == AF_INET6);
+            ::sockaddr_in6& addr =
+                *reinterpret_cast<::sockaddr_in6*>(&addrStorage);
+            addr.sin6_family = family;
+            addr.sin6_port = htons(port);
+            addrBuffer = &addr.sin6_addr;
+        }
+
+        const auto returnCode = inet_pton(family, ip.c_str(), addrBuffer);
+        if (returnCode == 0) {
+            std::ostringstream oss;
+            oss << "Invalid IP address"
+                   ", ip="
+                << ip << ", port=" << port;
+            throw std::invalid_argument(oss.str());
+        }
+        return IPAddress(addrStorage,
+                         family == AF_INET
+                            ? sizeof(::sockaddr_in)
+                            : sizeof(::sockaddr_in6));
+    }
+
     ::sockaddr_storage _addr;
     ::socklen_t _addrLen;
 };
