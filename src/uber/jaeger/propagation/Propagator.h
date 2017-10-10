@@ -55,13 +55,15 @@ class Propagator : public Extractor<ReaderType>, public Injector<WriterType> {
     SpanContext extract(const Reader& reader) const override
     {
         SpanContext ctx;
-        const auto result = reader.ForeachKey([this, &reader, &ctx](
+        auto found = false;
+        const auto result = reader.ForeachKey([this, &reader, &ctx, &found](
             const std::string& key,
             const std::string& value) {
-                if (key == _headerKeys.traceContextHeaderName()) {
+                if (!found && key == _headerKeys.traceContextHeaderName()) {
+                    found = true;
                     std::istringstream iss(value);
                     if (!(iss >> ctx)) {
-                        return opentracing::invalid_span_context_error;
+                        return opentracing::span_context_corrupted_error;
                     }
                 }
             });
