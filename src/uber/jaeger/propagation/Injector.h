@@ -37,8 +37,7 @@ class Injector {
   public:
     virtual ~Injector() = default;
 
-    virtual void inject(const SpanContext& ctx,
-                        const Writer& writer) const = 0;
+    virtual void inject(const SpanContext& ctx, const Writer& writer) const = 0;
 };
 
 }  // namespace propagation

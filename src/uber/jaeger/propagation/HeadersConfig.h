@@ -63,8 +63,8 @@ class HeadersConfig {
         return _traceBaggageHeaderPrefix;
     }
 
-    void setTraceBaggageHeaderPrefix(
-        const std::string& traceBaggageHeaderPrefix)
+    void
+    setTraceBaggageHeaderPrefix(const std::string& traceBaggageHeaderPrefix)
     {
         _traceBaggageHeaderPrefix = traceBaggageHeaderPrefix;
     }

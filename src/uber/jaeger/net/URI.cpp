@@ -34,8 +34,7 @@ namespace {
 
 bool isHex(char ch)
 {
-    return (ch >= '0' && ch <= '9') ||
-           (ch >= 'A' && ch <= 'F') ||
+    return (ch >= '0' && ch <= '9') || (ch >= 'A' && ch <= 'F') ||
            (ch >= 'a' && ch <= 'f');
 }
 
@@ -123,11 +122,7 @@ std::string URI::queryEscape(const std::string& input)
 
 std::string URI::queryUnescape(const std::string& input)
 {
-    enum class State {
-        kDefault,
-        kPercent,
-        kFirstHex
-    };
+    enum class State { kDefault, kPercent, kFirstHex };
 
     std::ostringstream oss;
     auto hex = 0;

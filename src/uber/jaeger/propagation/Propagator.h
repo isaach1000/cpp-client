@@ -45,8 +45,7 @@ class Propagator : public Extractor<ReaderType>, public Injector<WriterType> {
     using Writer = WriterType;
     using StrMap = SpanContext::StrMap;
 
-    Propagator(const HeadersConfig& headerKeys,
-               metrics::Metrics& metrics)
+    Propagator(const HeadersConfig& headerKeys, metrics::Metrics& metrics)
         : _headerKeys(headerKeys)
         , _metrics(metrics)
     {
@@ -58,9 +57,9 @@ class Propagator : public Extractor<ReaderType>, public Injector<WriterType> {
     {
         SpanContext ctx;
         StrMap baggage;
-        const auto err = reader.ForeachKey([this, &reader, &ctx, &baggage](
-            const std::string& rawKey,
-            const std::string& value) {
+        const auto err = reader.ForeachKey(
+            [this, &reader, &ctx, &baggage](const std::string& rawKey,
+                                            const std::string& value) {
                 const auto key = normalizeKey(rawKey);
                 if (key == _headerKeys.traceContextHeaderName()) {
                     const auto safeValue = decodeValue(value);
@@ -103,9 +102,8 @@ class Propagator : public Extractor<ReaderType>, public Injector<WriterType> {
         std::ostringstream oss;
         oss << ctx;
         writer.Set(_headerKeys.traceContextHeaderName(), oss.str());
-        ctx.forEachBaggageItem([this, &writer](
-            const std::string& key,
-            const std::string& value) {
+        ctx.forEachBaggageItem(
+            [this, &writer](const std::string& key, const std::string& value) {
                 const auto safeKey = addBaggageKeyPrefix(key);
                 const auto safeValue = encodeValue(value);
                 writer.Set(safeKey, safeValue);
@@ -164,9 +162,8 @@ class Propagator : public Extractor<ReaderType>, public Injector<WriterType> {
 using TextMapPropagator =
     Propagator<opentracing::TextMapReader, opentracing::TextMapWriter>;
 
-class HTTPHeaderPropagator :
-    public Propagator<opentracing::HTTPHeadersReader,
-                      opentracing::HTTPHeadersWriter> {
+class HTTPHeaderPropagator : public Propagator<opentracing::HTTPHeadersReader,
+                                               opentracing::HTTPHeadersWriter> {
   public:
     using Propagator<Reader, Writer>::Propagator;
 
