@@ -87,7 +87,7 @@ class Propagator : public Extractor<ReaderType>, public Injector<WriterType> {
                 }
             });
         if (err) {
-            _metrics.decodingErrors()->inc(1);
+            _metrics.decodingErrors().inc(1);
             return SpanContext();
         }
         if (!ctx.traceID().isValid() && !ctx.isDebug() && baggage.empty()) {
