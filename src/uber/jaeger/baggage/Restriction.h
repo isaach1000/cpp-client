@@ -20,50 +20,32 @@
  * THE SOFTWARE.
  */
 
-#include "uber/jaeger/net/IPAddress.h"
-
-#include <ifaddrs.h>
-#include <sys/types.h>
+#ifndef UBER_JAEGER_BAGGAGE_RESTRICTION_H
+#define UBER_JAEGER_BAGGAGE_RESTRICTION_H
 
 namespace uber {
 namespace jaeger {
-namespace net {
-namespace {
+namespace baggage {
 
-struct IfAddrDeleter : public std::function<void(ifaddrs*)> {
-    void operator()(ifaddrs* ifAddr) const
+class Restriction {
+  public:
+    Restriction(bool keyAllowed, int maxValueLength)
+        : _keyAllowed(keyAllowed)
+        , _maxValueLength(maxValueLength)
     {
-        if (ifAddr) {
-            ::freeifaddrs(ifAddr);
-        }
     }
+
+    bool keyAllowed() const { return _keyAllowed; }
+
+    int maxValueLength() const { return _maxValueLength; }
+
+  private:
+    bool _keyAllowed;
+    int _maxValueLength;
 };
 
-}  // anonymous namespace
-
-IPAddress IPAddress::host(int family)
-{
-    return host([family](const ifaddrs* ifAddr) {
-        return ifAddr->ifa_addr->sa_family == family;
-    });
-}
-
-IPAddress IPAddress::host(std::function<bool(const ifaddrs*)> filter)
-{
-    auto* ifAddrRawPtr = static_cast<ifaddrs*>(nullptr);
-    getifaddrs(&ifAddrRawPtr);
-    std::unique_ptr<ifaddrs, IfAddrDeleter> ifAddr(ifAddrRawPtr);
-    for (auto* itr = ifAddr.get(); itr; itr = itr->ifa_next) {
-        if (filter(itr)) {
-            const auto family = ifAddr->ifa_addr->sa_family;
-            const auto addrLen = (family == AF_INET) ? sizeof(::sockaddr_in)
-                                                     : sizeof(::sockaddr_in6);
-            return IPAddress(*itr->ifa_addr, addrLen);
-        }
-    }
-    return IPAddress();
-}
-
-}  // namespace net
+}  // namespace baggage
 }  // namespace jaeger
 }  // namespace uber
+
+#endif  // UBER_JAEGER_BAGGAGE_RESTRICTION_H

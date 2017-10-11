@@ -32,7 +32,9 @@
 #include "uber/jaeger/Logging.h"
 #include "uber/jaeger/Span.h"
 #include "uber/jaeger/Tag.h"
+#include "uber/jaeger/baggage/RestrictionManager.h"
 #include "uber/jaeger/metrics/Metrics.h"
+#include "uber/jaeger/net/IPAddress.h"
 #include "uber/jaeger/propagation/Propagator.h"
 #include "uber/jaeger/reporters/Reporter.h"
 #include "uber/jaeger/samplers/Sampler.h"
@@ -52,7 +54,7 @@ class Tracer : public opentracing::Tracer {
       public:
         Options() = default;
 
-        Options(bool poolSpans, bool gen128Bit, bool zipkinSharedRPCSpan)
+        Options(bool poolSpans, bool gen128Bit)
             : _poolSpans(poolSpans)
             , _gen128Bit(gen128Bit)
         {
@@ -69,7 +71,7 @@ class Tracer : public opentracing::Tracer {
 
   private:
     std::string _serviceName;
-    uint32_t _hostIPv4;
+    net::IPAddress _hostIPv4;
     std::unique_ptr<samplers::Sampler> _sampler;
     std::unique_ptr<reporters::Reporter> _reporter;
     metrics::Metrics _metrics;
@@ -78,7 +80,9 @@ class Tracer : public opentracing::Tracer {
     // TODO: `Span` object pool.
     propagation::TextMapPropagator _textPropagator;
     propagation::HTTPHeaderPropagator _httpHeaderPropagator;
+    propagation::BinaryPropagator _binaryPropagator;
     std::vector<Tag> _tags;
+    std::unique_ptr<baggage::RestrictionManager> _restrictionManager;
 };
 
 }  // namespace jaeger

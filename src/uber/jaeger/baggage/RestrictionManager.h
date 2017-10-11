@@ -20,50 +20,49 @@
  * THE SOFTWARE.
  */
 
-#include "uber/jaeger/net/IPAddress.h"
+#ifndef UBER_JAEGER_BAGGAGE_RESTRICTIONMANAGER_H
+#define UBER_JAEGER_BAGGAGE_RESTRICTIONMANAGER_H
 
-#include <ifaddrs.h>
-#include <sys/types.h>
+#include <string>
+
+#include "uber/jaeger/baggage/Restriction.h"
 
 namespace uber {
 namespace jaeger {
-namespace net {
-namespace {
+namespace baggage {
 
-struct IfAddrDeleter : public std::function<void(ifaddrs*)> {
-    void operator()(ifaddrs* ifAddr) const
-    {
-        if (ifAddr) {
-            ::freeifaddrs(ifAddr);
-        }
-    }
+class RestrictionManager {
+  public:
+    virtual ~RestrictionManager() = default;
+
+    virtual Restriction getRestriction(
+        const std::string& service, const std::string& key) = 0;
 };
 
-}  // anonymous namespace
-
-IPAddress IPAddress::host(int family)
-{
-    return host([family](const ifaddrs* ifAddr) {
-        return ifAddr->ifa_addr->sa_family == family;
-    });
-}
-
-IPAddress IPAddress::host(std::function<bool(const ifaddrs*)> filter)
-{
-    auto* ifAddrRawPtr = static_cast<ifaddrs*>(nullptr);
-    getifaddrs(&ifAddrRawPtr);
-    std::unique_ptr<ifaddrs, IfAddrDeleter> ifAddr(ifAddrRawPtr);
-    for (auto* itr = ifAddr.get(); itr; itr = itr->ifa_next) {
-        if (filter(itr)) {
-            const auto family = ifAddr->ifa_addr->sa_family;
-            const auto addrLen = (family == AF_INET) ? sizeof(::sockaddr_in)
-                                                     : sizeof(::sockaddr_in6);
-            return IPAddress(*itr->ifa_addr, addrLen);
-        }
+class DefaultRestrictionManager : public RestrictionManager {
+  public:
+    explicit DefaultRestrictionManager(int maxValueLength)
+        : _defaultRestriction(true,
+                              maxValueLength == 0
+                                  ? kDefaultMaxValueLength
+                                  : maxValueLength)
+    {
     }
-    return IPAddress();
-}
 
-}  // namespace net
+    Restriction getRestriction(
+        const std::string& service, const std::string& key) override
+    {
+        return _defaultRestriction;
+    }
+
+  private:
+    static constexpr auto kDefaultMaxValueLength = 2048;
+
+    Restriction _defaultRestriction;
+};
+
+}  // namespace baggage
 }  // namespace jaeger
 }  // namespace uber
+
+#endif  // UBER_JAEGER_BAGGAGE_RESTRICTIONMANAGER_H

@@ -37,6 +37,8 @@
 #include <system_error>
 #include <vector>
 
+struct ifaddrs;
+
 namespace uber {
 namespace jaeger {
 namespace net {
@@ -52,6 +54,10 @@ class IPAddress {
     {
         return versionFromString(ip, port, AF_INET6);
     }
+
+    static IPAddress host(int family);
+
+    static IPAddress host(std::function<bool(const ifaddrs*)> filter);
 
     IPAddress()
         : _addr()
