@@ -222,8 +222,8 @@ class Span : public opentracing::Span {
 }  // namespace jaeger
 }  // namespace uber
 
-template <typename Stream>
-inline Stream& operator<<(Stream& out, const uber::jaeger::Span& span)
+inline std::ostream& operator<<(
+    std::ostream& out, const uber::jaeger::Span& span)
 {
     span.print(out);
     return out;

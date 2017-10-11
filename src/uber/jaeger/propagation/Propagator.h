@@ -29,6 +29,7 @@
 
 #include <opentracing/propagation.h>
 
+#include "uber/jaeger/SpanContext.h"
 #include "uber/jaeger/metrics/Metrics.h"
 #include "uber/jaeger/net/URI.h"
 #include "uber/jaeger/platform/Endian.h"

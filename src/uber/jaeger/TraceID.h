@@ -62,6 +62,11 @@ class TraceID {
 
     uint64_t low() const { return _low; }
 
+    bool operator==(const TraceID& rhs) const
+    {
+        return _high == rhs._high && _low == rhs._low;
+    }
+
   private:
     uint64_t _high;
     uint64_t _low;
@@ -70,11 +75,18 @@ class TraceID {
 }  // namespace jaeger
 }  // namespace uber
 
-template <typename Stream>
-inline Stream& operator<<(Stream& out, const uber::jaeger::TraceID& traceID)
+inline std::ostream& operator<<(std::ostream& out,
+                                const uber::jaeger::TraceID& traceID)
 {
     traceID.print(out);
     return out;
+}
+
+inline std::istream& operator<<(std::istream& in,
+                                uber::jaeger::TraceID& traceID)
+{
+    traceID = uber::jaeger::TraceID::fromStream(in);
+    return in;
 }
 
 #endif  // UBER_JAEGER_TRACEID_H

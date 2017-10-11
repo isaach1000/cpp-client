@@ -122,6 +122,16 @@ class SpanContext : public opentracing::SpanContext {
         forEachBaggageItem(f);
     }
 
+    bool operator==(const SpanContext& rhs) const
+    {
+        return _traceID == rhs._traceID &&
+               _spanID == rhs._spanID &&
+               _parentID == rhs._parentID &&
+               _flags == rhs._flags &&
+               _baggage == rhs._baggage &&
+               _debugID == rhs._debugID;
+    }
+
   private:
     enum class Flag : unsigned char { kSampled = 1, kDebug = 2 };
 
@@ -136,16 +146,15 @@ class SpanContext : public opentracing::SpanContext {
 }  // namespace jaeger
 }  // namespace uber
 
-template <typename Stream>
-inline Stream& operator<<(Stream& out,
-                          const uber::jaeger::SpanContext& spanContext)
+inline std::ostream& operator<<(std::ostream& out,
+                                const uber::jaeger::SpanContext& spanContext)
 {
     spanContext.print(out);
     return out;
 }
 
-template <typename Stream>
-inline Stream& operator>>(Stream& in, uber::jaeger::SpanContext& spanContext)
+inline std::istream& operator>>(std::istream& in,
+                                uber::jaeger::SpanContext& spanContext)
 {
     spanContext = uber::jaeger::SpanContext::fromStream(in);
     return in;
