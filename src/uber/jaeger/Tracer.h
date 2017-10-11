@@ -33,13 +33,12 @@
 #include "uber/jaeger/Span.h"
 #include "uber/jaeger/Tag.h"
 #include "uber/jaeger/metrics/Metrics.h"
+#include "uber/jaeger/propagation/Propagator.h"
 #include "uber/jaeger/reporters/Reporter.h"
 #include "uber/jaeger/samplers/Sampler.h"
 
 /* TODO
 #include "uber/jaeger/internal/baggage/RestrictionManager.h"
-#include "uber/jaeger/propagation/Extractor.h"
-#include "uber/jaeger/propagation/Injector.h"
 */
 
 namespace uber {
@@ -56,7 +55,6 @@ class Tracer : public opentracing::Tracer {
         Options(bool poolSpans, bool gen128Bit, bool zipkinSharedRPCSpan)
             : _poolSpans(poolSpans)
             , _gen128Bit(gen128Bit)
-            , _zipkinSharedRPCSpan(zipkinSharedRPCSpan)
         {
         }
 
@@ -64,12 +62,9 @@ class Tracer : public opentracing::Tracer {
 
         bool gen128Bit() const { return _gen128Bit; }
 
-        bool zipkinSharedRPCSpan() const { return _zipkinSharedRPCSpan; }
-
       private:
         bool _poolSpans;
         bool _gen128Bit;
-        bool _zipkinSharedRPCSpan;
     };
 
   private:
@@ -81,10 +76,8 @@ class Tracer : public opentracing::Tracer {
     std::shared_ptr<spdlog::logger> _logger;
     std::mt19937 _randomNumberGenerator;
     // TODO: `Span` object pool.
-    /* TODO
-    std::unordered_map<Format, Injector> _injectors;
-    std::unordered_map<Format, Extractor> _extractors;
-     */
+    propagation::TextMapPropagator _textPropagator;
+    propagation::HTTPHeaderPropagator _httpHeaderPropagator;
     std::vector<Tag> _tags;
 };
 

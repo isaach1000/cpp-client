@@ -89,6 +89,8 @@ class SpanContext : public opentracing::SpanContext {
 
     unsigned char flags() const { return _flags; }
 
+    void setFlags(unsigned char flags) { _flags = flags; }
+
     bool isSampled() const
     {
         return _flags & static_cast<unsigned char>(Flag::kSampled);

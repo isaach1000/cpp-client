@@ -24,18 +24,23 @@
 #define UBER_JAEGER_PROPAGATION_PROPAGATOR_H
 
 #include <cctype>
+#include <climits>
 #include <sstream>
 
 #include <opentracing/propagation.h>
 
 #include "uber/jaeger/metrics/Metrics.h"
 #include "uber/jaeger/net/URI.h"
+#include "uber/jaeger/platform/Endian.h"
 #include "uber/jaeger/propagation/Extractor.h"
 #include "uber/jaeger/propagation/HeadersConfig.h"
 #include "uber/jaeger/propagation/Injector.h"
 
 namespace uber {
 namespace jaeger {
+
+class Tracer;
+
 namespace propagation {
 
 template <typename ReaderType, typename WriterType>
@@ -160,10 +165,12 @@ class Propagator : public Extractor<ReaderType>, public Injector<WriterType> {
 };
 
 using TextMapPropagator =
-    Propagator<opentracing::TextMapReader, opentracing::TextMapWriter>;
+    Propagator<const opentracing::TextMapReader&,
+               const opentracing::TextMapWriter&>;
 
-class HTTPHeaderPropagator : public Propagator<opentracing::HTTPHeadersReader,
-                                               opentracing::HTTPHeadersWriter> {
+class HTTPHeaderPropagator :
+    public Propagator<const opentracing::HTTPHeadersReader&,
+                      const opentracing::HTTPHeadersWriter&> {
   public:
     using Propagator<Reader, Writer>::Propagator;
 
@@ -187,6 +194,96 @@ class HTTPHeaderPropagator : public Propagator<opentracing::HTTPHeadersReader,
                        std::back_inserter(key),
                        [](char ch) { return std::tolower(ch); });
         return key;
+    }
+};
+
+class BinaryPropagator : public Extractor<std::istream&>,
+                         public Injector<std::ostream&> {
+  public:
+    using StrMap = SpanContext::StrMap;
+
+    void inject(const SpanContext& ctx, std::ostream& out) const override
+    {
+        writeBinary(out, ctx.traceID().high());
+        writeBinary(out, ctx.traceID().low());
+        writeBinary(out, ctx.spanID());
+        writeBinary(out, ctx.parentID());
+        // `flags` is a single byte, so endianness is not an issue.
+        out.put(ctx.flags());
+
+        writeBinary(out, static_cast<uint32_t>(ctx.baggage().size()));
+        for (auto&& pair : ctx.baggage()) {
+            auto&& key = pair.first;
+            writeBinary(out, static_cast<uint32_t>(key.size()));
+            out.write(key.c_str(), key.size());
+
+            auto&& value = pair.second;
+            writeBinary(out, static_cast<uint32_t>(value.size()));
+            out.write(value.c_str(), value.size());
+        }
+    }
+
+    SpanContext extract(std::istream& in) const override
+    {
+        const auto traceIDHigh = readBinary<uint64_t>(in);
+        const auto traceIDLow = readBinary<uint64_t>(in);
+        TraceID traceID(traceIDHigh, traceIDLow);
+        const auto spanID = readBinary<uint64_t>(in);
+        const auto parentID = readBinary<uint64_t>(in);
+
+        auto ch = '\0';
+        in.get(ch);
+        const auto flags = static_cast<unsigned char>(ch);
+
+        const auto numBaggageItems = readBinary<uint32_t>(in);
+        StrMap baggage;
+        baggage.reserve(numBaggageItems);
+        for (auto i = static_cast<uint32_t>(0); i < numBaggageItems; ++i) {
+            const auto keyLength = readBinary<uint32_t>(in);
+            std::string key(keyLength, '\0');
+            in.read(&key[0], keyLength);
+
+            const auto valueLength = readBinary<uint32_t>(in);
+            std::string value(valueLength, '\0');
+            in.read(&value[0], valueLength);
+
+            baggage[key] = value;
+        }
+
+        SpanContext ctx(traceID, spanID, parentID, false, baggage);
+        ctx.setFlags(flags);
+        return ctx;
+    }
+
+  private:
+    template <typename ValueType>
+    static
+    typename std::enable_if<std::is_integral<ValueType>::value, void>::type
+    writeBinary(std::ostream& out, ValueType value)
+    {
+        const ValueType outValue = platform::endian::toBigEndian(value);
+        for (auto i = static_cast<size_t>(0); i < sizeof(ValueType); ++i) {
+            const auto numShiftBits = (sizeof(ValueType) - i - 1) * CHAR_BIT;
+            const auto byte = outValue >> numShiftBits;
+            out.put(static_cast<unsigned char>(byte));
+        }
+    }
+
+    template <typename ValueType>
+    static
+    typename std::enable_if<std::is_integral<ValueType>::value, ValueType>::type
+    readBinary(std::istream& in)
+    {
+        auto value = static_cast<ValueType>(0);
+        auto ch = '\0';
+        for (auto i = static_cast<size_t>(0);
+             i < sizeof(ValueType) && in.get(ch);
+             ++i) {
+            const auto byte = static_cast<uint8_t>(ch);
+            value <<= CHAR_BIT;
+            value |= byte;
+        }
+        return platform::endian::fromBigEndian(value);
     }
 };
 

@@ -20,28 +20,39 @@
  * THE SOFTWARE.
  */
 
-#ifndef UBER_JAEGER_PROPAGATION_INJECTOR_H
-#define UBER_JAEGER_PROPAGATION_INJECTOR_H
+#ifndef UBER_JAEGER_PLATFORM_ENDIAN_H
+#define UBER_JAEGER_PLATFORM_ENDIAN_H
 
-#include <opentracing/propagation.h>
+#include <cstdint>
+
+#if defined(__APPLE__)
+#include <machine/endian.h>
+#elif defined(__linux__)
+#include <endian.h>
+#else
+#error "unsupported platform"
+#endif
 
 namespace uber {
 namespace jaeger {
+namespace platform {
+namespace endian {
 
-class SpanContext;
+inline uint16_t toBigEndian(uint16_t value) { return htobe16(value); }
 
-namespace propagation {
+inline uint32_t toBigEndian(uint32_t value) { return htobe32(value); }
 
-template <typename Writer>
-class Injector {
-  public:
-    virtual ~Injector() = default;
+inline uint64_t toBigEndian(uint64_t value) { return htobe64(value); }
 
-    virtual void inject(const SpanContext& ctx, Writer writer) const = 0;
-};
+inline uint16_t fromBigEndian(uint16_t value) { return be16toh(value); }
 
-}  // namespace propagation
+inline uint32_t fromBigEndian(uint32_t value) { return be32toh(value); }
+
+inline uint64_t fromBigEndian(uint64_t value) { return be64toh(value); }
+
+}  // namespace endian
+}  // namespace platform
 }  // namespace jaeger
 }  // namespace uber
 
-#endif  // UBER_JAEGER_PROPAGATION_INJECTOR_H
+#endif  // UBER_JAEGER_PLATFORM_ENDIAN_H

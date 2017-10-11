@@ -20,28 +20,4 @@
  * THE SOFTWARE.
  */
 
-#ifndef UBER_JAEGER_PROPAGATION_INJECTOR_H
-#define UBER_JAEGER_PROPAGATION_INJECTOR_H
-
-#include <opentracing/propagation.h>
-
-namespace uber {
-namespace jaeger {
-
-class SpanContext;
-
-namespace propagation {
-
-template <typename Writer>
-class Injector {
-  public:
-    virtual ~Injector() = default;
-
-    virtual void inject(const SpanContext& ctx, Writer writer) const = 0;
-};
-
-}  // namespace propagation
-}  // namespace jaeger
-}  // namespace uber
-
-#endif  // UBER_JAEGER_PROPAGATION_INJECTOR_H
+#include "uber/jaeger/propagation/Injector.h"

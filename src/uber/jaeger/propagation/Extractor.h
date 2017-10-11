@@ -36,7 +36,7 @@ class Extractor {
   public:
     virtual ~Extractor() = default;
 
-    virtual SpanContext extract(const Reader& reader) const = 0;
+    virtual SpanContext extract(Reader reader) const = 0;
 };
 
 }  // namespace propagation
