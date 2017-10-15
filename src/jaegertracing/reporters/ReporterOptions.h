@@ -35,10 +35,8 @@ class ReporterOptions {
         : _queueSize(kDefaultQueueSize)
         , _bufferFlushInterval(defaultBufferFlushInterval())
         , _logger(logging::nullLogger())
-        , _metrics()
+        , _metrics(metrics::Metrics::makeNullMetrics())
     {
-        metrics::NullStatsFactory factory;
-        _metrics = std::make_shared<metrics::Metrics>(factory);
     }
 
     int queueSize() const { return _queueSize; }

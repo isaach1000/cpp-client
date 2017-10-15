@@ -39,34 +39,44 @@ class Tracer : public opentracing::Tracer {
   public:
     using Clock = std::chrono::steady_clock;
 
-    class Options {
-      public:
-        Options() = default;
+    using string_view = opentracing::string_view;
 
-        Options(bool poolSpans, bool gen128Bit)
-            : _poolSpans(poolSpans)
-            , _gen128Bit(gen128Bit)
-        {
+    Tracer(const std::string& serviceName,
+           std::unique_ptr<samplers::Sampler>&& sampler,
+           std::unique_ptr<reporters::Reporter>&& reporter)
+        : _serviceName(serviceName)
+        , _hostIPv4(net::IPAddress::host(AF_INET))
+        , _sampler(std::move(sampler))
+        , _reporter(std::move(reporter))
+        , _metrics(metrics::Metrics::makeNullMetrics())
+        , _logger(logging::nullLogger())
+        , _randomNumberGenerator()
+        , _textPropagator()
+        , _httpHeaderPropagator()
+        , _binaryPropagator()
+        , _tags()
+        , _restrictionManager(new baggage::DefaultRestrictionManager(0))
+    {
+        if (_hostIPv4 == net::IPAddress()) {
+            _logger->error("Unable to determine this host's IP address");
         }
 
-        bool poolSpans() const { return _poolSpans; }
+        std::random_device device;
+        _randomNumberGenerator.seed(device());
+    }
 
-        bool gen128Bit() const { return _gen128Bit; }
-
-      private:
-        bool _poolSpans;
-        bool _gen128Bit;
-    };
+    std::unique_ptr<opentracing::Span> StartSpanWithOptions(
+        string_view operationName,
+        const opentracing::StartSpanOptions& options) const noexcept override;
 
   private:
     std::string _serviceName;
     net::IPAddress _hostIPv4;
     std::unique_ptr<samplers::Sampler> _sampler;
     std::unique_ptr<reporters::Reporter> _reporter;
-    metrics::Metrics _metrics;
+    std::unique_ptr<metrics::Metrics> _metrics;
     std::shared_ptr<spdlog::logger> _logger;
     std::mt19937 _randomNumberGenerator;
-    // TODO: `Span` object pool.
     propagation::TextMapPropagator _textPropagator;
     propagation::HTTPHeaderPropagator _httpHeaderPropagator;
     propagation::BinaryPropagator _binaryPropagator;

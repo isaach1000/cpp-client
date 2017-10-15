@@ -96,6 +96,11 @@ class SpanContext : public opentracing::SpanContext {
         return _flags & static_cast<unsigned char>(Flag::kDebug);
     }
 
+    bool isDebugIDContainerOnly() const
+    {
+        return !_traceID.isValid() && !_debugID.empty();
+    }
+
     void setDebug() { _flags |= static_cast<unsigned char>(Flag::kDebug); }
 
     bool isValid() const { return _traceID.isValid() && _spanID != 0; }

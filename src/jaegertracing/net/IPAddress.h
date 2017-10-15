@@ -66,8 +66,9 @@ class IPAddress {
     }
 
     IPAddress(const ::sockaddr& addr, ::socklen_t addrLen)
-        : IPAddress(reinterpret_cast<const ::sockaddr_storage&>(addr), addrLen)
+        : IPAddress()
     {
+        std::memcpy(&_addr, &addr, addrLen);
     }
 
     explicit IPAddress(const ::sockaddr_in& addr)
@@ -78,6 +79,14 @@ class IPAddress {
     explicit IPAddress(const ::sockaddr_in6& addr)
         : IPAddress(reinterpret_cast<const ::sockaddr&>(addr), sizeof(addr))
     {
+    }
+
+    bool operator==(const IPAddress& rhs) const
+    {
+        if (_addrLen != rhs._addrLen) {
+            return false;
+        }
+        return std::memcmp(&_addr, &rhs._addr, _addrLen) == 0;
     }
 
     const ::sockaddr_storage& addr() const { return _addr; }

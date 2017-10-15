@@ -21,9 +21,16 @@
 
 #include "jaegertracing/metrics/Counter.h"
 #include "jaegertracing/metrics/Gauge.h"
+#include "jaegertracing/metrics/NullStatsFactory.h"
 
 namespace jaegertracing {
 namespace metrics {
+
+std::unique_ptr<Metrics> Metrics::makeNullMetrics()
+{
+    metrics::NullStatsFactory factory;
+    return std::unique_ptr<Metrics>(new Metrics(factory));
+}
 
 std::string Metrics::addTagsToMetricName(
     const std::string& name,

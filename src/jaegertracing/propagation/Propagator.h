@@ -44,7 +44,14 @@ class Propagator : public Extractor<ReaderType>, public Injector<WriterType> {
     using Writer = WriterType;
     using StrMap = SpanContext::StrMap;
 
-    Propagator(const HeadersConfig& headerKeys, metrics::Metrics& metrics)
+    Propagator()
+        : _headerKeys()
+        , _metrics(metrics::Metrics::makeNullMetrics())
+    {
+    }
+
+    Propagator(const HeadersConfig& headerKeys,
+               const std::shared_ptr<metrics::Metrics>& metrics)
         : _headerKeys(headerKeys)
         , _metrics(metrics)
     {
@@ -56,7 +63,7 @@ class Propagator : public Extractor<ReaderType>, public Injector<WriterType> {
     {
         SpanContext ctx;
         StrMap baggage;
-        const auto err = reader.ForeachKey(
+        const auto result = reader.ForeachKey(
             [this, &reader, &ctx, &baggage](const std::string& rawKey,
                                             const std::string& value) {
                 const auto key = normalizeKey(rawKey);
@@ -64,7 +71,8 @@ class Propagator : public Extractor<ReaderType>, public Injector<WriterType> {
                     const auto safeValue = decodeValue(value);
                     std::istringstream iss(safeValue);
                     if (!(iss >> ctx)) {
-                        return opentracing::span_context_corrupted_error;
+                        return opentracing::make_unexpected(
+                            opentracing::span_context_corrupted_error);
                     }
                 }
                 else if (key == _headerKeys.jaegerDebugHeader()) {
@@ -85,8 +93,9 @@ class Propagator : public Extractor<ReaderType>, public Injector<WriterType> {
                     }
                 }
             });
-        if (err) {
-            _metrics.decodingErrors().inc(1);
+        if (!result &&
+            result.error() == opentracing::span_context_corrupted_error) {
+            _metrics->decodingErrors().inc(1);
             return SpanContext();
         }
         if (!ctx.traceID().isValid() && !ctx.isDebug() && baggage.empty()) {
@@ -106,6 +115,7 @@ class Propagator : public Extractor<ReaderType>, public Injector<WriterType> {
                 const auto safeKey = addBaggageKeyPrefix(key);
                 const auto safeValue = encodeValue(value);
                 writer.Set(safeKey, safeValue);
+                return true;
             });
     }
 
@@ -155,7 +165,7 @@ class Propagator : public Extractor<ReaderType>, public Injector<WriterType> {
     }
 
     HeadersConfig _headerKeys;
-    metrics::Metrics& _metrics;
+    std::shared_ptr<metrics::Metrics> _metrics;
 };
 
 using TextMapPropagator =

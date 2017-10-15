@@ -15,3 +15,44 @@
  */
 
 #include "jaegertracing/Tracer.h"
+
+#include "jaegertracing/Reference.h"
+
+namespace jaegertracing {
+
+std::unique_ptr<opentracing::Span> Tracer::StartSpanWithOptions(
+    string_view operationName,
+    const opentracing::StartSpanOptions& options) const noexcept
+{
+    std::vector<Reference> references;
+    SpanContext parent;
+    auto hasParent = false;
+    for (auto&& ref : options.references) {
+        // TODO: See if we can avoid `dynamic_cast`.
+        auto ctx = dynamic_cast<const SpanContext*>(ref.second);
+        if (!ctx) {
+            _logger->error(
+                "Reference contains invalid type of SpanReference: {0}",
+                ref.second);
+            continue;
+        }
+        if (!ctx->isValid() || ctx->isDebugIDContainerOnly()) {
+            continue;
+        }
+        references.push_back(Reference(*ctx, ref.first));
+
+        if (!hasParent) {
+            parent = *ctx;
+            hasParent =
+                (ref.first == opentracing::SpanReferenceType::ChildOfRef);
+        }
+    }
+
+    if (!hasParent && parent.isValid()) {
+        hasParent = true;
+    }
+
+    // TODO
+}
+
+}  // namespace jaegertracing

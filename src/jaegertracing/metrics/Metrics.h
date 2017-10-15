@@ -31,6 +31,8 @@ namespace metrics {
 
 class Metrics {
   public:
+    static std::unique_ptr<Metrics> makeNullMetrics();
+
     static std::unique_ptr<Metrics> fromStatsReporter(StatsReporter& reporter)
     {
         // Factory only used for constructor, so need not live past the

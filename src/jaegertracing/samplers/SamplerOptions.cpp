@@ -34,15 +34,13 @@ const auto kDefaultSamplingRefreshInterval = std::chrono::minutes(1);
 }  // anonymous namespace
 
 SamplerOptions::SamplerOptions()
-    : _metrics()
+    : _metrics(metrics::Metrics::makeNullMetrics())
     , _maxOperations(kDefaultMaxOperations)
     , _sampler(std::make_shared<ProbabilisticSampler>(kDefaultSamplingRate))
     , _logger(logging::nullLogger())
     , _samplingServerURL(kDefaultSamplingServerURL)
     , _samplingRefreshInterval(kDefaultSamplingRefreshInterval)
 {
-    metrics::NullStatsFactory factory;
-    _metrics = std::make_shared<metrics::Metrics>(factory);
 }
 
 SamplerOptions::~SamplerOptions() = default;
