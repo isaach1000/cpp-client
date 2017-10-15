@@ -54,6 +54,7 @@ if(BUILD_TESTING)
 endif()
 
 set(SUBDIRS baggage
+            concurrency
             metrics
             net
             net/http
