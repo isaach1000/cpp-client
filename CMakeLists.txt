@@ -1,11 +1,12 @@
 cmake_minimum_required(VERSION 3.1)
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 
 include(HunterGate)
 HunterGate(
     URL "https://github.com/ruslo/hunter/archive/v0.19.117.tar.gz"
     SHA1 "6681cc2f0b49b1173aa8ba94b8056aaa8119fb2f"
+    FILEPATH "${CMAKE_SOURCE_DIR}/cmake/HunterConfig.cmake"
 )
 
 project(jaegerclient VERSION 0.0.1)
@@ -47,7 +48,7 @@ if(BUILD_TESTING)
     if(CMAKE_BUILD_TYPE MATCHES Debug)
         include(CodeCoverage)
         APPEND_COVERAGE_COMPILER_FLAGS()
-        set(COVERAGE_EXCLUDES "${CMAKE_SOURCE_DIR}/src/uber/jaeger/thrift-gen/*"
+        set(COVERAGE_EXCLUDES "${CMAKE_SOURCE_DIR}/src/jaegertracing/thrift-gen/*"
                               "*Test.cpp")
     endif()
 endif()
@@ -62,19 +63,19 @@ set(SUBDIRS baggage
             samplers
             utils)
 
-file(GLOB SRC "src/uber/jaeger/*.cpp")
+file(GLOB SRC "src/jaegertracing/*.cpp")
 foreach(SUBDIR IN LISTS SUBDIRS)
-    file(GLOB SUBDIR_SRC "src/uber/jaeger/${SUBDIR}/*.cpp")
+    file(GLOB SUBDIR_SRC "src/jaegertracing/${SUBDIR}/*.cpp")
     list(FILTER SUBDIR_SRC EXCLUDE REGEX ".*Test\\.cpp")
     list(APPEND SRC ${SUBDIR_SRC})
 endforeach()
 
-add_subdirectory("src/uber/jaeger/thrift-gen")
+add_subdirectory("src/jaegertracing/thrift-gen")
 list(APPEND LIBS thriftgen thrift::thrift_static)
 
 add_library(jaeger ${SRC})
-configure_file(src/uber/jaeger/Constants.h.in
-               src/uber/jaeger/Constants.h
+configure_file(src/jaegertracing/Constants.h.in
+               src/jaegertracing/Constants.h
                @ONLY)
 target_include_directories(jaeger PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>
@@ -82,11 +83,11 @@ target_include_directories(jaeger PUBLIC
 target_link_libraries(jaeger ${LIBS})
 
 if(BUILD_TESTING)
-    add_subdirectory("${CMAKE_SOURCE_DIR}/src/uber/jaeger/testutils")
-    file(GLOB TEST_SRC "src/uber/jaeger/*Test.cpp"
-                       "src/uber/jaeger/testutils/*Test.cpp")
+    add_subdirectory("${CMAKE_SOURCE_DIR}/src/jaegertracing/testutils")
+    file(GLOB TEST_SRC "src/jaegertracing/*Test.cpp"
+                       "src/jaegertracing/testutils/*Test.cpp")
     foreach(SUBDIR IN LISTS SUBDIRS)
-        file(GLOB SUBDIR_TEST_SRC "src/uber/jaeger/${SUBDIR}/*Test.cpp")
+        file(GLOB SUBDIR_TEST_SRC "src/jaegertracing/${SUBDIR}/*Test.cpp")
         list(APPEND TEST_SRC ${SUBDIR_TEST_SRC})
     endforeach()
 
