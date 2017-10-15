@@ -46,9 +46,9 @@ class Metrics {
         const std::unordered_map<std::string, std::string>& tags);
 
     explicit Metrics(StatsFactory& factory)
-        : _traceStartedSampled(factory.createCounter(
+        : _tracesStartedSampled(factory.createCounter(
               "jaeger.traces", { { "state", "started" }, { "sampled", "y" } }))
-        , _traceStartedNotSampled(factory.createCounter(
+        , _tracesStartedNotSampled(factory.createCounter(
               "jaeger.traces", { { "state", "started" }, { "sampled", "n" } }))
         , _tracesJoinedSampled(factory.createCounter(
               "jaeger.traces", { { "state", "joined" }, { "sampled", "y" } }))
@@ -99,13 +99,13 @@ class Metrics {
 
     ~Metrics();
 
-    const Counter& traceStartedSampled() const { return *_traceStartedSampled; }
-    Counter& traceStartedSampled() { return *_traceStartedSampled; }
-    const Counter& traceStartedNotSampled() const
+    const Counter& tracesStartedSampled() const { return *_tracesStartedSampled; }
+    Counter& tracesStartedSampled() { return *_tracesStartedSampled; }
+    const Counter& tracesStartedNotSampled() const
     {
-        return *_traceStartedNotSampled;
+        return *_tracesStartedNotSampled;
     }
-    Counter& traceStartedNotSampled() { return *_traceStartedNotSampled; }
+    Counter& tracesStartedNotSampled() { return *_tracesStartedNotSampled; }
     const Counter& tracesJoinedSampled() const { return *_tracesJoinedSampled; }
     Counter& tracesJoinedSampled() { return *_tracesJoinedSampled; }
     const Counter& tracesJoinedNotSampled() const
@@ -151,8 +151,8 @@ class Metrics {
     Counter& baggageTruncate() { return *_baggageTruncate; }
 
   private:
-    std::unique_ptr<Counter> _traceStartedSampled;
-    std::unique_ptr<Counter> _traceStartedNotSampled;
+    std::unique_ptr<Counter> _tracesStartedSampled;
+    std::unique_ptr<Counter> _tracesStartedNotSampled;
     std::unique_ptr<Counter> _tracesJoinedSampled;
     std::unique_ptr<Counter> _tracesJoinedNotSampled;
     std::unique_ptr<Counter> _spansStarted;

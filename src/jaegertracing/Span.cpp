@@ -23,7 +23,7 @@ namespace jaegertracing {
 const opentracing::Tracer& Span::tracer() const noexcept
 {
     std::lock_guard<std::mutex> lock(_mutex);
-    std::shared_ptr<opentracing::Tracer> tracer(_tracer.lock());
+    std::shared_ptr<const opentracing::Tracer> tracer(_tracer.lock());
     if (tracer) {
         return *tracer;
     }

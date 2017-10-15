@@ -61,7 +61,7 @@ TEST(Propagator, testBinaryPropagation)
         TraceID(engine(), engine()),
         engine(),
         engine(),
-        false,
+        0,
         baggage);
     binaryPropagator.inject(ctx, ss);
     ASSERT_EQ(ctx, binaryPropagator.extract(ss));

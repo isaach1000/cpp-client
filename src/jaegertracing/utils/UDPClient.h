@@ -61,7 +61,7 @@ class UDPClient : public agent::thrift::AgentIf {
         const auto numWritten = ::write(_socket.handle(), data, size);
         if (numWritten != size) {
             throw std::system_error(
-                errno, std::generic_category(), "Failed to write message");
+                errno, std::system_category(), "Failed to write message");
         }
     }
 

@@ -30,6 +30,8 @@ class RestrictionManager {
 
     virtual Restriction getRestriction(
         const std::string& service, const std::string& key) = 0;
+
+    virtual void close() noexcept {}
 };
 
 class DefaultRestrictionManager : public RestrictionManager {

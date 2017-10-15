@@ -72,7 +72,7 @@ Response get(const URI& uri)
         std::ostringstream oss;
         oss << "Failed to write entire HTTP request"
             << ", uri=" << uri << ", request=" << request;
-        throw std::system_error(errno, std::generic_category(), oss.str());
+        throw std::system_error(errno, std::system_category(), oss.str());
     }
 
     constexpr auto kBufferSize = 256;

@@ -32,8 +32,7 @@ std::unique_ptr<opentracing::Span> Tracer::StartSpanWithOptions(
         auto ctx = dynamic_cast<const SpanContext*>(ref.second);
         if (!ctx) {
             _logger->error(
-                "Reference contains invalid type of SpanReference: {0}",
-                ref.second);
+                "Reference contains invalid type of SpanReference");
             continue;
         }
         if (!ctx->isValid() || ctx->isDebugIDContainerOnly()) {
@@ -52,7 +51,105 @@ std::unique_ptr<opentracing::Span> Tracer::StartSpanWithOptions(
         hasParent = true;
     }
 
-    // TODO
+    std::vector<Tag> samplerTags;
+    auto newTrace = false;
+    SpanContext ctx;
+    if (!hasParent || !parent.isValid()) {
+        newTrace = true;
+        const TraceID traceID(randomID(), randomID());
+        const auto spanID = traceID.low();
+        const auto parentID = 0;
+        auto flags = static_cast<unsigned char>(0);
+        if (hasParent && parent.isDebugIDContainerOnly()) {
+            flags |= (static_cast<unsigned char>(SpanContext::Flag::kSampled) |
+                      static_cast<unsigned char>(SpanContext::Flag::kDebug));
+        }
+        else {
+            const auto samplingStatus =
+                _sampler->isSampled(traceID, operationName);
+            if (samplingStatus.isSampled()) {
+                flags |=
+                    static_cast<unsigned char>(SpanContext::Flag::kSampled);
+                samplerTags = samplingStatus.tags();
+            }
+        }
+        ctx = SpanContext(traceID, spanID, parentID, flags, {});
+    }
+    else {
+        const auto traceID = parent.traceID();
+        const auto spanID = randomID();
+        const auto parentID = parent.spanID();
+        const auto flags = parent.flags();
+        ctx = SpanContext(traceID, spanID, parentID, flags, {});
+    }
+
+    if (hasParent && !parent.baggage().empty()) {
+        ctx.setBaggage(parent.baggage());
+    }
+
+    return startSpanInternal(ctx,
+                             operationName,
+                             options.start_steady_timestamp,
+                             samplerTags,
+                             options.tags,
+                             newTrace,
+                             references);
+}
+
+std::unique_ptr<Span> Tracer::startSpanInternal(
+    const SpanContext& context,
+    const std::string& operationName,
+    const Clock::time_point& startTime,
+    const std::vector<Tag>& internalTags,
+    const std::vector<OpenTracingTag>& tags,
+    bool newTrace,
+    const std::vector<Reference>& references) const
+{
+    std::weak_ptr<const Tracer> weakPtr(shared_from_this());
+    const auto firstInProcess = (context.parentID() == 0);
+
+    std::vector<Tag> spanTags;
+    spanTags.reserve(tags.size() + internalTags.size());
+    std::transform(std::begin(tags),
+                   std::end(tags),
+                   std::back_inserter(spanTags),
+                   [](const OpenTracingTag& tag) {
+                       return Tag(tag.first, tag.second);
+                   });
+    spanTags.insert(std::end(spanTags),
+                    std::begin(internalTags),
+                    std::end(internalTags));
+
+    std::unique_ptr<Span> span(new Span(weakPtr,
+                                        context,
+                                        operationName,
+                                        startTime,
+                                        Clock::duration(),
+                                        spanTags,
+                                        references,
+                                        firstInProcess));
+
+    _metrics->spansStarted().inc(1);
+    if (span->context().isSampled()) {
+        _metrics->spansSampled().inc(1);
+        if (newTrace) {
+            _metrics->tracesStartedSampled().inc(1);
+        }
+        else if (firstInProcess) {
+            _metrics->tracesJoinedSampled().inc(1);
+        }
+    }
+    else {
+        _metrics->spansNotSampled().inc(1);
+        if (newTrace) {
+            _metrics->tracesStartedNotSampled().inc(1);
+        }
+        else if (firstInProcess) {
+            _metrics->tracesJoinedNotSampled().inc(1);
+        }
+    }
+
+    return span;
 }
 
 }  // namespace jaegertracing

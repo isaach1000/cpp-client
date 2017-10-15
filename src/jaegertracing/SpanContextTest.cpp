@@ -62,7 +62,7 @@ TEST(SpanContext, testFromStream)
 
 TEST(SpanContext, testFormatting)
 {
-    SpanContext spanContext(TraceID(255, 255), 0, 0, false, {});
+    SpanContext spanContext(TraceID(255, 255), 0, 0, 0, {});
     std::ostringstream oss;
     oss << spanContext;
     ASSERT_EQ("ff00000000000000ff:0:0:0", oss.str());

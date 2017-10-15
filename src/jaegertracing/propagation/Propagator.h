@@ -71,7 +71,7 @@ class Propagator : public Extractor<ReaderType>, public Injector<WriterType> {
                     const auto safeValue = decodeValue(value);
                     std::istringstream iss(safeValue);
                     if (!(iss >> ctx)) {
-                        return opentracing::make_unexpected(
+                        return opentracing::make_expected_from_error<void>(
                             opentracing::span_context_corrupted_error);
                     }
                 }
@@ -92,6 +92,7 @@ class Propagator : public Extractor<ReaderType>, public Injector<WriterType> {
                         baggage[safeKey] = safeValue;
                     }
                 }
+                return opentracing::make_expected();
             });
         if (!result &&
             result.error() == opentracing::span_context_corrupted_error) {
@@ -254,7 +255,7 @@ class BinaryPropagator : public Extractor<std::istream&>,
             baggage[key] = value;
         }
 
-        SpanContext ctx(traceID, spanID, parentID, false, baggage);
+        SpanContext ctx(traceID, spanID, parentID, 0, baggage);
         ctx.setFlags(flags);
         return ctx;
     }

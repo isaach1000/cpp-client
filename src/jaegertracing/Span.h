@@ -37,9 +37,29 @@ class Span : public opentracing::Span {
   public:
     using Clock = std::chrono::steady_clock;
 
+    Span(const std::weak_ptr<const Tracer>& tracer,
+         const SpanContext& context,
+         const std::string& operationName,
+         const Clock::time_point& startTime,
+         const Clock::duration& duration,
+         const std::vector<Tag>& tags,
+         const std::vector<Reference>& references,
+         bool firstInProcess)
+        : _tracer(tracer)
+        , _context(context)
+        , _operationName(operationName)
+        , _startTime(startTime)
+        , _duration(duration)
+        , _references(references)
+    {
+    }
+
     Span(const Span& span)
     {
-        std::lock_guard<std::mutex> lock(span._mutex);
+        std::lock(_mutex, span._mutex);
+        std::lock_guard<std::mutex> lock(_mutex, std::adopt_lock);
+        std::lock_guard<std::mutex> spanLock(span._mutex, std::adopt_lock);
+
         _context = span._context;
         _operationName = span._operationName;
         _startTime = span._startTime;
@@ -49,21 +69,33 @@ class Span : public opentracing::Span {
         _references = span._references;
     }
 
-    Span& operator=(const Span& rhs)
+    // Pass-by-value intentional to implement copy-and-swap.
+    Span& operator=(Span rhs)
     {
-        std::lock_guard<std::mutex> lock(_mutex);
-        std::lock_guard<std::mutex> rhsLock(rhs._mutex);
-        _context = rhs._context;
-        _operationName = rhs._operationName;
-        _startTime = rhs._startTime;
-        _duration = rhs._duration;
-        _tags = rhs._tags;
-        _logs = rhs._logs;
-        _references = rhs._references;
+        swap(rhs);
         return *this;
     }
 
     ~Span();
+
+    void swap(Span& span)
+    {
+        using std::swap;
+
+        std::lock(_mutex, span._mutex);
+        std::lock_guard<std::mutex> lock(_mutex, std::adopt_lock);
+        std::lock_guard<std::mutex> spanLock(span._mutex, std::adopt_lock);
+
+        swap(_context, span._context);
+        swap(_operationName, span._operationName);
+        swap(_startTime, span._startTime);
+        swap(_duration, span._duration);
+        swap(_tags, span._tags);
+        swap(_logs, span._logs);
+        swap(_references, span._references);
+    }
+
+    friend void swap(Span& lhs, Span& rhs) { lhs.swap(rhs); }
 
     thrift::Span thrift() const
     {
@@ -189,8 +221,7 @@ class Span : public opentracing::Span {
         // TODO
     }
 
-  protected:
-    const opentracing::SpanContext& context() const noexcept override
+    const SpanContext& context() const noexcept override
     {
         std::lock_guard<std::mutex> lock(_mutex);
         return _context;
@@ -198,10 +229,12 @@ class Span : public opentracing::Span {
 
     const opentracing::Tracer& tracer() const noexcept override;
 
+  protected:
+
   private:
     bool isFinished() const { return _duration != Clock::duration(); }
 
-    std::weak_ptr<Tracer> _tracer;
+    std::weak_ptr<const Tracer> _tracer;
     SpanContext _context;
     std::string _operationName;
     Clock::time_point _startTime;

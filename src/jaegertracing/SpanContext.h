@@ -32,6 +32,8 @@ class SpanContext : public opentracing::SpanContext {
   public:
     using StrMap = std::unordered_map<std::string, std::string>;
 
+    enum class Flag : unsigned char { kSampled = 1, kDebug = 2 };
+
     static SpanContext fromStream(std::istream& in);
 
     SpanContext() = default;
@@ -39,12 +41,12 @@ class SpanContext : public opentracing::SpanContext {
     SpanContext(const TraceID& traceID,
                 uint64_t spanID,
                 uint64_t parentID,
-                bool sampled,
+                unsigned char flags,
                 const StrMap& baggage)
         : _traceID(traceID)
         , _spanID(spanID)
         , _parentID(parentID)
-        , _flags(sampled ? static_cast<unsigned char>(Flag::kSampled) : 0)
+        , _flags(flags)
         , _baggage(baggage)
         , _debugID()
     {
@@ -131,8 +133,6 @@ class SpanContext : public opentracing::SpanContext {
     }
 
   private:
-    enum class Flag : unsigned char { kSampled = 1, kDebug = 2 };
-
     TraceID _traceID;
     uint64_t _spanID;
     uint64_t _parentID;

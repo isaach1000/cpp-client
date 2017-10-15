@@ -61,7 +61,7 @@ class Socket {
             oss << "Failed to open socket"
                    ", family="
                 << family << ", type=" << type;
-            throw std::system_error(errno, std::generic_category(), oss.str());
+            throw std::system_error(errno, std::system_category(), oss.str());
         }
         _handle = handle;
         _family = family;
@@ -79,7 +79,7 @@ class Socket {
             oss << "Failed to bind socket to address"
                    ", addr=";
             addr.print(oss);
-            throw std::system_error(errno, std::generic_category(), oss.str());
+            throw std::system_error(errno, std::system_category(), oss.str());
         }
     }
 
@@ -131,7 +131,7 @@ class Socket {
         const auto returnCode = ::listen(_handle, backlog);
         if (returnCode != 0) {
             throw std::system_error(
-                errno, std::generic_category(), "Failed to listen on socket");
+                errno, std::system_category(), "Failed to listen on socket");
         }
     }
 
@@ -143,7 +143,7 @@ class Socket {
             _handle, reinterpret_cast<::sockaddr*>(&addrStorage), &addrLen);
         if (clientHandle < 0) {
             throw std::system_error(
-                errno, std::generic_category(), "Failed to accept on socket");
+                errno, std::system_category(), "Failed to accept on socket");
         }
 
         Socket clientSocket;
