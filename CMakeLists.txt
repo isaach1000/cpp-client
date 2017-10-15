@@ -9,7 +9,7 @@ HunterGate(
     FILEPATH "${CMAKE_SOURCE_DIR}/cmake/HunterConfig.cmake"
 )
 
-project(jaegerclient VERSION 0.0.1)
+project(jaegertracing VERSION 0.0.1)
 
 set(CMAKE_CXX_STANDARD_REQUIRED true)
 set(CMAKE_CXX_STANDARD 11)
@@ -73,14 +73,14 @@ endforeach()
 add_subdirectory("src/jaegertracing/thrift-gen")
 list(APPEND LIBS thriftgen thrift::thrift_static)
 
-add_library(jaeger ${SRC})
+add_library(jaegertracing ${SRC})
 configure_file(src/jaegertracing/Constants.h.in
                src/jaegertracing/Constants.h
                @ONLY)
-target_include_directories(jaeger PUBLIC
+target_include_directories(jaegertracing PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>
     $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/src>)
-target_link_libraries(jaeger ${LIBS})
+target_link_libraries(jaegertracing ${LIBS})
 
 if(BUILD_TESTING)
     add_subdirectory("${CMAKE_SOURCE_DIR}/src/jaegertracing/testutils")
@@ -92,7 +92,7 @@ if(BUILD_TESTING)
     endforeach()
 
     add_executable(UnitTest ${TEST_SRC})
-    target_link_libraries(UnitTest testutils GTest::main jaeger ${LIBS})
+    target_link_libraries(UnitTest testutils GTest::main jaegertracing ${LIBS})
     add_test(NAME UnitTest
              COMMAND UnitTest)
     if(CMAKE_BUILD_TYPE MATCHES Debug)
