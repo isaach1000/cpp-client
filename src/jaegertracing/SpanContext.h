@@ -124,12 +124,9 @@ class SpanContext : public opentracing::SpanContext {
 
     bool operator==(const SpanContext& rhs) const
     {
-        return _traceID == rhs._traceID &&
-               _spanID == rhs._spanID &&
-               _parentID == rhs._parentID &&
-               _flags == rhs._flags &&
-               _baggage == rhs._baggage &&
-               _debugID == rhs._debugID;
+        return _traceID == rhs._traceID && _spanID == rhs._spanID &&
+               _parentID == rhs._parentID && _flags == rhs._flags &&
+               _baggage == rhs._baggage && _debugID == rhs._debugID;
     }
 
   private:

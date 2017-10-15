@@ -18,8 +18,8 @@
 #define JAEGERTRACING_TRACER_H
 
 #include <chrono>
-#include <random>
 #include <memory>
+#include <random>
 #include <vector>
 
 #include <opentracing/tracer.h>
@@ -52,13 +52,13 @@ class Tracer : public opentracing::Tracer,
         return std::shared_ptr<Tracer>(new Tracer(std::forward<Args>(args)...));
     }
 
-    std::unique_ptr<opentracing::Span> StartSpanWithOptions(
-        string_view operationName,
-        const opentracing::StartSpanOptions& options) const noexcept override;
+    std::unique_ptr<opentracing::Span>
+    StartSpanWithOptions(string_view operationName,
+                         const opentracing::StartSpanOptions& options) const
+        noexcept override;
 
-    opentracing::expected<void> Inject(
-        const opentracing::SpanContext& ctx,
-        std::ostream& writer) const override
+    opentracing::expected<void> Inject(const opentracing::SpanContext& ctx,
+                                       std::ostream& writer) const override
     {
         const auto* jaegerCtx = dynamic_cast<const SpanContext*>(&ctx);
         if (!jaegerCtx) {
@@ -69,9 +69,9 @@ class Tracer : public opentracing::Tracer,
         return opentracing::make_expected();
     }
 
-    opentracing::expected<void> Inject(
-        const opentracing::SpanContext& ctx,
-        const opentracing::TextMapWriter& writer) const override
+    opentracing::expected<void>
+    Inject(const opentracing::SpanContext& ctx,
+           const opentracing::TextMapWriter& writer) const override
     {
         const auto* jaegerCtx = dynamic_cast<const SpanContext*>(&ctx);
         if (!jaegerCtx) {
@@ -82,9 +82,9 @@ class Tracer : public opentracing::Tracer,
         return opentracing::make_expected();
     }
 
-    opentracing::expected<void> Inject(
-        const opentracing::SpanContext& ctx,
-        const opentracing::HTTPHeadersWriter& writer) const override
+    opentracing::expected<void>
+    Inject(const opentracing::SpanContext& ctx,
+           const opentracing::HTTPHeadersWriter& writer) const override
     {
         const auto* jaegerCtx = dynamic_cast<const SpanContext*>(&ctx);
         if (!jaegerCtx) {
@@ -95,22 +95,22 @@ class Tracer : public opentracing::Tracer,
         return opentracing::make_expected();
     }
 
-    opentracing::expected<std::unique_ptr<opentracing::SpanContext>> Extract(
-        std::istream& reader) const override
+    opentracing::expected<std::unique_ptr<opentracing::SpanContext>>
+    Extract(std::istream& reader) const override
     {
         return std::unique_ptr<opentracing::SpanContext>(
             new SpanContext(_binaryPropagator.extract(reader)));
     }
 
-    opentracing::expected<std::unique_ptr<opentracing::SpanContext>> Extract(
-        const opentracing::TextMapReader& reader) const override
+    opentracing::expected<std::unique_ptr<opentracing::SpanContext>>
+    Extract(const opentracing::TextMapReader& reader) const override
     {
         return std::unique_ptr<opentracing::SpanContext>(
             new SpanContext(_textPropagator.extract(reader)));
     }
 
-    opentracing::expected<std::unique_ptr<opentracing::SpanContext>> Extract(
-        const opentracing::HTTPHeadersReader& reader) const override
+    opentracing::expected<std::unique_ptr<opentracing::SpanContext>>
+    Extract(const opentracing::HTTPHeadersReader& reader) const override
     {
         return std::unique_ptr<opentracing::SpanContext>(
             new SpanContext(_httpHeaderPropagator.extract(reader)));
@@ -176,14 +176,14 @@ class Tracer : public opentracing::Tracer,
 
     using OpenTracingTag = std::pair<std::string, opentracing::Value>;
 
-    std::unique_ptr<Span> startSpanInternal(
-        const SpanContext& context,
-        const std::string& operationName,
-        const Clock::time_point& startTime,
-        const std::vector<Tag>& internalTags,
-        const std::vector<OpenTracingTag>& tags,
-        bool newTrace,
-        const std::vector<Reference>& references) const;
+    std::unique_ptr<Span>
+    startSpanInternal(const SpanContext& context,
+                      const std::string& operationName,
+                      const Clock::time_point& startTime,
+                      const std::vector<Tag>& internalTags,
+                      const std::vector<OpenTracingTag>& tags,
+                      bool newTrace,
+                      const std::vector<Reference>& references) const;
 
     std::string _serviceName;
     net::IPAddress _hostIPv4;

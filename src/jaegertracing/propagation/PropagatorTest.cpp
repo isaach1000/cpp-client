@@ -28,9 +28,10 @@ template <typename RandomGenerator>
 std::string randomStr(RandomGenerator& gen)
 {
     constexpr auto kMaxSize = 10;
-    static constexpr char kLetters[] = "abcdefghijklmnopqrstuvwxyz"
-                                       "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                                       "0123456789";
+    static constexpr char kLetters[] =
+        "abcdefghijklmnopqrstuvwxyz"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "0123456789";
     constexpr auto kNumLetters = sizeof(kLetters) - 1;
     const auto size = gen() % kMaxSize;
     std::string result(size, '\0');
@@ -58,11 +59,7 @@ TEST(Propagator, testBinaryPropagation)
         baggage[key] = value;
     }
     SpanContext ctx(
-        TraceID(engine(), engine()),
-        engine(),
-        engine(),
-        0,
-        baggage);
+        TraceID(engine(), engine()), engine(), engine(), 0, baggage);
     binaryPropagator.inject(ctx, ss);
     ASSERT_EQ(ctx, binaryPropagator.extract(ss));
 }

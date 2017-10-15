@@ -20,9 +20,10 @@
 
 namespace jaegertracing {
 
-std::unique_ptr<opentracing::Span> Tracer::StartSpanWithOptions(
-    string_view operationName,
-    const opentracing::StartSpanOptions& options) const noexcept
+std::unique_ptr<opentracing::Span>
+Tracer::StartSpanWithOptions(string_view operationName,
+                             const opentracing::StartSpanOptions& options) const
+    noexcept
 {
     std::vector<Reference> references;
     SpanContext parent;
@@ -31,8 +32,7 @@ std::unique_ptr<opentracing::Span> Tracer::StartSpanWithOptions(
         // TODO: See if we can avoid `dynamic_cast`.
         auto ctx = dynamic_cast<const SpanContext*>(ref.second);
         if (!ctx) {
-            _logger->error(
-                "Reference contains invalid type of SpanReference");
+            _logger->error("Reference contains invalid type of SpanReference");
             continue;
         }
         if (!ctx->isValid() || ctx->isDebugIDContainerOnly()) {
@@ -96,29 +96,27 @@ std::unique_ptr<opentracing::Span> Tracer::StartSpanWithOptions(
                              references);
 }
 
-std::unique_ptr<Span> Tracer::startSpanInternal(
-    const SpanContext& context,
-    const std::string& operationName,
-    const Clock::time_point& startTime,
-    const std::vector<Tag>& internalTags,
-    const std::vector<OpenTracingTag>& tags,
-    bool newTrace,
-    const std::vector<Reference>& references) const
+std::unique_ptr<Span>
+Tracer::startSpanInternal(const SpanContext& context,
+                          const std::string& operationName,
+                          const Clock::time_point& startTime,
+                          const std::vector<Tag>& internalTags,
+                          const std::vector<OpenTracingTag>& tags,
+                          bool newTrace,
+                          const std::vector<Reference>& references) const
 {
     std::weak_ptr<const Tracer> weakPtr(shared_from_this());
     const auto firstInProcess = (context.parentID() == 0);
 
     std::vector<Tag> spanTags;
     spanTags.reserve(tags.size() + internalTags.size());
-    std::transform(std::begin(tags),
-                   std::end(tags),
-                   std::back_inserter(spanTags),
-                   [](const OpenTracingTag& tag) {
-                       return Tag(tag.first, tag.second);
-                   });
-    spanTags.insert(std::end(spanTags),
-                    std::begin(internalTags),
-                    std::end(internalTags));
+    std::transform(
+        std::begin(tags),
+        std::end(tags),
+        std::back_inserter(spanTags),
+        [](const OpenTracingTag& tag) { return Tag(tag.first, tag.second); });
+    spanTags.insert(
+        std::end(spanTags), std::begin(internalTags), std::end(internalTags));
 
     std::unique_ptr<Span> span(new Span(weakPtr,
                                         context,

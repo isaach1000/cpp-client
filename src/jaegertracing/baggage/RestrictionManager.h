@@ -28,8 +28,8 @@ class RestrictionManager {
   public:
     virtual ~RestrictionManager() = default;
 
-    virtual Restriction getRestriction(
-        const std::string& service, const std::string& key) = 0;
+    virtual Restriction getRestriction(const std::string& service,
+                                       const std::string& key) = 0;
 
     virtual void close() noexcept {}
 };
@@ -38,14 +38,13 @@ class DefaultRestrictionManager : public RestrictionManager {
   public:
     explicit DefaultRestrictionManager(int maxValueLength)
         : _defaultRestriction(true,
-                              maxValueLength == 0
-                                  ? kDefaultMaxValueLength
-                                  : maxValueLength)
+                              maxValueLength == 0 ? kDefaultMaxValueLength
+                                                  : maxValueLength)
     {
     }
 
-    Restriction getRestriction(
-        const std::string& service, const std::string& key) override
+    Restriction getRestriction(const std::string& service,
+                               const std::string& key) override
     {
         return _defaultRestriction;
     }

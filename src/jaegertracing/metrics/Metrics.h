@@ -99,7 +99,10 @@ class Metrics {
 
     ~Metrics();
 
-    const Counter& tracesStartedSampled() const { return *_tracesStartedSampled; }
+    const Counter& tracesStartedSampled() const
+    {
+        return *_tracesStartedSampled;
+    }
     Counter& tracesStartedSampled() { return *_tracesStartedSampled; }
     const Counter& tracesStartedNotSampled() const
     {

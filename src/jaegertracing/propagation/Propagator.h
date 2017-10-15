@@ -63,37 +63,36 @@ class Propagator : public Extractor<ReaderType>, public Injector<WriterType> {
     {
         SpanContext ctx;
         StrMap baggage;
-        const auto result = reader.ForeachKey(
-            [this, &reader, &ctx, &baggage](const std::string& rawKey,
-                                            const std::string& value) {
-                const auto key = normalizeKey(rawKey);
-                if (key == _headerKeys.traceContextHeaderName()) {
+        const auto result = reader.ForeachKey([this, &reader, &ctx, &baggage](
+            const std::string& rawKey, const std::string& value) {
+            const auto key = normalizeKey(rawKey);
+            if (key == _headerKeys.traceContextHeaderName()) {
+                const auto safeValue = decodeValue(value);
+                std::istringstream iss(safeValue);
+                if (!(iss >> ctx)) {
+                    return opentracing::make_expected_from_error<void>(
+                        opentracing::span_context_corrupted_error);
+                }
+            }
+            else if (key == _headerKeys.jaegerDebugHeader()) {
+                ctx.setDebug();
+            }
+            else if (key == _headerKeys.jaegerBaggageHeader()) {
+                for (auto&& pair : parseCommaSeparatedMap(value)) {
+                    baggage[pair.first] = pair.second;
+                }
+            }
+            else {
+                const auto prefix = _headerKeys.traceBaggageHeaderPrefix();
+                if (key.size() >= prefix.size() &&
+                    key.substr(0, prefix.size()) == prefix) {
+                    const auto safeKey = removeBaggageKeyPrefix(key);
                     const auto safeValue = decodeValue(value);
-                    std::istringstream iss(safeValue);
-                    if (!(iss >> ctx)) {
-                        return opentracing::make_expected_from_error<void>(
-                            opentracing::span_context_corrupted_error);
-                    }
+                    baggage[safeKey] = safeValue;
                 }
-                else if (key == _headerKeys.jaegerDebugHeader()) {
-                    ctx.setDebug();
-                }
-                else if (key == _headerKeys.jaegerBaggageHeader()) {
-                    for (auto&& pair : parseCommaSeparatedMap(value)) {
-                        baggage[pair.first] = pair.second;
-                    }
-                }
-                else {
-                    const auto prefix = _headerKeys.traceBaggageHeaderPrefix();
-                    if (key.size() >= prefix.size() &&
-                        key.substr(0, prefix.size()) == prefix) {
-                        const auto safeKey = removeBaggageKeyPrefix(key);
-                        const auto safeValue = decodeValue(value);
-                        baggage[safeKey] = safeValue;
-                    }
-                }
-                return opentracing::make_expected();
-            });
+            }
+            return opentracing::make_expected();
+        });
         if (!result &&
             result.error() == opentracing::span_context_corrupted_error) {
             _metrics->decodingErrors().inc(1);
@@ -169,13 +168,12 @@ class Propagator : public Extractor<ReaderType>, public Injector<WriterType> {
     std::shared_ptr<metrics::Metrics> _metrics;
 };
 
-using TextMapPropagator =
-    Propagator<const opentracing::TextMapReader&,
-               const opentracing::TextMapWriter&>;
+using TextMapPropagator = Propagator<const opentracing::TextMapReader&,
+                                     const opentracing::TextMapWriter&>;
 
-class HTTPHeaderPropagator :
-    public Propagator<const opentracing::HTTPHeadersReader&,
-                      const opentracing::HTTPHeadersWriter&> {
+class HTTPHeaderPropagator
+    : public Propagator<const opentracing::HTTPHeadersReader&,
+                        const opentracing::HTTPHeadersWriter&> {
   public:
     using Propagator<Reader, Writer>::Propagator;
 
@@ -263,8 +261,8 @@ class BinaryPropagator : public Extractor<std::istream&>,
   private:
     template <typename ValueType>
     static
-    typename std::enable_if<std::is_integral<ValueType>::value, void>::type
-    writeBinary(std::ostream& out, ValueType value)
+        typename std::enable_if<std::is_integral<ValueType>::value, void>::type
+        writeBinary(std::ostream& out, ValueType value)
     {
         const ValueType outValue = platform::endian::toBigEndian(value);
         for (auto i = static_cast<size_t>(0); i < sizeof(ValueType); ++i) {
@@ -275,8 +273,8 @@ class BinaryPropagator : public Extractor<std::istream&>,
     }
 
     template <typename ValueType>
-    static
-    typename std::enable_if<std::is_integral<ValueType>::value, ValueType>::type
+    static typename std::enable_if<std::is_integral<ValueType>::value,
+                                   ValueType>::type
     readBinary(std::istream& in)
     {
         auto value = static_cast<ValueType>(0);

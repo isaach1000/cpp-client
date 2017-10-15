@@ -230,7 +230,6 @@ class Span : public opentracing::Span {
     const opentracing::Tracer& tracer() const noexcept override;
 
   protected:
-
   private:
     bool isFinished() const { return _duration != Clock::duration(); }
 
@@ -247,8 +246,8 @@ class Span : public opentracing::Span {
 
 }  // namespace jaegertracing
 
-inline std::ostream& operator<<(
-    std::ostream& out, const jaegertracing::Span& span)
+inline std::ostream& operator<<(std::ostream& out,
+                                const jaegertracing::Span& span)
 {
     span.print(out);
     return out;
