@@ -66,7 +66,6 @@ TEST(Sampler, testSamplerTags)
     RateLimitingSampler rate(0.1);
     SamplerOptions options;
     options.setSampler(std::make_shared<ConstSampler>(true));
-    // TODO: RemotelyControlledSampler remote("", options);
 
     const struct {
         Sampler& _sampler;
@@ -76,7 +75,6 @@ TEST(Sampler, testSamplerTags)
                   { constFalse, "const", false },
                   { prob, "probabilistic", 0.1 },
                   { rate, "ratelimiting", 0.1 } };
-    // TODO: { remote, "const", true } };
 
     for (auto&& test : tests) {
         const auto tags =

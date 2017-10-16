@@ -29,7 +29,6 @@ Tracer::StartSpanWithOptions(string_view operationName,
     SpanContext parent;
     auto hasParent = false;
     for (auto&& ref : options.references) {
-        // TODO: See if we can avoid `dynamic_cast`.
         auto ctx = dynamic_cast<const SpanContext*>(ref.second);
         if (!ctx) {
             _logger->error("Reference contains invalid type of SpanReference");
