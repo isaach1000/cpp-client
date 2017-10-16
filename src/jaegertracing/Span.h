@@ -181,10 +181,7 @@ class Span : public opentracing::Span {
     }
 
     void FinishWithOptions(const opentracing::FinishSpanOptions&
-                               finishSpanOptions) noexcept override
-    {
-        // TODO
-    }
+                               finishSpanOptions) noexcept override;
 
     void SetOperationName(opentracing::string_view name) noexcept override
     {
@@ -202,23 +199,37 @@ class Span : public opentracing::Span {
     }
 
     void SetBaggageItem(opentracing::string_view restrictedKey,
-                        opentracing::string_view value) noexcept override
-    {
-        // TODO
-    }
+                        opentracing::string_view value) noexcept override;
 
     std::string BaggageItem(opentracing::string_view restrictedKey) const
         noexcept override
     {
-        // TODO
-        return "";
+        std::lock_guard<std::mutex> lock(_mutex);
+        auto itr = _context.baggage().find(restrictedKey);
+        return (itr == std::end(_context.baggage()))
+                    ? std::string()
+                    : itr->second;
     }
 
     void Log(std::initializer_list<
              std::pair<opentracing::string_view, opentracing::Value>>
-                 fields) noexcept override
+                 fieldPairs) noexcept override
     {
-        // TODO
+        std::lock_guard<std::mutex> lock(_mutex);
+        if (!_context.isSampled()) {
+            return;
+        }
+
+        std::vector<Tag> fields;
+        fields.reserve(fieldPairs.size());
+        std::transform(std::begin(fieldPairs),
+                       std::end(fieldPairs),
+                       std::back_inserter(fields),
+                       [](const std::pair<opentracing::string_view,
+                                          opentracing::Value>& pair) {
+                           return Tag(pair.first, pair.second);
+                       });
+        logFieldsNoLocking(std::begin(fields), std::end(fields));
     }
 
     const SpanContext& context() const noexcept override
@@ -229,9 +240,17 @@ class Span : public opentracing::Span {
 
     const opentracing::Tracer& tracer() const noexcept override;
 
-  protected:
+    std::string serviceName() const noexcept;
+
   private:
     bool isFinished() const { return _duration != Clock::duration(); }
+
+    template <typename FieldIterator>
+    void logFieldsNoLocking(FieldIterator first, FieldIterator last) noexcept
+    {
+        LogRecord log(Clock::now(), first, last);
+        _logs.push_back(log);
+    }
 
     std::weak_ptr<const Tracer> _tracer;
     SpanContext _context;

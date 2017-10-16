@@ -63,7 +63,12 @@ class Propagator : public Extractor<ReaderType>, public Injector<WriterType> {
     {
         SpanContext ctx;
         StrMap baggage;
-        const auto result = reader.ForeachKey([this, &reader, &ctx, &baggage](
+        std::string debugID;
+        const auto result = reader.ForeachKey([this,
+                                               &reader,
+                                               &ctx,
+                                               &debugID,
+                                               &baggage](
             const std::string& rawKey, const std::string& value) {
             const auto key = normalizeKey(rawKey);
             if (key == _headerKeys.traceContextHeaderName()) {
@@ -75,7 +80,7 @@ class Propagator : public Extractor<ReaderType>, public Injector<WriterType> {
                 }
             }
             else if (key == _headerKeys.jaegerDebugHeader()) {
-                ctx.setDebug();
+                debugID = value;
             }
             else if (key == _headerKeys.jaegerBaggageHeader()) {
                 for (auto&& pair : parseCommaSeparatedMap(value)) {
@@ -93,16 +98,23 @@ class Propagator : public Extractor<ReaderType>, public Injector<WriterType> {
             }
             return opentracing::make_expected();
         });
+
         if (!result &&
             result.error() == opentracing::span_context_corrupted_error) {
             _metrics->decodingErrors().inc(1);
             return SpanContext();
         }
-        if (!ctx.traceID().isValid() && !ctx.isDebug() && baggage.empty()) {
+
+        if (!ctx.traceID().isValid() && debugID.empty() && baggage.empty()) {
             return SpanContext();
         }
-        ctx.setBaggage(baggage);
-        return ctx;
+
+        return SpanContext(ctx.traceID(),
+                           ctx.spanID(),
+                           ctx.parentID(),
+                           0,
+                           baggage,
+                           debugID);
     }
 
     void inject(const SpanContext& ctx, const Writer& writer) const override
@@ -253,8 +265,7 @@ class BinaryPropagator : public Extractor<std::istream&>,
             baggage[key] = value;
         }
 
-        SpanContext ctx(traceID, spanID, parentID, 0, baggage);
-        ctx.setFlags(flags);
+        SpanContext ctx(traceID, spanID, parentID, flags, baggage);
         return ctx;
     }
 

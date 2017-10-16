@@ -84,7 +84,7 @@ Tracer::StartSpanWithOptions(string_view operationName,
     }
 
     if (hasParent && !parent.baggage().empty()) {
-        ctx.setBaggage(parent.baggage());
+        ctx = ctx.withBaggage(parent.baggage());
     }
 
     return startSpanInternal(ctx,

@@ -42,13 +42,14 @@ class SpanContext : public opentracing::SpanContext {
                 uint64_t spanID,
                 uint64_t parentID,
                 unsigned char flags,
-                const StrMap& baggage)
+                const StrMap& baggage,
+                const std::string& debugID = "")
         : _traceID(traceID)
         , _spanID(spanID)
         , _parentID(parentID)
         , _flags(flags)
         , _baggage(baggage)
-        , _debugID()
+        , _debugID(debugID)
     {
     }
 
@@ -60,7 +61,15 @@ class SpanContext : public opentracing::SpanContext {
 
     const StrMap& baggage() const { return _baggage; }
 
-    void setBaggage(const StrMap& baggage) { _baggage = baggage; }
+    SpanContext withBaggage(const StrMap& baggage) const
+    {
+        return SpanContext(_traceID,
+                           _spanID,
+                           _parentID,
+                           _flags,
+                           baggage,
+                           _debugID);
+    }
 
     template <typename Function>
     void forEachBaggageItem(Function f) const
@@ -84,14 +93,10 @@ class SpanContext : public opentracing::SpanContext {
 
     unsigned char flags() const { return _flags; }
 
-    void setFlags(unsigned char flags) { _flags = flags; }
-
     bool isSampled() const
     {
         return _flags & static_cast<unsigned char>(Flag::kSampled);
     }
-
-    void setSampled() { _flags |= static_cast<unsigned char>(Flag::kSampled); }
 
     bool isDebug() const
     {
@@ -102,8 +107,6 @@ class SpanContext : public opentracing::SpanContext {
     {
         return !_traceID.isValid() && !_debugID.empty();
     }
-
-    void setDebug() { _flags |= static_cast<unsigned char>(Flag::kDebug); }
 
     bool isValid() const { return _traceID.isValid() && _spanID != 0; }
 

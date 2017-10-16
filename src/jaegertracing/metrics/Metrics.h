@@ -150,6 +150,10 @@ class Metrics {
         return *_samplerParsingFailure;
     }
     Counter& samplerParsingFailure() { return *_samplerParsingFailure; }
+    const Counter& baggageUpdateSuccess() const { return *_baggageUpdateSuccess; }
+    Counter& baggageUpdateSuccess() { return *_baggageUpdateSuccess; }
+    const Counter& baggageUpdateFailure() const { return *_baggageUpdateFailure; }
+    Counter& baggageUpdateFailure() { return *_baggageUpdateFailure; }
     const Counter& baggageTruncate() const { return *_baggageTruncate; }
     Counter& baggageTruncate() { return *_baggageTruncate; }
 

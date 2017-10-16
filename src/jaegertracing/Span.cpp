@@ -20,6 +20,42 @@
 
 namespace jaegertracing {
 
+void Span::SetBaggageItem(opentracing::string_view restrictedKey,
+                          opentracing::string_view value) noexcept
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    std::shared_ptr<const Tracer> tracer(_tracer.lock());
+    const auto& baggageSetter = tracer->baggageSetter();
+    auto baggage = _context.baggage();
+    baggageSetter.setBaggage(*this,
+                             baggage,
+                             restrictedKey,
+                             value,
+                             [this](std::vector<Tag>::const_iterator first,
+                                    std::vector<Tag>::const_iterator last) {
+                                logFieldsNoLocking(first, last);
+                             });
+    _context = _context.withBaggage(baggage);
+}
+
+void Span::FinishWithOptions(
+    const opentracing::FinishSpanOptions& finishSpanOptions) noexcept
+{
+    std::shared_ptr<const Tracer> tracer;
+    {
+        std::lock_guard<std::mutex> lock(_mutex);
+        if (_context.isSampled()) {
+            _duration = finishSpanOptions.finish_steady_timestamp - _startTime;
+        }
+        tracer = _tracer.lock();
+    }
+
+    // Call `reportSpan` even for non-sampled traces.
+    if (tracer) {
+        tracer->reportSpan(*this);
+    }
+}
+
 const opentracing::Tracer& Span::tracer() const noexcept
 {
     std::lock_guard<std::mutex> lock(_mutex);
@@ -30,6 +66,16 @@ const opentracing::Tracer& Span::tracer() const noexcept
     tracer = opentracing::Tracer::Global();
     assert(tracer);
     return *tracer;
+}
+
+std::string Span::serviceName() const noexcept
+{
+    std::lock_guard<std::mutex> lock(_mutex);
+    std::shared_ptr<const Tracer> tracer(_tracer.lock());
+    if (!tracer) {
+        return std::string();
+    }
+    return tracer->serviceName();
 }
 
 }  // namespace jaegertracing

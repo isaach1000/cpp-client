@@ -28,6 +28,7 @@
 #include "jaegertracing/Logging.h"
 #include "jaegertracing/Span.h"
 #include "jaegertracing/Tag.h"
+#include "jaegertracing/baggage/BaggageSetter.h"
 #include "jaegertracing/baggage/RestrictionManager.h"
 #include "jaegertracing/metrics/Metrics.h"
 #include "jaegertracing/net/IPAddress.h"
@@ -123,6 +124,23 @@ class Tracer : public opentracing::Tracer,
         _restrictionManager->close();
     }
 
+    void close() noexcept { Close(); }
+
+    const std::string& serviceName() const { return _serviceName; }
+
+    const baggage::BaggageSetter& baggageSetter() const
+    {
+        return _baggageSetter;
+    }
+
+    void reportSpan(const Span& span) const
+    {
+        _metrics->spansFinished().inc(1);
+        if (span.context().isSampled()) {
+            _reporter->report(span);
+        }
+    }
+
   private:
     Tracer(const std::string& serviceName,
            std::unique_ptr<samplers::Sampler>&& sampler,
@@ -139,6 +157,7 @@ class Tracer : public opentracing::Tracer,
         , _binaryPropagator()
         , _tags()
         , _restrictionManager(new baggage::DefaultRestrictionManager(0))
+        , _baggageSetter(*_restrictionManager, *_metrics)
     {
         _tags.push_back(Tag(kJaegerClientVersionTagKey, kJaegerClientVersion));
 
@@ -198,6 +217,7 @@ class Tracer : public opentracing::Tracer,
     propagation::BinaryPropagator _binaryPropagator;
     std::vector<Tag> _tags;
     std::unique_ptr<baggage::RestrictionManager> _restrictionManager;
+    baggage::BaggageSetter _baggageSetter;
 };
 
 }  // namespace jaegertracing
