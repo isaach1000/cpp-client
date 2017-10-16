@@ -66,8 +66,8 @@ class Config {
         return _samplingRefreshInterval;
     }
 
-    void setSamplingRefreshInterval(
-        const Clock::duration& samplingRefreshInterval)
+    void
+    setSamplingRefreshInterval(const Clock::duration& samplingRefreshInterval)
     {
         _samplingRefreshInterval = samplingRefreshInterval;
     }

@@ -55,13 +55,13 @@ class FakeTransport : public Transport {
 };
 
 const Span span(std::weak_ptr<Tracer>(),
-                    SpanContext(),
-                    "",
-                    Span::Clock::now(),
-                    Span::Clock::duration(),
-                    {},
-                    {},
-                    false);
+                SpanContext(),
+                "",
+                Span::Clock::now(),
+                Span::Clock::duration(),
+                {},
+                {},
+                false);
 
 }  // anonymous namespace
 
@@ -132,10 +132,12 @@ TEST(Reporter, testCompositeReporter)
 
     CompositeReporter reporter(reporters);
     reporter.report(span);
-    ASSERT_EQ(1, std::static_pointer_cast<InMemoryReporter>(
-                    reporters[0])->spansSubmitted());
-    ASSERT_EQ(1, std::static_pointer_cast<InMemoryReporter>(
-                    reporters[1])->spansSubmitted());
+    ASSERT_EQ(1,
+              std::static_pointer_cast<InMemoryReporter>(reporters[0])
+                  ->spansSubmitted());
+    ASSERT_EQ(1,
+              std::static_pointer_cast<InMemoryReporter>(reporters[1])
+                  ->spansSubmitted());
 }
 
 }  // namespace reporters

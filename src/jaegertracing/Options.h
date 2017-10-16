@@ -37,17 +37,13 @@ class Options {
             const std::shared_ptr<spdlog::logger>& logger,
             const std::shared_ptr<reporters::Reporter>& reporter,
             const std::vector<Tag>& tags)
-        : _statsFactory(statsFactory
-                            ? statsFactory
-                            : std::shared_ptr<metrics::StatsFactory>(
-                                new metrics::NullStatsFactory()))
-        , _logger(logger
-                    ? logger
-                    : logging::nullLogger())
-        , _reporter(reporter
-                        ? reporter
-                        : std::shared_ptr<reporters::Reporter>(
-                            new reporters::NullReporter()))
+        : _statsFactory(statsFactory ? statsFactory
+                                     : std::shared_ptr<metrics::StatsFactory>(
+                                           new metrics::NullStatsFactory()))
+        , _logger(logger ? logger : logging::nullLogger())
+        , _reporter(reporter ? reporter
+                             : std::shared_ptr<reporters::Reporter>(
+                                   new reporters::NullReporter()))
         , _tags(tags)
     {
     }
@@ -57,20 +53,14 @@ class Options {
         return _statsFactory;
     }
 
-    const std::shared_ptr<spdlog::logger>& logger() const
-    {
-        return _logger;
-    }
+    const std::shared_ptr<spdlog::logger>& logger() const { return _logger; }
 
     const std::shared_ptr<reporters::Reporter>& reporter() const
     {
         return _reporter;
     }
 
-    const std::vector<Tag>& tags() const
-    {
-        return _tags;
-    }
+    const std::vector<Tag>& tags() const { return _tags; }
 
   private:
     std::shared_ptr<metrics::StatsFactory> _statsFactory;

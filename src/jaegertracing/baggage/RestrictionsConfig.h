@@ -33,7 +33,7 @@ class RestrictionsConfig {
                        const std::string& hostPort,
                        const Clock::duration& refreshInterval)
         : _denyBaggageOnInitializationFailure(
-            denyBaggageOnInitializationFailure)
+              denyBaggageOnInitializationFailure)
         , _hostPort(hostPort)
         , _refreshInterval(refreshInterval)
     {
