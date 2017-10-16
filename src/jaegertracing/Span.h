@@ -193,7 +193,11 @@ class Span : public opentracing::Span {
     void SetTag(opentracing::string_view key,
                 const opentracing::Value& value) noexcept override
     {
-        // TODO
+        std::lock_guard<std::mutex> lock(_mutex);
+        if (isFinished() || !_context.isSampled()) {
+            return;
+        }
+        _tags.push_back(Tag(key, value));
     }
 
     void SetBaggageItem(opentracing::string_view restrictedKey,

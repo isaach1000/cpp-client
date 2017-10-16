@@ -37,7 +37,7 @@ std::string randomStr(RandomGenerator& gen)
     std::string result(size, '\0');
     for (auto i = static_cast<size_t>(0); i < size; ++i) {
         const auto pos = gen() % kNumLetters;
-        result[pos] = kLetters[pos];
+        result[i] = kLetters[pos];
     }
     return result;
 }
