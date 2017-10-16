@@ -33,7 +33,7 @@ namespace samplers {
 class AdaptiveSampler : public Sampler {
   public:
     using PerOperationSamplingStrategies =
-        thrift::sampling_manager::PerOperationSamplingStrategies;
+        sampling_manager::thrift::PerOperationSamplingStrategies;
     using SamplerMap = std::unordered_map<
         std::string,
         std::shared_ptr<GuaranteedThroughputProbabilisticSampler>>;

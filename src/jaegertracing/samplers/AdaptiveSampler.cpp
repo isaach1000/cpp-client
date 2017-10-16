@@ -21,7 +21,7 @@ namespace samplers {
 namespace {
 
 AdaptiveSampler::SamplerMap samplersFromStrategies(
-    const thrift::sampling_manager::PerOperationSamplingStrategies& strategies)
+    const sampling_manager::thrift::PerOperationSamplingStrategies& strategies)
 {
     AdaptiveSampler::SamplerMap samplers;
     for (auto&& strategy : strategies.perOperationStrategies) {
@@ -36,7 +36,7 @@ AdaptiveSampler::SamplerMap samplersFromStrategies(
 }  // anonymous namespace
 
 AdaptiveSampler::AdaptiveSampler(
-    const thrift::sampling_manager::PerOperationSamplingStrategies& strategies,
+    const sampling_manager::thrift::PerOperationSamplingStrategies& strategies,
     size_t maxOperations)
     : _samplers(samplersFromStrategies(strategies))
     , _defaultSampler(strategies.defaultSamplingProbability)

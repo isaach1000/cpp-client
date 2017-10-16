@@ -9,7 +9,7 @@
 
 #include "sampling_types.h"
 
-namespace jaegertracing { namespace thrift { namespace sampling_manager {
+namespace jaegertracing { namespace sampling_manager { namespace thrift {
 
 class samplingConstants {
  public:

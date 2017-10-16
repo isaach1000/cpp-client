@@ -160,7 +160,7 @@ void MockAgent::serveHTTP(std::promise<void>& started)
                     "'service' parameter must occur only once");
             }
             const auto serviceName = match[1].str();
-            thrift::sampling_manager::SamplingStrategyResponse response;
+            sampling_manager::thrift::SamplingStrategyResponse response;
             _samplingMgr.getSamplingStrategy(response, serviceName);
             const auto responseJSON =
                 apache::thrift::ThriftJSONString(response);

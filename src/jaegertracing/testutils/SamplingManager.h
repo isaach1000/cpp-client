@@ -27,17 +27,17 @@
 namespace jaegertracing {
 namespace testutils {
 
-class SamplingManager : public thrift::sampling_manager::SamplingManagerIf {
+class SamplingManager : public sampling_manager::thrift::SamplingManagerIf {
   public:
-    using Response = thrift::sampling_manager::SamplingStrategyResponse;
+    using Response = sampling_manager::thrift::SamplingStrategyResponse;
 
     void getSamplingStrategy(Response& response,
                              const std::string& service) override
     {
         using ProbabilisticSamplingStrategy =
-            thrift::sampling_manager::ProbabilisticSamplingStrategy;
+            sampling_manager::thrift::ProbabilisticSamplingStrategy;
         using SamplingStrategyType =
-            thrift::sampling_manager::SamplingStrategyType;
+            sampling_manager::thrift::SamplingStrategyType;
 
         std::lock_guard<std::mutex> lock(_mutex);
         auto responseItr = _sampling.find(service);

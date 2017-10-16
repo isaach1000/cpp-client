@@ -6,7 +6,7 @@
  */
 #include "sampling_constants.h"
 
-namespace jaegertracing { namespace thrift { namespace sampling_manager {
+namespace jaegertracing { namespace sampling_manager { namespace thrift {
 
 const samplingConstants g_sampling_constants;
 

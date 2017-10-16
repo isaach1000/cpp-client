@@ -53,9 +53,9 @@ class RemotelyControlledSampler : public Sampler {
 
   private:
     using PerOperationSamplingStrategies =
-        thrift::sampling_manager::PerOperationSamplingStrategies;
+        sampling_manager::thrift::PerOperationSamplingStrategies;
     using SamplingStrategyResponse =
-        thrift::sampling_manager::SamplingStrategyResponse;
+        sampling_manager::thrift::SamplingStrategyResponse;
 
     void pollController();
 
@@ -69,7 +69,7 @@ class RemotelyControlledSampler : public Sampler {
 
     SamplerOptions _options;
     std::string _serviceName;
-    std::shared_ptr<thrift::sampling_manager::SamplingManagerIf> _manager;
+    std::shared_ptr<sampling_manager::thrift::SamplingManagerIf> _manager;
     bool _running;
     std::mutex _mutex;
     std::condition_variable _shutdownCV;

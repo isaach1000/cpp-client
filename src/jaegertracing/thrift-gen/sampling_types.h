@@ -17,7 +17,7 @@
 #include <thrift/cxxfunctional.h>
 
 
-namespace jaegertracing { namespace thrift { namespace sampling_manager {
+namespace jaegertracing { namespace sampling_manager { namespace thrift {
 
 struct SamplingStrategyType {
   enum type {

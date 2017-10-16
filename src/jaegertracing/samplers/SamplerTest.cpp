@@ -193,7 +193,7 @@ TEST(Sampler, testGuaranteedThroughputProbabilisticSamplerUpdate)
 
 TEST(Sampler, testAdaptiveSampler)
 {
-    namespace thriftgen = thrift::sampling_manager;
+    namespace thriftgen = sampling_manager::thrift;
 
     thriftgen::OperationSamplingStrategy strategy;
     strategy.__set_operation(kTestOperationName);
@@ -228,7 +228,7 @@ TEST(Sampler, testAdaptiveSampler)
 
 TEST(Sampler, testAdaptiveSamplerErrors)
 {
-    namespace thriftgen = thrift::sampling_manager;
+    namespace thriftgen = sampling_manager::thrift;
 
     thriftgen::OperationSamplingStrategy strategy;
     strategy.__set_operation(kTestOperationName);
@@ -255,7 +255,7 @@ TEST(Sampler, testAdaptiveSamplerErrors)
 
 TEST(Sampler, testAdaptiveSamplerUpdate)
 {
-    namespace thriftgen = thrift::sampling_manager;
+    namespace thriftgen = sampling_manager::thrift;
 
     constexpr auto kSamplingRate = 0.1;
     constexpr auto kLowerBound = 2.0;

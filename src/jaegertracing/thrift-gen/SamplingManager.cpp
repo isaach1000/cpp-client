@@ -6,7 +6,7 @@
  */
 #include "SamplingManager.h"
 
-namespace jaegertracing { namespace thrift { namespace sampling_manager {
+namespace jaegertracing { namespace sampling_manager { namespace thrift {
 
 
 SamplingManager_getSamplingStrategy_args::~SamplingManager_getSamplingStrategy_args() throw() {

@@ -14,7 +14,7 @@ using namespace ::apache::thrift::server;
 
 using boost::shared_ptr;
 
-using namespace  ::jaegertracing::thrift::sampling_manager;
+using namespace  ::jaegertracing::sampling_manager::thrift;
 
 class SamplingManagerHandler : virtual public SamplingManagerIf {
  public:

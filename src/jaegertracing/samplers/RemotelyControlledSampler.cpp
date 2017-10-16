@@ -33,10 +33,10 @@ namespace jaegertracing {
 namespace samplers {
 namespace {
 
-class HTTPSamplingManager : public thrift::sampling_manager::SamplingManagerIf {
+class HTTPSamplingManager : public sampling_manager::thrift::SamplingManagerIf {
   public:
     using SamplingStrategyResponse =
-        thrift::sampling_manager::SamplingStrategyResponse;
+        sampling_manager::thrift::SamplingStrategyResponse;
 
     explicit HTTPSamplingManager(const std::string& serverURL)
         : _serverURI(net::URI::parse(serverURL))
@@ -118,7 +118,7 @@ void RemotelyControlledSampler::updateSampler()
 {
     assert(_manager);
     assert(_options.metrics());
-    thrift::sampling_manager::SamplingStrategyResponse response;
+    sampling_manager::thrift::SamplingStrategyResponse response;
     try {
         assert(_manager);
         _manager->getSamplingStrategy(response, _serviceName);

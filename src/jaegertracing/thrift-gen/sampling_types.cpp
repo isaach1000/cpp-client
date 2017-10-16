@@ -11,7 +11,7 @@
 
 #include <thrift/TToString.h>
 
-namespace jaegertracing { namespace thrift { namespace sampling_manager {
+namespace jaegertracing { namespace sampling_manager { namespace thrift {
 
 int _kSamplingStrategyTypeValues[] = {
   SamplingStrategyType::PROBABILISTIC,
