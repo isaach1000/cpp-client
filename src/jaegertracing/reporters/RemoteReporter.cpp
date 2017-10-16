@@ -54,6 +54,9 @@ void RemoteReporter::close()
 {
     {
         std::unique_lock<std::mutex> lock(_mutex);
+        if (!_running) {
+            return;
+        }
         _running = false;
         lock.unlock();
         _cv.notify_one();

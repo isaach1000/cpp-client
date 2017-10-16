@@ -65,10 +65,16 @@ TEST(Reporter, testRemoteReporter)
                     {},
                     {},
                     false);
-    reporter.report(span);
+    constexpr auto kNumReports = 100;
+    for (auto i = 0; i < kNumReports; ++i) {
+        reporter.report(span);
+    }
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
-    std::lock_guard<std::mutex> lock(mutex);
-    ASSERT_EQ(1, spans.size());
+    {
+        std::lock_guard<std::mutex> lock(mutex);
+        ASSERT_EQ(kNumReports, spans.size());
+    }
+    reporter.close();
 }
 
 }  // namespace reporters

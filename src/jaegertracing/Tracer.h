@@ -128,6 +128,8 @@ class Tracer : public opentracing::Tracer,
 
     const std::string& serviceName() const { return _serviceName; }
 
+    const std::vector<Tag>& tags() const { return _tags; }
+
     const baggage::BaggageSetter& baggageSetter() const
     {
         return _baggageSetter;

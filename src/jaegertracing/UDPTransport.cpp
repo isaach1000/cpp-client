@@ -16,6 +16,8 @@
 
 #include "jaegertracing/UDPTransport.h"
 
+#include "jaegertracing/Tracer.h"
+
 namespace jaegertracing {
 namespace {
 
@@ -50,7 +52,19 @@ UDPTransport::UDPTransport(const net::IPAddress& ip, int maxPacketSize)
 
 int UDPTransport::append(const Span& span)
 {
-    /* TODO: Set process */
+    if (_process.serviceName.empty()) {
+        const auto& tracer = static_cast<const Tracer&>(span.tracer());
+        _process.serviceName = tracer.serviceName();
+
+        const auto& tracerTags = tracer.tags();
+        std::vector<thrift::Tag> thriftTags;
+        thriftTags.reserve(tracerTags.size());
+        std::transform(std::begin(tracerTags),
+                       std::end(tracerTags),
+                       std::back_inserter(thriftTags),
+                       [](const Tag& tag) { return tag.thrift(); });
+        _process.__set_tags(thriftTags);
+    }
     const auto jaegerSpan = span.thrift();
     const auto spanSize = calcSizeOfSerializedThrift(
         jaegerSpan, _protocol, _client->maxPacketSize());
