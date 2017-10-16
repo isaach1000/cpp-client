@@ -204,9 +204,8 @@ class Span : public opentracing::Span {
     {
         std::lock_guard<std::mutex> lock(_mutex);
         auto itr = _context.baggage().find(restrictedKey);
-        return (itr == std::end(_context.baggage()))
-                    ? std::string()
-                    : itr->second;
+        return (itr == std::end(_context.baggage())) ? std::string()
+                                                     : itr->second;
     }
 
     void Log(std::initializer_list<
@@ -220,13 +219,12 @@ class Span : public opentracing::Span {
 
         std::vector<Tag> fields;
         fields.reserve(fieldPairs.size());
-        std::transform(std::begin(fieldPairs),
-                       std::end(fieldPairs),
-                       std::back_inserter(fields),
-                       [](const std::pair<opentracing::string_view,
-                                          opentracing::Value>& pair) {
-                           return Tag(pair.first, pair.second);
-                       });
+        std::transform(
+            std::begin(fieldPairs),
+            std::end(fieldPairs),
+            std::back_inserter(fields),
+            [](const std::pair<opentracing::string_view, opentracing::Value>&
+                   pair) { return Tag(pair.first, pair.second); });
         logFieldsNoLocking(std::begin(fields), std::end(fields));
     }
 

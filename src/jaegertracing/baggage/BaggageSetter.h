@@ -90,11 +90,8 @@ class BaggageSetter {
             return;
         }
 
-        std::vector<Tag> fields({
-            {"event", "baggage"},
-            {"key", key},
-            {"value", value}
-        });
+        std::vector<Tag> fields(
+            { { "event", "baggage" }, { "key", key }, { "value", value } });
         if (!prevItem.empty()) {
             fields.push_back(Tag("override", "true"));
         }

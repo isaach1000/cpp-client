@@ -40,14 +40,9 @@ class FakeTransport : public Transport {
         return 1;
     }
 
-    int flush() override
-    {
-        return 0;
-    }
+    int flush() override { return 0; }
 
-    void close() override
-    {
-    }
+    void close() override {}
 
   private:
     std::vector<Span>& _spans;

@@ -33,7 +33,7 @@ void Span::SetBaggageItem(opentracing::string_view restrictedKey,
                              value,
                              [this](std::vector<Tag>::const_iterator first,
                                     std::vector<Tag>::const_iterator last) {
-                                logFieldsNoLocking(first, last);
+                                 logFieldsNoLocking(first, last);
                              });
     _context = _context.withBaggage(baggage);
 }

@@ -31,9 +31,8 @@ inline std::string hostname()
     std::string buffer(kBufferSize, '\0');
     const auto returnCode = ::gethostname(&buffer[0], buffer.size());
     if (returnCode != 0) {
-        throw std::system_error(errno,
-                                std::system_category(),
-                                "Failed to get hostname");
+        throw std::system_error(
+            errno, std::system_category(), "Failed to get hostname");
     }
     const auto nullPos = buffer.find('\0');
     return buffer.substr(0, nullPos);

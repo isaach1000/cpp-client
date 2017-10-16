@@ -63,12 +63,8 @@ class SpanContext : public opentracing::SpanContext {
 
     SpanContext withBaggage(const StrMap& baggage) const
     {
-        return SpanContext(_traceID,
-                           _spanID,
-                           _parentID,
-                           _flags,
-                           baggage,
-                           _debugID);
+        return SpanContext(
+            _traceID, _spanID, _parentID, _flags, baggage, _debugID);
     }
 
     template <typename Function>

@@ -64,40 +64,37 @@ class Propagator : public Extractor<ReaderType>, public Injector<WriterType> {
         SpanContext ctx;
         StrMap baggage;
         std::string debugID;
-        const auto result = reader.ForeachKey([this,
-                                               &reader,
-                                               &ctx,
-                                               &debugID,
-                                               &baggage](
-            const std::string& rawKey, const std::string& value) {
-            const auto key = normalizeKey(rawKey);
-            if (key == _headerKeys.traceContextHeaderName()) {
-                const auto safeValue = decodeValue(value);
-                std::istringstream iss(safeValue);
-                if (!(iss >> ctx)) {
-                    return opentracing::make_expected_from_error<void>(
-                        opentracing::span_context_corrupted_error);
-                }
-            }
-            else if (key == _headerKeys.jaegerDebugHeader()) {
-                debugID = value;
-            }
-            else if (key == _headerKeys.jaegerBaggageHeader()) {
-                for (auto&& pair : parseCommaSeparatedMap(value)) {
-                    baggage[pair.first] = pair.second;
-                }
-            }
-            else {
-                const auto prefix = _headerKeys.traceBaggageHeaderPrefix();
-                if (key.size() >= prefix.size() &&
-                    key.substr(0, prefix.size()) == prefix) {
-                    const auto safeKey = removeBaggageKeyPrefix(key);
+        const auto result =
+            reader.ForeachKey([this, &reader, &ctx, &debugID, &baggage](
+                const std::string& rawKey, const std::string& value) {
+                const auto key = normalizeKey(rawKey);
+                if (key == _headerKeys.traceContextHeaderName()) {
                     const auto safeValue = decodeValue(value);
-                    baggage[safeKey] = safeValue;
+                    std::istringstream iss(safeValue);
+                    if (!(iss >> ctx)) {
+                        return opentracing::make_expected_from_error<void>(
+                            opentracing::span_context_corrupted_error);
+                    }
                 }
-            }
-            return opentracing::make_expected();
-        });
+                else if (key == _headerKeys.jaegerDebugHeader()) {
+                    debugID = value;
+                }
+                else if (key == _headerKeys.jaegerBaggageHeader()) {
+                    for (auto&& pair : parseCommaSeparatedMap(value)) {
+                        baggage[pair.first] = pair.second;
+                    }
+                }
+                else {
+                    const auto prefix = _headerKeys.traceBaggageHeaderPrefix();
+                    if (key.size() >= prefix.size() &&
+                        key.substr(0, prefix.size()) == prefix) {
+                        const auto safeKey = removeBaggageKeyPrefix(key);
+                        const auto safeValue = decodeValue(value);
+                        baggage[safeKey] = safeValue;
+                    }
+                }
+                return opentracing::make_expected();
+            });
 
         if (!result &&
             result.error() == opentracing::span_context_corrupted_error) {
@@ -109,12 +106,8 @@ class Propagator : public Extractor<ReaderType>, public Injector<WriterType> {
             return SpanContext();
         }
 
-        return SpanContext(ctx.traceID(),
-                           ctx.spanID(),
-                           ctx.parentID(),
-                           0,
-                           baggage,
-                           debugID);
+        return SpanContext(
+            ctx.traceID(), ctx.spanID(), ctx.parentID(), 0, baggage, debugID);
     }
 
     void inject(const SpanContext& ctx, const Writer& writer) const override
