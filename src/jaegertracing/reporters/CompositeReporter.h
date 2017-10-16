@@ -35,6 +35,8 @@ class CompositeReporter : public Reporter {
     {
     }
 
+    ~CompositeReporter() { close(); }
+
     void report(const Span& span) override
     {
         std::for_each(

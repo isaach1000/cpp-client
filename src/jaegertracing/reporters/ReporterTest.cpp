@@ -19,8 +19,10 @@
 #include "jaegertracing/Logging.h"
 #include "jaegertracing/Tracer.h"
 #include "jaegertracing/Transport.h"
+#include "jaegertracing/reporters/CompositeReporter.h"
 #include "jaegertracing/reporters/InMemoryReporter.h"
 #include "jaegertracing/reporters/LoggingReporter.h"
+#include "jaegertracing/reporters/NullReporter.h"
 #include "jaegertracing/reporters/RemoteReporter.h"
 #include "jaegertracing/samplers/ConstSampler.h"
 
@@ -89,6 +91,16 @@ TEST(Reporter, testRemoteReporter)
     reporter.close();
 }
 
+TEST(Reporter, testNullReporter)
+{
+    NullReporter reporter;
+    constexpr auto kNumReports = 100;
+    for (auto i = 0; i < kNumReports; ++i) {
+        reporter.report(span);
+    }
+    reporter.close();
+}
+
 TEST(Reporter, testLoggingReporter)
 {
     LoggingReporter reporter(logging::nullLogger());
@@ -110,6 +122,20 @@ TEST(Reporter, testInMemoryReporter)
     reporter.reset();
     ASSERT_EQ(0, reporter.spansSubmitted());
     reporter.close();
+}
+
+TEST(Reporter, testCompositeReporter)
+{
+    std::vector<std::shared_ptr<Reporter>> reporters;
+    reporters.push_back(std::make_shared<InMemoryReporter>());
+    reporters.push_back(std::make_shared<InMemoryReporter>());
+
+    CompositeReporter reporter(reporters);
+    reporter.report(span);
+    ASSERT_EQ(1, std::static_pointer_cast<InMemoryReporter>(
+                    reporters[0])->spansSubmitted());
+    ASSERT_EQ(1, std::static_pointer_cast<InMemoryReporter>(
+                    reporters[1])->spansSubmitted());
 }
 
 }  // namespace reporters
