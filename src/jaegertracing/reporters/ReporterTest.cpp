@@ -16,8 +16,11 @@
 
 #include <gtest/gtest.h>
 
+#include "jaegertracing/Logging.h"
 #include "jaegertracing/Tracer.h"
 #include "jaegertracing/Transport.h"
+#include "jaegertracing/reporters/InMemoryReporter.h"
+#include "jaegertracing/reporters/LoggingReporter.h"
 #include "jaegertracing/reporters/RemoteReporter.h"
 #include "jaegertracing/samplers/ConstSampler.h"
 
@@ -49,6 +52,15 @@ class FakeTransport : public Transport {
     std::mutex& _mutex;
 };
 
+const Span span(std::weak_ptr<Tracer>(),
+                    SpanContext(),
+                    "",
+                    Span::Clock::now(),
+                    Span::Clock::duration(),
+                    {},
+                    {},
+                    false);
+
 }  // anonymous namespace
 
 TEST(Reporter, testRemoteReporter)
@@ -74,6 +86,29 @@ TEST(Reporter, testRemoteReporter)
         std::lock_guard<std::mutex> lock(mutex);
         ASSERT_EQ(kNumReports, spans.size());
     }
+    reporter.close();
+}
+
+TEST(Reporter, testLoggingReporter)
+{
+    LoggingReporter reporter(logging::nullLogger());
+    constexpr auto kNumReports = 100;
+    for (auto i = 0; i < kNumReports; ++i) {
+        reporter.report(span);
+    }
+    reporter.close();
+}
+
+TEST(Reporter, testInMemoryReporter)
+{
+    InMemoryReporter reporter;
+    constexpr auto kNumReports = 100;
+    for (auto i = 0; i < kNumReports; ++i) {
+        reporter.report(span);
+    }
+    ASSERT_EQ(kNumReports, reporter.spansSubmitted());
+    reporter.reset();
+    ASSERT_EQ(0, reporter.spansSubmitted());
     reporter.close();
 }
 
