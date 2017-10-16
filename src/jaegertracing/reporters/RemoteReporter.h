@@ -36,8 +36,10 @@ class RemoteReporter : public Reporter {
     using Clock = ReporterOptions::Clock;
 
     explicit RemoteReporter(
-        std::unique_ptr<Transport> sender,
+        std::unique_ptr<Transport>&& sender,
         const ReporterOptions& reporterOptions = ReporterOptions());
+
+    ~RemoteReporter() { close(); }
 
     void report(const Span& span) override;
 
@@ -61,7 +63,6 @@ class RemoteReporter : public Reporter {
     std::deque<Span> _queue;
     std::atomic<int64_t> _queueLength;
     bool _running;
-    bool _forceFlush;  // For testing
     Clock::time_point _lastFlush;
     std::condition_variable _cv;
     std::mutex _mutex;

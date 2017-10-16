@@ -19,14 +19,13 @@
 namespace jaegertracing {
 namespace reporters {
 
-RemoteReporter::RemoteReporter(std::unique_ptr<Transport> sender,
+RemoteReporter::RemoteReporter(std::unique_ptr<Transport>&& sender,
                                const ReporterOptions& reporterOptions)
     : _reporterOptions(reporterOptions)
     , _sender(std::move(sender))
     , _queue()
     , _queueLength(0)
     , _running(true)
-    , _forceFlush(false)
     , _lastFlush(Clock::now())
     , _cv()
     , _mutex()
@@ -66,17 +65,12 @@ void RemoteReporter::sweepQueue()
 {
     while (true) {
         std::unique_lock<std::mutex> lock(_mutex);
-
-        if (!_running) {
-            return;
-        }
-
         _cv.wait(lock, [this]() {
             return !_running || !_queue.empty() ||
-                   bufferFlushIntervalExpired() || _forceFlush;
+                   bufferFlushIntervalExpired();
         });
 
-        if (!_running) {
+        if (!_running && _queue.empty()) {
             return;
         }
 
@@ -85,7 +79,7 @@ void RemoteReporter::sweepQueue()
             _queue.pop_front();
             sendSpan(span);
         }
-        else if (bufferFlushIntervalExpired() || _forceFlush) {
+        else if (bufferFlushIntervalExpired()) {
             flush();
         }
     }

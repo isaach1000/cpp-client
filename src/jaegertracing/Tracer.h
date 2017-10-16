@@ -47,7 +47,7 @@ class Tracer : public opentracing::Tracer,
     using string_view = opentracing::string_view;
 
     template <typename... Args>
-    std::shared_ptr<Tracer> make(Args&&... args)
+    static std::shared_ptr<Tracer> make(Args&&... args)
     {
         // Avoid `std::make_shared` when using `std::weak_ptr`.
         return std::shared_ptr<Tracer>(new Tracer(std::forward<Args>(args)...));
