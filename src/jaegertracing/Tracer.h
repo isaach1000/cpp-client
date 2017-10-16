@@ -22,10 +22,13 @@
 #include <random>
 #include <vector>
 
+#include <opentracing/noop.h>
 #include <opentracing/tracer.h>
 
+#include "jaegertracing/Config.h"
 #include "jaegertracing/Constants.h"
 #include "jaegertracing/Logging.h"
+#include "jaegertracing/Options.h"
 #include "jaegertracing/Span.h"
 #include "jaegertracing/Tag.h"
 #include "jaegertracing/baggage/BaggageSetter.h"
@@ -45,6 +48,20 @@ class Tracer : public opentracing::Tracer,
     using Clock = std::chrono::steady_clock;
 
     using string_view = opentracing::string_view;
+
+    /* TODO:
+    static std::shared_ptr<opentracing::Tracer> make(
+        const std::string& serviceName,
+        const Config& config,
+        const Options& options)
+    {
+        if (serviceName.empty()) {
+            throw std::invalid_argument("no service name provided");
+        }
+        if (config.disabled()) {
+            return opentracing::MakeNoopTracer();
+        }
+    }*/
 
     template <typename... Args>
     static std::shared_ptr<Tracer> make(Args&&... args)
@@ -145,8 +162,8 @@ class Tracer : public opentracing::Tracer,
 
   private:
     Tracer(const std::string& serviceName,
-           std::unique_ptr<samplers::Sampler>&& sampler,
-           std::unique_ptr<reporters::Reporter>&& reporter)
+           const std::shared_ptr<samplers::Sampler>& sampler,
+           const std::shared_ptr<reporters::Reporter>& reporter)
         : _serviceName(serviceName)
         , _hostIPv4(net::IPAddress::host(AF_INET))
         , _sampler(std::move(sampler))
@@ -208,9 +225,9 @@ class Tracer : public opentracing::Tracer,
 
     std::string _serviceName;
     net::IPAddress _hostIPv4;
-    std::unique_ptr<samplers::Sampler> _sampler;
-    std::unique_ptr<reporters::Reporter> _reporter;
-    std::unique_ptr<metrics::Metrics> _metrics;
+    std::shared_ptr<samplers::Sampler> _sampler;
+    std::shared_ptr<reporters::Reporter> _reporter;
+    std::shared_ptr<metrics::Metrics> _metrics;
     std::shared_ptr<spdlog::logger> _logger;
     mutable std::mt19937 _randomNumberGenerator;
     mutable std::mutex _randomMutex;
