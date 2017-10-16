@@ -38,7 +38,7 @@ flags = [
 '-isystem',
 '/usr/local/include',
 '-I',
-os.path.join(project_dir, 'src')
+os.path.join(project_dir, 'src'),
 '-I',
 os.path.join(project_dir, 'build')
 ]
