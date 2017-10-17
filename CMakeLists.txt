@@ -6,6 +6,7 @@ include(HunterGate)
 HunterGate(
     URL "https://github.com/ruslo/hunter/archive/v0.19.124.tar.gz"
     SHA1 "6f0daa06ced6eaf68d34f4dae4d1c02fffdd890b"
+    FILEPATH "${CMAKE_SOURCE_DIR}/cmake/HunterConfig.cmake"
 )
 
 project(jaegertracing VERSION 0.0.1)
