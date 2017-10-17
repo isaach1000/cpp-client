@@ -73,7 +73,7 @@ TEST(Reporter, testRemoteReporter)
     auto metrics = metrics::Metrics::makeNullMetrics();
     RemoteReporter reporter(
         std::chrono::milliseconds(1),
-        1,
+        10,
         std::unique_ptr<Transport>(new FakeTransport(spans, mutex)),
         *logger,
         *metrics);

@@ -37,6 +37,14 @@ class Config {
   public:
     using Clock = std::chrono::steady_clock;
 
+    static constexpr auto kDefaultQueueSize = 100;
+    static constexpr auto kDefaultLocalAgentHostPort = "127.0.0.1:5775";
+
+    static Clock::duration defaultBufferFlushInterval()
+    {
+        return std::chrono::seconds(10);
+    }
+
 #ifdef JAEGERTRACING_WITH_YAML_CPP
 
     static Config parse(const YAML::Node& configYAML)
@@ -53,23 +61,30 @@ class Config {
         const auto logSpans =
             utils::yaml::findOrDefault<bool>(configYAML, "logSpans", false);
         const auto localAgentHostPort = utils::yaml::findOrDefault<std::string>(
-            configYAML, "localAgentHostPort", "127.0.0.1:0");
+            configYAML, "localAgentHostPort", "");
         return Config(
             queueSize, bufferFlushInterval, logSpans, localAgentHostPort);
     }
 
 #endif  // JAEGERTRACING_WITH_YAML_CPP
 
-    Config() = default;
+    Config()
+        : Config(0, Clock::duration(), false, "")
+    {
+    }
 
     Config(int queueSize,
            const Clock::duration& bufferFlushInterval,
            bool logSpans,
            const std::string& localAgentHostPort)
-        : _queueSize(queueSize)
-        , _bufferFlushInterval(bufferFlushInterval)
+        : _queueSize(queueSize > 0 ? queueSize : kDefaultQueueSize)
+        , _bufferFlushInterval(bufferFlushInterval.count() > 0
+                ? bufferFlushInterval
+                : defaultBufferFlushInterval())
         , _logSpans(logSpans)
-        , _localAgentHostPort(localAgentHostPort)
+        , _localAgentHostPort(localAgentHostPort.empty()
+                                ? kDefaultLocalAgentHostPort
+                                : localAgentHostPort)
     {
     }
 

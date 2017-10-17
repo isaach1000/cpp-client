@@ -41,6 +41,12 @@ class Config {
     using Clock = std::chrono::steady_clock;
 
     static constexpr auto kDefaultSamplingProbability = 0.001;
+    static constexpr auto kDefaultSamplingServerURL = "http://127.0.0.1:5778";
+
+    static Clock::duration defaultSamplingRefreshInterval()
+    {
+        return std::chrono::minutes(1);
+    }
 
 #ifdef JAEGERTRACING_WITH_YAML_CPP
 
@@ -70,7 +76,10 @@ class Config {
 
 #endif  // JAEGERTRACING_WITH_YAML_CPP
 
-    Config() = default;
+    Config()
+        : Config("", 0, "", 0, std::chrono::seconds(0))
+    {
+    }
 
     Config(const std::string& type,
            double param,
@@ -79,9 +88,13 @@ class Config {
            const Clock::duration& samplingRefreshInterval)
         : _type(type.empty() ? kSamplerTypeRemote : type)
         , _param(param == 0 ? kDefaultSamplingProbability : param)
-        , _samplingServerURL(samplingServerURL)
+        , _samplingServerURL(samplingServerURL.empty()
+                ? kDefaultSamplingServerURL
+                : samplingServerURL)
         , _maxOperations(maxOperations)
-        , _samplingRefreshInterval(samplingRefreshInterval)
+        , _samplingRefreshInterval(samplingRefreshInterval.count() > 0
+                ? samplingRefreshInterval
+                : defaultSamplingRefreshInterval())
     {
     }
 
