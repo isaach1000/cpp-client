@@ -38,6 +38,21 @@ namespace net {
 
 class IPAddress {
   public:
+    static IPAddress v4(const std::string& hostPort)
+    {
+        const auto colonPos = hostPort.find(':');
+        const auto ip = hostPort.substr(0, colonPos);
+        int port = 0;
+        if (colonPos != std::string::npos) {
+            const auto portStr = hostPort.substr(colonPos + 1);
+            std::istringstream iss(portStr);
+            if (!(iss >> port)) {
+                port = 0;
+            }
+        }
+        return v4(ip, port);
+    }
+
     static IPAddress v4(const std::string& ip, int port)
     {
         return versionFromString(ip, port, AF_INET);

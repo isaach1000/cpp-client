@@ -18,8 +18,16 @@
 #define JAEGERTRACING_REPORTERS_CONFIG_H
 
 #include <chrono>
+#include <memory>
 #include <string>
 
+#include "jaegertracing/Logging.h"
+#include "jaegertracing/UDPTransport.h"
+#include "jaegertracing/metrics/Metrics.h"
+#include "jaegertracing/reporters/CompositeReporter.h"
+#include "jaegertracing/reporters/LoggingReporter.h"
+#include "jaegertracing/reporters/RemoteReporter.h"
+#include "jaegertracing/reporters/Reporter.h"
 #include "jaegertracing/utils/YAML.h"
 
 namespace jaegertracing {
@@ -47,7 +55,7 @@ class Config {
             utils::yaml::findOrDefault<bool>(configYAML, "logSpans", false);
         const auto localAgentHostPort =
             utils::yaml::findOrDefault<std::string>(
-                configYAML, "localAgentHostPort", "");
+                configYAML, "localAgentHostPort", "127.0.0.1:0");
         return Config(queueSize,
                       bufferFlushInterval,
                       logSpans,
@@ -69,32 +77,44 @@ class Config {
     {
     }
 
-    int queueSize() const { return _queueSize; }
+    std::unique_ptr<Reporter> makeReporter(
+        const std::string& serviceName,
+        spdlog::logger& logger,
+        metrics::Metrics& metrics) const
+    {
+        std::unique_ptr<UDPTransport> sender(
+            new UDPTransport(net::IPAddress::v4(_localAgentHostPort), 0));
+        std::unique_ptr<RemoteReporter> remoteReporter(
+            new RemoteReporter(
+                _bufferFlushInterval,
+                _queueSize,
+                std::move(sender),
+                logger,
+                metrics));
+        if (_logSpans) {
+            logger.info("Initializing logging reporter");
+            return std::unique_ptr<CompositeReporter>(
+                new CompositeReporter({
+                    std::shared_ptr<RemoteReporter>(
+                        std::move(remoteReporter)),
+                    std::make_shared<LoggingReporter>(logger)
+                }));
+        }
+        return remoteReporter;
+    }
 
-    void setQueueSize(int queueSize) { _queueSize = queueSize; }
+    int queueSize() const { return _queueSize; }
 
     const Clock::duration& bufferFlushInterval() const
     {
         return _bufferFlushInterval;
     }
 
-    void setBufferFlushInterval(const Clock::duration& bufferFlushInterval)
-    {
-        _bufferFlushInterval = bufferFlushInterval;
-    }
-
     bool logSpans() const { return _logSpans; }
-
-    void setLogSpans(bool logSpans) { _logSpans = logSpans; }
 
     const std::string& localAgentHostPort() const
     {
         return _localAgentHostPort;
-    }
-
-    void setLocalAgentHostPort(const std::string& localAgentHostPort)
-    {
-        _localAgentHostPort = localAgentHostPort;
     }
 
   private:

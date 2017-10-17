@@ -84,37 +84,16 @@ class HeadersConfig {
         return _jaegerBaggageHeader;
     }
 
-    void setJaegerBaggageHeader(const std::string& jaegerBaggageHeader)
-    {
-        _jaegerBaggageHeader = jaegerBaggageHeader;
-    }
-
     const std::string& jaegerDebugHeader() const { return _jaegerDebugHeader; }
-
-    void setJaegerDebugHeader(const std::string& jaegerDebugHeader)
-    {
-        _jaegerDebugHeader = jaegerDebugHeader;
-    }
 
     const std::string& traceBaggageHeaderPrefix() const
     {
         return _traceBaggageHeaderPrefix;
     }
 
-    void
-    setTraceBaggageHeaderPrefix(const std::string& traceBaggageHeaderPrefix)
-    {
-        _traceBaggageHeaderPrefix = traceBaggageHeaderPrefix;
-    }
-
     const std::string& traceContextHeaderName() const
     {
         return _traceContextHeaderName;
-    }
-
-    void setTraceContextHeaderName(const std::string& traceContextHeaderName)
-    {
-        _traceContextHeaderName = traceContextHeaderName;
     }
 
   private:

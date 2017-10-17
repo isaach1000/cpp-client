@@ -17,9 +17,20 @@
 #ifndef JAEGERTRACING_SAMPLERS_CONFIG_H
 #define JAEGERTRACING_SAMPLERS_CONFIG_H
 
+#include <cctype>
 #include <chrono>
+#include <memory>
+#include <sstream>
 #include <string>
 
+#include "jaegertracing/Constants.h"
+#include "jaegertracing/Logging.h"
+#include "jaegertracing/metrics/Metrics.h"
+#include "jaegertracing/samplers/ConstSampler.h"
+#include "jaegertracing/samplers/ProbabilisticSampler.h"
+#include "jaegertracing/samplers/RateLimitingSampler.h"
+#include "jaegertracing/samplers/RemotelyControlledSampler.h"
+#include "jaegertracing/samplers/Sampler.h"
 #include "jaegertracing/utils/YAML.h"
 
 namespace jaegertracing {
@@ -28,6 +39,8 @@ namespace samplers {
 class Config {
   public:
     using Clock = std::chrono::steady_clock;
+
+    static constexpr auto kDefaultSamplingProbability = 0.001;
 
 #ifdef JAEGERTRACING_WITH_YAML_CPP
 
@@ -64,42 +77,82 @@ class Config {
            const std::string& samplingServerURL,
            int maxOperations,
            const Clock::duration& samplingRefreshInterval)
-        : _type(type)
-        , _param(param)
+        : _type(type.empty() ? kSamplerTypeRemote : type)
+        , _param(param == 0 ? kDefaultSamplingProbability : param)
         , _samplingServerURL(samplingServerURL)
         , _maxOperations(maxOperations)
         , _samplingRefreshInterval(samplingRefreshInterval)
     {
     }
 
-    const std::string& type() const { return _type; }
+    std::unique_ptr<Sampler> makeSampler(
+        const std::string& serviceName,
+        spdlog::logger& logger,
+        metrics::Metrics& metrics) const
+    {
+        std::string samplerType;
+        samplerType.reserve(_type.size());
+        std::transform(std::begin(_type),
+                       std::end(_type),
+                       std::back_inserter(samplerType),
+                       [](const char ch) { return std::tolower(ch); });
+        if (samplerType == kSamplerTypeConst) {
+            return std::unique_ptr<ConstSampler>(new ConstSampler(_param != 0));
+        }
 
-    void setType(const std::string& type) { _type = type; }
+        if (samplerType == kSamplerTypeProbabilistic) {
+            if (_param >= 0 && _param <= 1) {
+                return std::unique_ptr<ProbabilisticSampler>(
+                    new ProbabilisticSampler(_param));
+            }
+            else {
+                logger.error("Invalid parameter for probabilistic sampler: {0}"
+                             ", expecting value between 0 and 1",
+                             _param);
+                return std::unique_ptr<Sampler>();
+            }
+        }
+
+        if (samplerType == kSamplerTypeRateLimiting) {
+            return std::unique_ptr<RateLimitingSampler>(
+                new RateLimitingSampler(_param));
+        }
+
+        if (samplerType == kSamplerTypeRemote || samplerType.empty()) {
+            auto config = *this;
+            config._type = kSamplerTypeProbabilistic;
+            std::shared_ptr<Sampler> initSampler(
+                config.makeSampler(serviceName, logger, metrics));
+            if (!initSampler) {
+                return std::unique_ptr<Sampler>();
+            }
+
+            return std::unique_ptr<RemotelyControlledSampler>(
+                new RemotelyControlledSampler(
+                    serviceName,
+                    _samplingServerURL,
+                    initSampler,
+                    _maxOperations,
+                    _samplingRefreshInterval,
+                    logger,
+                    metrics));
+        }
+
+        logger.error("Unknown sampler type {0}", _type);
+        return std::unique_ptr<Sampler>();
+    }
+
+    const std::string& type() const { return _type; }
 
     double param() const { return _param; }
 
-    void setParam(double param) { _param = param; }
-
     const std::string& samplingServerURL() const { return _samplingServerURL; }
 
-    void setSamplingServerURL(const std::string& samplingServerURL)
-    {
-        _samplingServerURL = samplingServerURL;
-    }
-
     int maxOperations() const { return _maxOperations; }
-
-    void setMaxOperations(int maxOperations) { _maxOperations = maxOperations; }
 
     const Clock::duration& samplingRefreshInterval() const
     {
         return _samplingRefreshInterval;
-    }
-
-    void
-    setSamplingRefreshInterval(const Clock::duration& samplingRefreshInterval)
-    {
-        _samplingRefreshInterval = samplingRefreshInterval;
     }
 
   private:

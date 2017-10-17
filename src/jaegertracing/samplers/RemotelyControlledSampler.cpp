@@ -73,16 +73,28 @@ class HTTPSamplingManager : public sampling_manager::thrift::SamplingManagerIf {
 }  // anonymous namespace
 
 RemotelyControlledSampler::RemotelyControlledSampler(
-    const std::string& serviceName, const SamplerOptions& options)
-    : _options(options)
-    , _serviceName(serviceName)
+    const std::string& serviceName,
+    const std::string& samplingServerURL,
+    const std::shared_ptr<Sampler>& sampler,
+    int maxOperations,
+    const Clock::duration& samplingRefreshInterval,
+    spdlog::logger& logger,
+    metrics::Metrics& metrics)
+    : _serviceName(serviceName)
+    , _samplingServerURL(samplingServerURL)
+    , _sampler(sampler)
+    , _maxOperations(maxOperations)
+    , _samplingRefreshInterval(samplingRefreshInterval)
+    , _logger(logger)
+    , _metrics(metrics)
     , _manager(
-          std::make_shared<HTTPSamplingManager>(_options.samplingServerURL()))
+          std::make_shared<HTTPSamplingManager>(_samplingServerURL))
     , _running(true)
     , _mutex()
     , _shutdownCV()
     , _thread([this]() { pollController(); })
 {
+    assert(_sampler);
 }
 
 SamplingStatus
@@ -90,8 +102,8 @@ RemotelyControlledSampler::isSampled(const TraceID& id,
                                      const std::string& operation)
 {
     std::lock_guard<std::mutex> lock(_mutex);
-    assert(_options.sampler());
-    return _options.sampler()->isSampled(id, operation);
+    assert(_sampler);
+    return _sampler->isSampled(id, operation);
 }
 
 void RemotelyControlledSampler::close()
@@ -109,7 +121,7 @@ void RemotelyControlledSampler::pollController()
         updateSampler();
         std::unique_lock<std::mutex> lock(_mutex);
         _shutdownCV.wait_for(lock,
-                             _options.samplingRefreshInterval(),
+                             _samplingRefreshInterval,
                              [this]() { return !_running; });
     }
 }
@@ -117,21 +129,20 @@ void RemotelyControlledSampler::pollController()
 void RemotelyControlledSampler::updateSampler()
 {
     assert(_manager);
-    assert(_options.metrics());
     sampling_manager::thrift::SamplingStrategyResponse response;
     try {
         assert(_manager);
         _manager->getSamplingStrategy(response, _serviceName);
     } catch (const std::exception& ex) {
-        _options.metrics()->samplerQueryFailure().inc(1);
+        _metrics.samplerQueryFailure().inc(1);
         return;
     } catch (...) {
-        _options.metrics()->samplerQueryFailure().inc(1);
+        _metrics.samplerQueryFailure().inc(1);
         return;
     }
 
     std::lock_guard<std::mutex> lock(_mutex);
-    _options.metrics()->samplerRetrieved().inc(1);
+    _metrics.samplerRetrieved().inc(1);
 
     if (response.__isset.operationSampling) {
         updateAdaptiveSampler(response.operationSampling);
@@ -140,28 +151,27 @@ void RemotelyControlledSampler::updateSampler()
         try {
             updateRateLimitingOrProbabilisticSampler(response);
         } catch (const std::exception& ex) {
-            _options.metrics()->samplerUpdateFailure().inc(1);
+            _metrics.samplerUpdateFailure().inc(1);
             return;
         } catch (...) {
-            _options.metrics()->samplerUpdateFailure().inc(1);
+            _metrics.samplerUpdateFailure().inc(1);
             return;
         }
     }
-    _options.metrics()->samplerUpdated().inc(1);
+    _metrics.samplerUpdated().inc(1);
 }
 
 void RemotelyControlledSampler::updateAdaptiveSampler(
     const PerOperationSamplingStrategies& strategies)
 {
-    auto sampler = _options.sampler();
+    auto sampler = _sampler;
     assert(sampler);
     if (sampler->type() == Type::kAdaptiveSampler) {
         static_cast<AdaptiveSampler&>(*sampler).update(strategies);
     }
     else {
-        sampler = std::make_shared<AdaptiveSampler>(strategies,
-                                                    _options.maxOperations());
-        _options.setSampler(sampler);
+        _sampler = std::make_shared<AdaptiveSampler>(strategies,
+                                                     _maxOperations);
     }
 }
 
@@ -182,7 +192,7 @@ void RemotelyControlledSampler::updateRateLimitingOrProbabilisticSampler(
         oss << "Unsupported sampling strategy type " << response.strategyType;
         throw std::runtime_error(oss.str());
     }
-    _options.setSampler(sampler);
+    _sampler = sampler;
 }
 
 }  // namespace samplers

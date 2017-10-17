@@ -27,7 +27,6 @@
 #include "jaegertracing/samplers/RateLimitingSampler.h"
 #include "jaegertracing/samplers/RemotelyControlledSampler.h"
 #include "jaegertracing/samplers/Sampler.h"
-#include "jaegertracing/samplers/SamplerOptions.h"
 #include "jaegertracing/samplers/SamplingStatus.h"
 #include "jaegertracing/testutils/TUDPTransport.h"
 
@@ -64,8 +63,6 @@ TEST(Sampler, testSamplerTags)
     ConstSampler constFalse(false);
     ProbabilisticSampler prob(0.1);
     RateLimitingSampler rate(0.1);
-    SamplerOptions options;
-    options.setSampler(std::make_shared<ConstSampler>(true));
 
     const struct {
         Sampler& _sampler;
@@ -92,19 +89,6 @@ TEST(Sampler, testSamplerTags)
         }
         ASSERT_EQ(2, count);
     }
-}
-
-TEST(Sampler, testSamplerOptions)
-{
-    SamplerOptions options;
-    ASSERT_EQ(Sampler::Type::kProbabilisticSampler, options.sampler()->type());
-    auto sampler =
-        std::static_pointer_cast<ProbabilisticSampler>(options.sampler());
-    ASSERT_EQ(0.001, sampler->samplingRate());
-    ASSERT_NE(0, options.maxOperations());
-    ASSERT_FALSE(options.samplingServerURL().empty());
-    ASSERT_TRUE(static_cast<bool>(options.metrics()));
-    ASSERT_NE(0, options.samplingRefreshInterval().count());
 }
 
 TEST(Sampler, testProbabilisticSamplerErrors)

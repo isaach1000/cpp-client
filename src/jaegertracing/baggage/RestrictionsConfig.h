@@ -70,23 +70,9 @@ class RestrictionsConfig {
         return _denyBaggageOnInitializationFailure;
     }
 
-    void setDenyBaggageOnInitializationFailure(
-        bool denyBaggageOnInitializationFailure)
-    {
-        _denyBaggageOnInitializationFailure =
-            denyBaggageOnInitializationFailure;
-    }
-
     const std::string& hostPort() const { return _hostPort; }
 
-    void setHostPort(const std::string& hostPort) { _hostPort = hostPort; }
-
     const Clock::duration& refreshInterval() const { return _refreshInterval; }
-
-    void setRefreshInterval(const Clock::duration& refreshInterval)
-    {
-        _refreshInterval = refreshInterval;
-    }
 
   private:
     bool _denyBaggageOnInitializationFailure;

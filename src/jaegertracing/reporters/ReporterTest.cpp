@@ -69,8 +69,14 @@ TEST(Reporter, testRemoteReporter)
 {
     std::vector<Span> spans;
     std::mutex mutex;
+    auto logger = logging::nullLogger();
+    auto metrics = metrics::Metrics::makeNullMetrics();
     RemoteReporter reporter(
-        std::unique_ptr<Transport>(new FakeTransport(spans, mutex)));
+        std::chrono::milliseconds(1),
+        1,
+        std::unique_ptr<Transport>(new FakeTransport(spans, mutex)),
+        *logger,
+        *metrics);
     const Span span(std::weak_ptr<Tracer>(),
                     SpanContext(),
                     "",
@@ -103,7 +109,8 @@ TEST(Reporter, testNullReporter)
 
 TEST(Reporter, testLoggingReporter)
 {
-    LoggingReporter reporter(logging::nullLogger());
+    const auto logger = logging::nullLogger();
+    LoggingReporter reporter(*logger);
     constexpr auto kNumReports = 100;
     for (auto i = 0; i < kNumReports; ++i) {
         reporter.report(span);

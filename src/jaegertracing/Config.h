@@ -77,39 +77,17 @@ class Config {
 
     bool disabled() const { return _disabled; }
 
-    void setDisabled(bool disabled) { _disabled = disabled; }
-
     const samplers::Config& sampler() const { return _sampler; }
-
-    void setSampler(const samplers::Config& sampler) { _sampler = sampler; }
 
     const reporters::Config& reporter() const { return _reporter; }
 
-    void setReporter(const reporters::Config& reporter)
-    {
-        _reporter = reporter;
-    }
-
     const propagation::HeadersConfig& headers() const { return _headers; }
 
-    void setHeaders(const propagation::HeadersConfig& headers)
-    {
-        _headers = headers;
-    }
-
     bool rpcMetrics() const { return _rpcMetrics; }
-
-    void setRPCMetrics(bool rpcMetrics) { _rpcMetrics = rpcMetrics; }
 
     const baggage::RestrictionsConfig& baggageRestrictions() const
     {
         return _baggageRestrictions;
-    }
-
-    void setBaggageRestrictions(
-        const baggage::RestrictionsConfig& baggageRestrictions)
-    {
-        _baggageRestrictions = baggageRestrictions;
     }
 
   private:

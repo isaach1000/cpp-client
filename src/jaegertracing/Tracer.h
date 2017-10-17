@@ -28,12 +28,12 @@
 #include "jaegertracing/Config.h"
 #include "jaegertracing/Constants.h"
 #include "jaegertracing/Logging.h"
-#include "jaegertracing/Options.h"
 #include "jaegertracing/Span.h"
 #include "jaegertracing/Tag.h"
 #include "jaegertracing/baggage/BaggageSetter.h"
 #include "jaegertracing/baggage/RestrictionManager.h"
 #include "jaegertracing/metrics/Metrics.h"
+#include "jaegertracing/metrics/NullStatsFactory.h"
 #include "jaegertracing/net/IPAddress.h"
 #include "jaegertracing/platform/Hostname.h"
 #include "jaegertracing/propagation/Propagator.h"
@@ -49,25 +49,43 @@ class Tracer : public opentracing::Tracer,
 
     using string_view = opentracing::string_view;
 
-    /* TODO:
+    static std::shared_ptr<opentracing::Tracer> make(
+        const std::string& serviceName,
+        const Config& config)
+    {
+        return make(serviceName, config, logging::nullLogger());
+    }
+
     static std::shared_ptr<opentracing::Tracer> make(
         const std::string& serviceName,
         const Config& config,
-        const Options& options)
+        const std::shared_ptr<spdlog::logger>& logger)
+    {
+        metrics::NullStatsFactory factory;
+        return make(serviceName, config, logger, factory);
+    }
+
+    static std::shared_ptr<opentracing::Tracer> make(
+        const std::string& serviceName,
+        const Config& config,
+        const std::shared_ptr<spdlog::logger>& logger,
+        metrics::StatsFactory& statsFactory)
     {
         if (serviceName.empty()) {
             throw std::invalid_argument("no service name provided");
         }
+
         if (config.disabled()) {
             return opentracing::MakeNoopTracer();
         }
-    }*/
 
-    template <typename... Args>
-    static std::shared_ptr<Tracer> make(Args&&... args)
-    {
-        // Avoid `std::make_shared` when using `std::weak_ptr`.
-        return std::shared_ptr<Tracer>(new Tracer(std::forward<Args>(args)...));
+        auto metrics = std::make_shared<metrics::Metrics>(statsFactory);
+        std::shared_ptr<samplers::Sampler> sampler(
+            config.sampler().makeSampler(serviceName, *logger, *metrics));
+        std::shared_ptr<reporters::Reporter> reporter(
+            config.reporter().makeReporter(serviceName, *logger, *metrics));
+        return std::shared_ptr<Tracer>(new Tracer(
+            serviceName, sampler, reporter, logger, metrics));
     }
 
     std::unique_ptr<opentracing::Span>
@@ -163,13 +181,15 @@ class Tracer : public opentracing::Tracer,
   private:
     Tracer(const std::string& serviceName,
            const std::shared_ptr<samplers::Sampler>& sampler,
-           const std::shared_ptr<reporters::Reporter>& reporter)
+           const std::shared_ptr<reporters::Reporter>& reporter,
+           const std::shared_ptr<spdlog::logger>& logger,
+           const std::shared_ptr<metrics::Metrics>& metrics)
         : _serviceName(serviceName)
         , _hostIPv4(net::IPAddress::host(AF_INET))
-        , _sampler(std::move(sampler))
-        , _reporter(std::move(reporter))
-        , _metrics(metrics::Metrics::makeNullMetrics())
-        , _logger(logging::nullLogger())
+        , _sampler(sampler)
+        , _reporter(reporter)
+        , _metrics(metrics)
+        , _logger(logger)
         , _randomNumberGenerator()
         , _textPropagator()
         , _httpHeaderPropagator()
@@ -196,10 +216,7 @@ class Tracer : public opentracing::Tracer,
         }
 
         std::random_device device;
-        {
-            std::lock_guard<std::mutex> lock(_randomMutex);
-            _randomNumberGenerator.seed(device());
-        }
+        _randomNumberGenerator.seed(device());
     }
 
     uint64_t randomID() const

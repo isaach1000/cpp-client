@@ -26,7 +26,7 @@ namespace reporters {
 
 class LoggingReporter : public Reporter {
   public:
-    explicit LoggingReporter(const std::shared_ptr<spdlog::logger>& logger)
+    explicit LoggingReporter(spdlog::logger& logger)
         : _logger(logger)
     {
     }
@@ -36,7 +36,7 @@ class LoggingReporter : public Reporter {
     void close() override {}
 
   private:
-    std::shared_ptr<spdlog::logger> _logger;
+    spdlog::logger& _logger;
 };
 
 }  // namespace reporters

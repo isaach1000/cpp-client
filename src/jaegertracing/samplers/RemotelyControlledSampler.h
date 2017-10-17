@@ -23,8 +23,10 @@
 #include <thread>
 
 #include "jaegertracing/Constants.h"
+#include "jaegertracing/Logging.h"
+#include "jaegertracing/metrics/Metrics.h"
+#include "jaegertracing/samplers/ProbabilisticSampler.h"
 #include "jaegertracing/samplers/Sampler.h"
-#include "jaegertracing/samplers/SamplerOptions.h"
 #include "jaegertracing/thrift-gen/SamplingManager.h"
 
 namespace jaegertracing {
@@ -34,13 +36,14 @@ class RemotelyControlledSampler : public Sampler {
   public:
     using Clock = std::chrono::steady_clock;
 
-    explicit RemotelyControlledSampler(const std::string& serviceName)
-        : RemotelyControlledSampler(serviceName, SamplerOptions())
-    {
-    }
-
-    RemotelyControlledSampler(const std::string& serviceName,
-                              const SamplerOptions& options);
+    RemotelyControlledSampler(
+        const std::string& serviceName,
+        const std::string& samplingServerURL,
+        const std::shared_ptr<Sampler>& sampler,
+        int maxOperations,
+        const Clock::duration& samplingRefreshInterval,
+        spdlog::logger& logger,
+        metrics::Metrics& metrics);
 
     ~RemotelyControlledSampler() { close(); }
 
@@ -67,8 +70,13 @@ class RemotelyControlledSampler : public Sampler {
     void updateRateLimitingOrProbabilisticSampler(
         const SamplingStrategyResponse& response);
 
-    SamplerOptions _options;
     std::string _serviceName;
+    std::string _samplingServerURL;
+    std::shared_ptr<Sampler> _sampler;
+    int _maxOperations;
+    Clock::duration _samplingRefreshInterval;
+    spdlog::logger& _logger;
+    metrics::Metrics& _metrics;
     std::shared_ptr<sampling_manager::thrift::SamplingManagerIf> _manager;
     bool _running;
     std::mutex _mutex;

@@ -23,21 +23,25 @@
 #include <mutex>
 #include <thread>
 
+#include "jaegertracing/Logging.h"
 #include "jaegertracing/Span.h"
 #include "jaegertracing/Transport.h"
+#include "jaegertracing/metrics/Metrics.h"
 #include "jaegertracing/reporters/Reporter.h"
-#include "jaegertracing/reporters/ReporterOptions.h"
 
 namespace jaegertracing {
 namespace reporters {
 
 class RemoteReporter : public Reporter {
   public:
-    using Clock = ReporterOptions::Clock;
+    using Clock = std::chrono::steady_clock;
 
-    explicit RemoteReporter(
+    RemoteReporter(
+        const Clock::duration& bufferFlushInterval,
+        int fixedQueueSize,
         std::unique_ptr<Transport>&& sender,
-        const ReporterOptions& reporterOptions = ReporterOptions());
+        spdlog::logger& logger,
+        metrics::Metrics& metrics);
 
     ~RemoteReporter() { close(); }
 
@@ -54,14 +58,16 @@ class RemoteReporter : public Reporter {
 
     bool bufferFlushIntervalExpired() const
     {
-        return (_lastFlush - Clock::now()) >=
-               _reporterOptions.bufferFlushInterval();
+        return (_lastFlush - Clock::now()) >= _bufferFlushInterval;
     }
 
-    ReporterOptions _reporterOptions;
+    Clock::duration _bufferFlushInterval;
+    int _fixedQueueSize;
     std::unique_ptr<Transport> _sender;
+    spdlog::logger& _logger;
+    metrics::Metrics& _metrics;
     std::deque<Span> _queue;
-    std::atomic<int64_t> _queueLength;
+    std::atomic<int> _queueLength;
     bool _running;
     Clock::time_point _lastFlush;
     std::condition_variable _cv;
