@@ -19,10 +19,6 @@ function working() {
     echo -e "${BLUE}$1${NO_COLOR}"
 }
 
-function alert() {
-    echo -e "${RED}$1${NO_COLOR}"
-}
-
 mkdir -p build
 cd build || exit
 cmake -DCMAKE_BUILD_TYPE=Debug ..

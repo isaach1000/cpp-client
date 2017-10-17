@@ -4,9 +4,8 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 
 include(HunterGate)
 HunterGate(
-    URL "https://github.com/ruslo/hunter/archive/v0.19.117.tar.gz"
-    SHA1 "6681cc2f0b49b1173aa8ba94b8056aaa8119fb2f"
-    FILEPATH "${CMAKE_SOURCE_DIR}/cmake/HunterConfig.cmake"
+    URL "https://github.com/ruslo/hunter/archive/v0.19.124.tar.gz"
+    SHA1 "6f0daa06ced6eaf68d34f4dae4d1c02fffdd890b"
 )
 
 project(jaegertracing VERSION 0.0.1)
