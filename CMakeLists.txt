@@ -39,6 +39,13 @@ hunter_add_package(opentracing-cpp)
 find_package(OpenTracing CONFIG REQUIRED)
 list(APPEND LIBS OpenTracing::opentracing-static)
 
+option(WITH_YAML_CPP "Use yaml-cpp to parse config files" true)
+if(WITH_YAML_CPP)
+    hunter_add_package(yaml-cpp)
+    find_package(yaml-cpp CONFIG REQUIRED)
+    list(APPEND LIBS yaml-cpp::yaml-cpp)
+endif()
+
 include(CTest)
 if(BUILD_TESTING)
     hunter_add_package(GTest)
@@ -74,6 +81,7 @@ add_subdirectory("src/jaegertracing/thrift-gen")
 list(APPEND LIBS thriftgen thrift::thrift_static)
 
 add_library(jaegertracing ${SRC})
+set(JAEGERTRACING_WITH_YAML_CPP ${WITH_YAML_CPP})
 configure_file(src/jaegertracing/Constants.h.in
                src/jaegertracing/Constants.h
                @ONLY)

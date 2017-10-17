@@ -20,12 +20,28 @@
 #include <chrono>
 #include <string>
 
+#include "jaegertracing/Constants.h"
+
+#ifdef JAEGERTRACING_WITH_YAML_CPP
+#include <yaml-cpp/yaml.h>
+#endif  // JAEGERTRACING_WITH_YAML_CPP
+
 namespace jaegertracing {
 namespace baggage {
 
 class RestrictionsConfig {
   public:
     using Clock = std::chrono::steady_clock;
+
+#ifdef JAEGERTRACING_WITH_YAML_CPP
+
+    static RestrictionsConfig parse(const YAML::Node& configYAML)
+    {
+        // TODO
+        return RestrictionsConfig();
+    }
+
+#endif  // JAEGERTRACING_WITH_YAML_CPP
 
     RestrictionsConfig() = default;
 

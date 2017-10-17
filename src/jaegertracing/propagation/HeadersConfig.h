@@ -21,11 +21,25 @@
 
 #include "jaegertracing/Constants.h"
 
+#ifdef JAEGERTRACING_WITH_YAML_CPP
+#include <yaml-cpp/yaml.h>
+#endif  // JAEGERTRACING_WITH_YAML_CPP
+
 namespace jaegertracing {
 namespace propagation {
 
 class HeadersConfig {
   public:
+#ifdef JAEGERTRACING_WITH_YAML_CPP
+
+    static HeadersConfig parse(const YAML::Node& configYAML)
+    {
+        // TODO
+        return HeadersConfig();
+    }
+
+#endif  // JAEGERTRACING_WITH_YAML_CPP
+
     HeadersConfig()
         : _jaegerDebugHeader(kJaegerDebugHeader)
         , _jaegerBaggageHeader(kJaegerBaggageHeader)

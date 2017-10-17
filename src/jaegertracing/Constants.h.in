@@ -23,6 +23,8 @@
 #ifndef JAEGERTRACING_CONSTANTS_H
 #define JAEGERTRACING_CONSTANTS_H
 
+#cmakedefine JAEGERTRACING_WITH_YAML_CPP
+
 namespace jaegertracing {
 
 static constexpr auto kJaegerClientVersion = "@PROJECT_VERSION@";

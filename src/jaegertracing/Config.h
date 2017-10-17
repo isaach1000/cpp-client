@@ -17,15 +17,55 @@
 #ifndef JAEGERTRACING_CONFIG_H
 #define JAEGERTRACING_CONFIG_H
 
+#include "jaegertracing/Constants.h"
 #include "jaegertracing/baggage/RestrictionsConfig.h"
 #include "jaegertracing/propagation/HeadersConfig.h"
 #include "jaegertracing/reporters/Config.h"
 #include "jaegertracing/samplers/Config.h"
 
+#ifdef JAEGERTRACING_WITH_YAML_CPP
+#include <yaml-cpp/yaml.h>
+#endif  // JAEGERTRACING_WITH_YAML_CPP
+
 namespace jaegertracing {
 
 class Config {
   public:
+#ifdef JAEGERTRACING_WITH_YAML_CPP
+
+    static Config parse(const YAML::Node& configYAML)
+    {
+        if (!configYAML.IsDefined()) {
+            return Config();
+        }
+
+        const auto disabledNode = configYAML["disabled"];
+        const auto disabled = disabledNode.IsDefined()
+                                ? disabledNode.as<bool>()
+                                : false;
+        const auto samplerNode = configYAML["sampler"];
+        const auto sampler = samplers::Config::parse(samplerNode);
+        const auto reporterNode = configYAML["reporter"];
+        const auto reporter = reporters::Config::parse(reporterNode);
+        const auto headersNode = configYAML["headers"];
+        const auto headers = propagation::HeadersConfig::parse(headersNode);
+        const auto rpcMetricsNode = configYAML["rpc_metrics"];
+        const auto rpcMetrics = rpcMetricsNode.IsDefined()
+                                ? rpcMetricsNode.as<bool>()
+                                : false;
+        const auto baggageRestrictionsNode = configYAML["baggage_restrictions"];
+        const auto baggageRestrictions =
+            baggage::RestrictionsConfig::parse(baggageRestrictionsNode);
+        return Config(disabled,
+                      sampler,
+                      reporter,
+                      headers,
+                      rpcMetrics,
+                      baggageRestrictions);
+    }
+
+#endif  // JAEGERTRACING_WITH_YAML_CPP
+
     Config() = default;
 
     Config(bool disabled,

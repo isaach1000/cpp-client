@@ -20,12 +20,28 @@
 #include <chrono>
 #include <string>
 
+#include "jaegertracing/Constants.h"
+
+#ifdef JAEGERTRACING_WITH_YAML_CPP
+#include <yaml-cpp/yaml.h>
+#endif  // JAEGERTRACING_WITH_YAML_CPP
+
 namespace jaegertracing {
 namespace samplers {
 
 class Config {
   public:
     using Clock = std::chrono::steady_clock;
+
+#ifdef JAEGERTRACING_WITH_YAML_CPP
+
+    static Config parse(const YAML::Node& configYAML)
+    {
+        // TODO
+        return Config();
+    }
+
+#endif  // JAEGERTRACING_WITH_YAML_CPP
 
     Config() = default;
 
