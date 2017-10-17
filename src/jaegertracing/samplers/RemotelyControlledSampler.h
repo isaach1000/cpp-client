@@ -36,14 +36,13 @@ class RemotelyControlledSampler : public Sampler {
   public:
     using Clock = std::chrono::steady_clock;
 
-    RemotelyControlledSampler(
-        const std::string& serviceName,
-        const std::string& samplingServerURL,
-        const std::shared_ptr<Sampler>& sampler,
-        int maxOperations,
-        const Clock::duration& samplingRefreshInterval,
-        spdlog::logger& logger,
-        metrics::Metrics& metrics);
+    RemotelyControlledSampler(const std::string& serviceName,
+                              const std::string& samplingServerURL,
+                              const std::shared_ptr<Sampler>& sampler,
+                              int maxOperations,
+                              const Clock::duration& samplingRefreshInterval,
+                              spdlog::logger& logger,
+                              metrics::Metrics& metrics);
 
     ~RemotelyControlledSampler() { close(); }
 

@@ -50,8 +50,8 @@ class Config {
             return Config();
         }
 
-        const auto type = utils::yaml::findOrDefault<std::string>(
-            configYAML, "type", "");
+        const auto type =
+            utils::yaml::findOrDefault<std::string>(configYAML, "type", "");
         const auto param =
             utils::yaml::findOrDefault<double>(configYAML, "param", 0);
         const auto samplingServerURL = utils::yaml::findOrDefault<std::string>(
@@ -85,10 +85,9 @@ class Config {
     {
     }
 
-    std::unique_ptr<Sampler> makeSampler(
-        const std::string& serviceName,
-        spdlog::logger& logger,
-        metrics::Metrics& metrics) const
+    std::unique_ptr<Sampler> makeSampler(const std::string& serviceName,
+                                         spdlog::logger& logger,
+                                         metrics::Metrics& metrics) const
     {
         std::string samplerType;
         samplerType.reserve(_type.size());
@@ -106,9 +105,10 @@ class Config {
                     new ProbabilisticSampler(_param));
             }
             else {
-                logger.error("Invalid parameter for probabilistic sampler: {0}"
-                             ", expecting value between 0 and 1",
-                             _param);
+                logger.error(
+                    "Invalid parameter for probabilistic sampler: {0}"
+                    ", expecting value between 0 and 1",
+                    _param);
                 return std::unique_ptr<Sampler>();
             }
         }
@@ -128,14 +128,13 @@ class Config {
             }
 
             return std::unique_ptr<RemotelyControlledSampler>(
-                new RemotelyControlledSampler(
-                    serviceName,
-                    _samplingServerURL,
-                    initSampler,
-                    _maxOperations,
-                    _samplingRefreshInterval,
-                    logger,
-                    metrics));
+                new RemotelyControlledSampler(serviceName,
+                                              _samplingServerURL,
+                                              initSampler,
+                                              _maxOperations,
+                                              _samplingRefreshInterval,
+                                              logger,
+                                              metrics));
         }
 
         logger.error("Unknown sampler type {0}", _type);

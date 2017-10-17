@@ -34,9 +34,8 @@ class HeadersConfig {
             return HeadersConfig();
         }
 
-        const auto jaegerDebugHeader =
-            utils::yaml::findOrDefault<std::string>(
-                configYAML, "jaegerDebugHeader", "");
+        const auto jaegerDebugHeader = utils::yaml::findOrDefault<std::string>(
+            configYAML, "jaegerDebugHeader", "");
         const auto jaegerBaggageHeader =
             utils::yaml::findOrDefault<std::string>(
                 configYAML, "jaegerBaggageHeader", "");
@@ -64,15 +63,14 @@ class HeadersConfig {
                   const std::string& jaegerBaggageHeader,
                   const std::string& traceContextHeaderName,
                   const std::string& traceBaggageHeaderPrefix)
-        : _jaegerDebugHeader(jaegerDebugHeader.empty()
-                                ? kJaegerDebugHeader
-                                : jaegerDebugHeader)
+        : _jaegerDebugHeader(jaegerDebugHeader.empty() ? kJaegerDebugHeader
+                                                       : jaegerDebugHeader)
         , _jaegerBaggageHeader(jaegerBaggageHeader.empty()
-                                ? kJaegerBaggageHeader
-                                : jaegerBaggageHeader)
+                                   ? kJaegerBaggageHeader
+                                   : jaegerBaggageHeader)
         , _traceContextHeaderName(traceContextHeaderName.empty()
-                                    ? kTraceContextHeaderName
-                                    : traceContextHeaderName)
+                                      ? kTraceContextHeaderName
+                                      : traceContextHeaderName)
         , _traceBaggageHeaderPrefix(traceBaggageHeaderPrefix.empty()
                                         ? kTraceBaggageHeaderPrefix
                                         : traceBaggageHeaderPrefix)

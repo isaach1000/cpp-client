@@ -87,8 +87,7 @@ RemotelyControlledSampler::RemotelyControlledSampler(
     , _samplingRefreshInterval(samplingRefreshInterval)
     , _logger(logger)
     , _metrics(metrics)
-    , _manager(
-          std::make_shared<HTTPSamplingManager>(_samplingServerURL))
+    , _manager(std::make_shared<HTTPSamplingManager>(_samplingServerURL))
     , _running(true)
     , _mutex()
     , _shutdownCV()
@@ -120,9 +119,8 @@ void RemotelyControlledSampler::pollController()
     while (_running) {
         updateSampler();
         std::unique_lock<std::mutex> lock(_mutex);
-        _shutdownCV.wait_for(lock,
-                             _samplingRefreshInterval,
-                             [this]() { return !_running; });
+        _shutdownCV.wait_for(
+            lock, _samplingRefreshInterval, [this]() { return !_running; });
     }
 }
 
@@ -170,8 +168,8 @@ void RemotelyControlledSampler::updateAdaptiveSampler(
         static_cast<AdaptiveSampler&>(*sampler).update(strategies);
     }
     else {
-        _sampler = std::make_shared<AdaptiveSampler>(strategies,
-                                                     _maxOperations);
+        _sampler =
+            std::make_shared<AdaptiveSampler>(strategies, _maxOperations);
     }
 }
 

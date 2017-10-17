@@ -49,27 +49,26 @@ class Tracer : public opentracing::Tracer,
 
     using string_view = opentracing::string_view;
 
-    static std::shared_ptr<opentracing::Tracer> make(
-        const std::string& serviceName,
-        const Config& config)
+    static std::shared_ptr<opentracing::Tracer>
+    make(const std::string& serviceName, const Config& config)
     {
         return make(serviceName, config, logging::nullLogger());
     }
 
-    static std::shared_ptr<opentracing::Tracer> make(
-        const std::string& serviceName,
-        const Config& config,
-        const std::shared_ptr<spdlog::logger>& logger)
+    static std::shared_ptr<opentracing::Tracer>
+    make(const std::string& serviceName,
+         const Config& config,
+         const std::shared_ptr<spdlog::logger>& logger)
     {
         metrics::NullStatsFactory factory;
         return make(serviceName, config, logger, factory);
     }
 
-    static std::shared_ptr<opentracing::Tracer> make(
-        const std::string& serviceName,
-        const Config& config,
-        const std::shared_ptr<spdlog::logger>& logger,
-        metrics::StatsFactory& statsFactory)
+    static std::shared_ptr<opentracing::Tracer>
+    make(const std::string& serviceName,
+         const Config& config,
+         const std::shared_ptr<spdlog::logger>& logger,
+         metrics::StatsFactory& statsFactory)
     {
         if (serviceName.empty()) {
             throw std::invalid_argument("no service name provided");
@@ -84,8 +83,8 @@ class Tracer : public opentracing::Tracer,
             config.sampler().makeSampler(serviceName, *logger, *metrics));
         std::shared_ptr<reporters::Reporter> reporter(
             config.reporter().makeReporter(serviceName, *logger, *metrics));
-        return std::shared_ptr<Tracer>(new Tracer(
-            serviceName, sampler, reporter, logger, metrics));
+        return std::shared_ptr<Tracer>(
+            new Tracer(serviceName, sampler, reporter, logger, metrics));
     }
 
     std::unique_ptr<opentracing::Span>

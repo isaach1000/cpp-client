@@ -48,18 +48,14 @@ class Config {
         const auto queueSize =
             utils::yaml::findOrDefault<int>(configYAML, "queueSize", 0);
         const auto bufferFlushInterval =
-            std::chrono::seconds(
-                utils::yaml::findOrDefault<int>(
-                    configYAML, "bufferFlushInterval", 0));
+            std::chrono::seconds(utils::yaml::findOrDefault<int>(
+                configYAML, "bufferFlushInterval", 0));
         const auto logSpans =
             utils::yaml::findOrDefault<bool>(configYAML, "logSpans", false);
-        const auto localAgentHostPort =
-            utils::yaml::findOrDefault<std::string>(
-                configYAML, "localAgentHostPort", "127.0.0.1:0");
-        return Config(queueSize,
-                      bufferFlushInterval,
-                      logSpans,
-                      localAgentHostPort);
+        const auto localAgentHostPort = utils::yaml::findOrDefault<std::string>(
+            configYAML, "localAgentHostPort", "127.0.0.1:0");
+        return Config(
+            queueSize, bufferFlushInterval, logSpans, localAgentHostPort);
     }
 
 #endif  // JAEGERTRACING_WITH_YAML_CPP
@@ -77,28 +73,23 @@ class Config {
     {
     }
 
-    std::unique_ptr<Reporter> makeReporter(
-        const std::string& serviceName,
-        spdlog::logger& logger,
-        metrics::Metrics& metrics) const
+    std::unique_ptr<Reporter> makeReporter(const std::string& serviceName,
+                                           spdlog::logger& logger,
+                                           metrics::Metrics& metrics) const
     {
         std::unique_ptr<UDPTransport> sender(
             new UDPTransport(net::IPAddress::v4(_localAgentHostPort), 0));
         std::unique_ptr<RemoteReporter> remoteReporter(
-            new RemoteReporter(
-                _bufferFlushInterval,
-                _queueSize,
-                std::move(sender),
-                logger,
-                metrics));
+            new RemoteReporter(_bufferFlushInterval,
+                               _queueSize,
+                               std::move(sender),
+                               logger,
+                               metrics));
         if (_logSpans) {
             logger.info("Initializing logging reporter");
-            return std::unique_ptr<CompositeReporter>(
-                new CompositeReporter({
-                    std::shared_ptr<RemoteReporter>(
-                        std::move(remoteReporter)),
-                    std::make_shared<LoggingReporter>(logger)
-                }));
+            return std::unique_ptr<CompositeReporter>(new CompositeReporter(
+                { std::shared_ptr<RemoteReporter>(std::move(remoteReporter)),
+                  std::make_shared<LoggingReporter>(logger) }));
         }
         return remoteReporter;
     }

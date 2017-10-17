@@ -36,12 +36,11 @@ class RemoteReporter : public Reporter {
   public:
     using Clock = std::chrono::steady_clock;
 
-    RemoteReporter(
-        const Clock::duration& bufferFlushInterval,
-        int fixedQueueSize,
-        std::unique_ptr<Transport>&& sender,
-        spdlog::logger& logger,
-        metrics::Metrics& metrics);
+    RemoteReporter(const Clock::duration& bufferFlushInterval,
+                   int fixedQueueSize,
+                   std::unique_ptr<Transport>&& sender,
+                   spdlog::logger& logger,
+                   metrics::Metrics& metrics);
 
     ~RemoteReporter() { close(); }
 

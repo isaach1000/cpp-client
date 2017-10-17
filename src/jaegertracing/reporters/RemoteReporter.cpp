@@ -19,12 +19,11 @@
 namespace jaegertracing {
 namespace reporters {
 
-RemoteReporter::RemoteReporter(
-    const Clock::duration& bufferFlushInterval,
-    int fixedQueueSize,
-    std::unique_ptr<Transport>&& sender,
-    spdlog::logger& logger,
-    metrics::Metrics& metrics)
+RemoteReporter::RemoteReporter(const Clock::duration& bufferFlushInterval,
+                               int fixedQueueSize,
+                               std::unique_ptr<Transport>&& sender,
+                               spdlog::logger& logger,
+                               metrics::Metrics& metrics)
     : _bufferFlushInterval(bufferFlushInterval)
     , _fixedQueueSize(fixedQueueSize)
     , _sender(std::move(sender))
@@ -44,8 +43,7 @@ RemoteReporter::RemoteReporter(
 void RemoteReporter::report(const Span& span)
 {
     std::unique_lock<std::mutex> lock(_mutex);
-    const auto pushed =
-        (static_cast<int>(_queue.size()) < _fixedQueueSize);
+    const auto pushed = (static_cast<int>(_queue.size()) < _fixedQueueSize);
     if (pushed) {
         _queue.push_back(span);
         lock.unlock();
@@ -101,8 +99,7 @@ void RemoteReporter::sendSpan(const Span& span)
         const auto flushed = _sender->append(span);
         if (flushed > 0) {
             _metrics.reporterSuccess().inc(flushed);
-            _metrics.reporterQueueLength().update(
-                _queueLength);
+            _metrics.reporterQueueLength().update(_queueLength);
         }
     } catch (const Transport::Exception& ex) {
         _metrics.reporterFailure().inc(ex.numFailed());
