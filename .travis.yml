@@ -1,0 +1,29 @@
+language: cpp
+sudo: false
+dist: trusty
+compiler:
+  - g++
+os:
+  - linux
+
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - lcov
+
+branches:
+  only:
+    - master
+
+script: ./scripts/build.sh
+
+after_success:
+  - cd ${TRAVIS_BUILD_DIR}
+  - make UnitTestCoverage
+  - bash <(curl -s https://codecov.io/bash) || echo "Codecov did not collect coverage reports"
+
+env:
+  global:
+    - LANG="en_US.UTF-8"
