@@ -20,11 +20,7 @@
 #include <chrono>
 #include <string>
 
-#include "jaegertracing/Constants.h"
-
-#ifdef JAEGERTRACING_WITH_YAML_CPP
-#include <yaml-cpp/yaml.h>
-#endif  // JAEGERTRACING_WITH_YAML_CPP
+#include "jaegertracing/utils/YAML.h"
 
 namespace jaegertracing {
 namespace samplers {
@@ -37,8 +33,26 @@ class Config {
 
     static Config parse(const YAML::Node& configYAML)
     {
-        // TODO
-        return Config();
+        if (!configYAML.IsMap()) {
+            return Config();
+        }
+
+        const auto type = utils::yaml::findOrDefault<std::string>(
+            configYAML, "type", "");
+        const auto param =
+            utils::yaml::findOrDefault<double>(configYAML, "param", 0);
+        const auto samplingServerURL = utils::yaml::findOrDefault<std::string>(
+            configYAML, "samplingServerURL", "");
+        const auto maxOperations =
+            utils::yaml::findOrDefault<int>(configYAML, "maxOperations", 0);
+        const auto samplingRefreshInterval =
+            std::chrono::seconds(utils::yaml::findOrDefault<int>(
+                configYAML, "samplingRefreshInterval", 0));
+        return Config(type,
+                      param,
+                      samplingServerURL,
+                      maxOperations,
+                      samplingRefreshInterval);
     }
 
 #endif  // JAEGERTRACING_WITH_YAML_CPP

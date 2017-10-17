@@ -20,11 +20,7 @@
 #include <chrono>
 #include <string>
 
-#include "jaegertracing/Constants.h"
-
-#ifdef JAEGERTRACING_WITH_YAML_CPP
-#include <yaml-cpp/yaml.h>
-#endif  // JAEGERTRACING_WITH_YAML_CPP
+#include "jaegertracing/utils/YAML.h"
 
 namespace jaegertracing {
 namespace reporters {
@@ -37,8 +33,25 @@ class Config {
 
     static Config parse(const YAML::Node& configYAML)
     {
-        // TODO
-        return Config();
+        if (!configYAML.IsMap()) {
+            return Config();
+        }
+
+        const auto queueSize =
+            utils::yaml::findOrDefault<int>(configYAML, "queueSize", 0);
+        const auto bufferFlushInterval =
+            std::chrono::seconds(
+                utils::yaml::findOrDefault<int>(
+                    configYAML, "bufferFlushInterval", 0));
+        const auto logSpans =
+            utils::yaml::findOrDefault<bool>(configYAML, "logSpans", false);
+        const auto localAgentHostPort =
+            utils::yaml::findOrDefault<std::string>(
+                configYAML, "localAgentHostPort", "");
+        return Config(queueSize,
+                      bufferFlushInterval,
+                      logSpans,
+                      localAgentHostPort);
     }
 
 #endif  // JAEGERTRACING_WITH_YAML_CPP

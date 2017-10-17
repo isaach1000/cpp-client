@@ -20,11 +20,7 @@
 #include <chrono>
 #include <string>
 
-#include "jaegertracing/Constants.h"
-
-#ifdef JAEGERTRACING_WITH_YAML_CPP
-#include <yaml-cpp/yaml.h>
-#endif  // JAEGERTRACING_WITH_YAML_CPP
+#include "jaegertracing/utils/YAML.h"
 
 namespace jaegertracing {
 namespace baggage {
@@ -37,8 +33,22 @@ class RestrictionsConfig {
 
     static RestrictionsConfig parse(const YAML::Node& configYAML)
     {
-        // TODO
-        return RestrictionsConfig();
+        if (!configYAML.IsMap()) {
+            return RestrictionsConfig();
+        }
+
+        const auto denyBaggageOnInitializationFailure =
+            utils::yaml::findOrDefault<bool>(
+                configYAML, "denyBaggageOnInitializationFailure", false);
+        const auto hostPort =
+            utils::yaml::findOrDefault<std::string>(
+                configYAML, "hostPort", "");
+        const auto refreshInterval =
+            std::chrono::seconds(utils::yaml::findOrDefault<int>(
+                configYAML, "refreshInterval", 0));
+        return RestrictionsConfig(denyBaggageOnInitializationFailure,
+                                  hostPort,
+                                  refreshInterval);
     }
 
 #endif  // JAEGERTRACING_WITH_YAML_CPP
