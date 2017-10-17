@@ -31,7 +31,7 @@ class Config {
 
     static Config parse(const YAML::Node& configYAML)
     {
-        if (!configYAML.IsDefined()) {
+        if (!configYAML.IsMap()) {
             return Config();
         }
 
