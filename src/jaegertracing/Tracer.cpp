@@ -32,7 +32,8 @@ Tracer::StartSpanWithOptions(string_view operationName,
         for (auto&& ref : options.references) {
             auto ctx = dynamic_cast<const SpanContext*>(ref.second);
             if (!ctx) {
-                _logger->error("Reference contains invalid type of SpanReference");
+                _logger->error(
+                    "Reference contains invalid type of SpanReference");
                 continue;
             }
             if (!ctx->isValid() || ctx->isDebugIDContainerOnly()) {
@@ -61,8 +62,9 @@ Tracer::StartSpanWithOptions(string_view operationName,
             const auto parentID = 0;
             auto flags = static_cast<unsigned char>(0);
             if (hasParent && parent.isDebugIDContainerOnly()) {
-                flags |= (static_cast<unsigned char>(SpanContext::Flag::kSampled) |
-                          static_cast<unsigned char>(SpanContext::Flag::kDebug));
+                flags |=
+                    (static_cast<unsigned char>(SpanContext::Flag::kSampled) |
+                     static_cast<unsigned char>(SpanContext::Flag::kDebug));
             }
             else {
                 const auto samplingStatus =
@@ -96,8 +98,7 @@ Tracer::StartSpanWithOptions(string_view operationName,
                                  references);
     } catch (...) {
         utils::ErrorUtil::logError(
-            *_logger,
-            "Error occurred in Tracer::StartSpanWithOptions");
+            *_logger, "Error occurred in Tracer::StartSpanWithOptions");
         return nullptr;
     }
 }

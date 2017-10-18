@@ -28,21 +28,18 @@ TEST(Tracer, testTracer)
     auto mockAgent = testutils::MockAgent::make();
     mockAgent->start();
     std::ostringstream samplingServerURLStream;
-    samplingServerURLStream
-        << "http://"
-        << mockAgent->samplingServerAddr().authority();
+    samplingServerURLStream << "http://"
+                            << mockAgent->samplingServerAddr().authority();
     Config config(false,
-                  samplers::Config(
-                        "",
-                        0,
-                        samplingServerURLStream.str(),
-                        0,
-                        samplers::Config::Clock::duration()),
-                  reporters::Config(
-                        0,
-                        reporters::Config::Clock::duration(),
-                        false,
-                        mockAgent->spanServerAddress().authority()),
+                  samplers::Config("",
+                                   0,
+                                   samplingServerURLStream.str(),
+                                   0,
+                                   samplers::Config::Clock::duration()),
+                  reporters::Config(0,
+                                    reporters::Config::Clock::duration(),
+                                    false,
+                                    mockAgent->spanServerAddress().authority()),
                   propagation::HeadersConfig(),
                   false,
                   baggage::RestrictionsConfig());

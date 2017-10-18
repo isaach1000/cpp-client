@@ -40,11 +40,8 @@ inline void logError(spdlog::logger& logger,
                    ex.what(),
                    ex.numFailed());
     } catch (const std::system_error& ex) {
-        logger.log(level,
-                   "{0}: {1}, code={2}",
-                   message,
-                   ex.what(),
-                   ex.code().value());
+        logger.log(
+            level, "{0}: {1}, code={2}", message, ex.what(), ex.code().value());
     } catch (const std::exception& ex) {
         logger.log(level, "{0}: {1}", message, ex.what());
     } catch (...) {

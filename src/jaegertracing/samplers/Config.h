@@ -89,12 +89,12 @@ class Config {
         : _type(type.empty() ? kSamplerTypeRemote : type)
         , _param(param == 0 ? kDefaultSamplingProbability : param)
         , _samplingServerURL(samplingServerURL.empty()
-                ? kDefaultSamplingServerURL
-                : samplingServerURL)
+                                 ? kDefaultSamplingServerURL
+                                 : samplingServerURL)
         , _maxOperations(maxOperations)
         , _samplingRefreshInterval(samplingRefreshInterval.count() > 0
-                ? samplingRefreshInterval
-                : defaultSamplingRefreshInterval())
+                                       ? samplingRefreshInterval
+                                       : defaultSamplingRefreshInterval())
     {
     }
 

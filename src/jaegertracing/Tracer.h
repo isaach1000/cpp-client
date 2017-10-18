@@ -159,8 +159,8 @@ class Tracer : public opentracing::Tracer,
             _sampler->close();
             _restrictionManager->close();
         } catch (...) {
-            utils::ErrorUtil::logError(
-                *_logger, "Error occurred in Tracer::Close");
+            utils::ErrorUtil::logError(*_logger,
+                                       "Error occurred in Tracer::Close");
         }
     }
 

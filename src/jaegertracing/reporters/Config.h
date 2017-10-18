@@ -79,12 +79,12 @@ class Config {
            const std::string& localAgentHostPort)
         : _queueSize(queueSize > 0 ? queueSize : kDefaultQueueSize)
         , _bufferFlushInterval(bufferFlushInterval.count() > 0
-                ? bufferFlushInterval
-                : defaultBufferFlushInterval())
+                                   ? bufferFlushInterval
+                                   : defaultBufferFlushInterval())
         , _logSpans(logSpans)
         , _localAgentHostPort(localAgentHostPort.empty()
-                                ? kDefaultLocalAgentHostPort
-                                : localAgentHostPort)
+                                  ? kDefaultLocalAgentHostPort
+                                  : localAgentHostPort)
     {
     }
 
