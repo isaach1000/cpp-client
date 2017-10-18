@@ -39,6 +39,7 @@
 #include "jaegertracing/propagation/Propagator.h"
 #include "jaegertracing/reporters/Reporter.h"
 #include "jaegertracing/samplers/Sampler.h"
+#include "jaegertracing/utils/ErrorUtil.h"
 
 namespace jaegertracing {
 
@@ -153,9 +154,14 @@ class Tracer : public opentracing::Tracer,
 
     void Close() noexcept override
     {
-        _reporter->close();
-        _sampler->close();
-        _restrictionManager->close();
+        try {
+            _reporter->close();
+            _sampler->close();
+            _restrictionManager->close();
+        } catch (...) {
+            utils::ErrorUtil::logError(
+                *_logger, "Error occurred in Tracer::Close");
+        }
     }
 
     void close() noexcept { Close(); }

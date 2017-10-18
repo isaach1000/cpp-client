@@ -25,74 +25,81 @@ Tracer::StartSpanWithOptions(string_view operationName,
                              const opentracing::StartSpanOptions& options) const
     noexcept
 {
-    std::vector<Reference> references;
-    SpanContext parent;
-    auto hasParent = false;
-    for (auto&& ref : options.references) {
-        auto ctx = dynamic_cast<const SpanContext*>(ref.second);
-        if (!ctx) {
-            _logger->error("Reference contains invalid type of SpanReference");
-            continue;
-        }
-        if (!ctx->isValid() || ctx->isDebugIDContainerOnly()) {
-            continue;
-        }
-        references.push_back(Reference(*ctx, ref.first));
+    try {
+        std::vector<Reference> references;
+        SpanContext parent;
+        auto hasParent = false;
+        for (auto&& ref : options.references) {
+            auto ctx = dynamic_cast<const SpanContext*>(ref.second);
+            if (!ctx) {
+                _logger->error("Reference contains invalid type of SpanReference");
+                continue;
+            }
+            if (!ctx->isValid() || ctx->isDebugIDContainerOnly()) {
+                continue;
+            }
+            references.push_back(Reference(*ctx, ref.first));
 
-        if (!hasParent) {
-            parent = *ctx;
-            hasParent =
-                (ref.first == opentracing::SpanReferenceType::ChildOfRef);
-        }
-    }
-
-    if (!hasParent && parent.isValid()) {
-        hasParent = true;
-    }
-
-    std::vector<Tag> samplerTags;
-    auto newTrace = false;
-    SpanContext ctx;
-    if (!hasParent || !parent.isValid()) {
-        newTrace = true;
-        const TraceID traceID(randomID(), randomID());
-        const auto spanID = traceID.low();
-        const auto parentID = 0;
-        auto flags = static_cast<unsigned char>(0);
-        if (hasParent && parent.isDebugIDContainerOnly()) {
-            flags |= (static_cast<unsigned char>(SpanContext::Flag::kSampled) |
-                      static_cast<unsigned char>(SpanContext::Flag::kDebug));
-        }
-        else {
-            const auto samplingStatus =
-                _sampler->isSampled(traceID, operationName);
-            if (samplingStatus.isSampled()) {
-                flags |=
-                    static_cast<unsigned char>(SpanContext::Flag::kSampled);
-                samplerTags = samplingStatus.tags();
+            if (!hasParent) {
+                parent = *ctx;
+                hasParent =
+                    (ref.first == opentracing::SpanReferenceType::ChildOfRef);
             }
         }
-        ctx = SpanContext(traceID, spanID, parentID, flags, {});
-    }
-    else {
-        const auto traceID = parent.traceID();
-        const auto spanID = randomID();
-        const auto parentID = parent.spanID();
-        const auto flags = parent.flags();
-        ctx = SpanContext(traceID, spanID, parentID, flags, {});
-    }
 
-    if (hasParent && !parent.baggage().empty()) {
-        ctx = ctx.withBaggage(parent.baggage());
-    }
+        if (!hasParent && parent.isValid()) {
+            hasParent = true;
+        }
 
-    return startSpanInternal(ctx,
-                             operationName,
-                             options.start_steady_timestamp,
-                             samplerTags,
-                             options.tags,
-                             newTrace,
-                             references);
+        std::vector<Tag> samplerTags;
+        auto newTrace = false;
+        SpanContext ctx;
+        if (!hasParent || !parent.isValid()) {
+            newTrace = true;
+            const TraceID traceID(randomID(), randomID());
+            const auto spanID = traceID.low();
+            const auto parentID = 0;
+            auto flags = static_cast<unsigned char>(0);
+            if (hasParent && parent.isDebugIDContainerOnly()) {
+                flags |= (static_cast<unsigned char>(SpanContext::Flag::kSampled) |
+                          static_cast<unsigned char>(SpanContext::Flag::kDebug));
+            }
+            else {
+                const auto samplingStatus =
+                    _sampler->isSampled(traceID, operationName);
+                if (samplingStatus.isSampled()) {
+                    flags |=
+                        static_cast<unsigned char>(SpanContext::Flag::kSampled);
+                    samplerTags = samplingStatus.tags();
+                }
+            }
+            ctx = SpanContext(traceID, spanID, parentID, flags, {});
+        }
+        else {
+            const auto traceID = parent.traceID();
+            const auto spanID = randomID();
+            const auto parentID = parent.spanID();
+            const auto flags = parent.flags();
+            ctx = SpanContext(traceID, spanID, parentID, flags, {});
+        }
+
+        if (hasParent && !parent.baggage().empty()) {
+            ctx = ctx.withBaggage(parent.baggage());
+        }
+
+        return startSpanInternal(ctx,
+                                 operationName,
+                                 options.start_steady_timestamp,
+                                 samplerTags,
+                                 options.tags,
+                                 newTrace,
+                                 references);
+    } catch (...) {
+        utils::ErrorUtil::logError(
+            *_logger,
+            "Error occurred in Tracer::StartSpanWithOptions");
+        return nullptr;
+    }
 }
 
 std::unique_ptr<Span>

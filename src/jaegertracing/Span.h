@@ -243,7 +243,7 @@ class Span : public opentracing::Span {
     std::string serviceName() const noexcept;
 
   private:
-    bool isFinished() const { return _duration != Clock::duration(); }
+    bool isFinished() const { return _duration == Clock::duration(); }
 
     template <typename FieldIterator>
     void logFieldsNoLocking(FieldIterator first, FieldIterator last) noexcept
