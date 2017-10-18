@@ -66,8 +66,8 @@ TEST(Sampler, testSamplerTags)
 
     const struct {
         Sampler& _sampler;
-        Tag::ValueType _typeTag;
-        Tag::ValueType _paramTag;
+        std::string _samplerType;
+        Tag::ValueType _samplerParam;
     } tests[] = { { constTrue, "const", true },
                   { constFalse, "const", false },
                   { prob, "probabilistic", 0.1 },
@@ -79,11 +79,12 @@ TEST(Sampler, testSamplerTags)
         auto count = 0;
         for (auto&& tag : tags) {
             if (tag.key() == kSamplerTypeTagKey) {
-                ASSERT_EQ(test._typeTag, tag.value());
+                ASSERT_TRUE(tag.value().is<const char*>());
+                ASSERT_EQ(test._samplerType, tag.value().get<const char*>());
                 ++count;
             }
             else if (tag.key() == kSamplerParamTagKey) {
-                ASSERT_EQ(test._paramTag, tag.value());
+                ASSERT_EQ(test._samplerParam, tag.value());
                 ++count;
             }
         }
