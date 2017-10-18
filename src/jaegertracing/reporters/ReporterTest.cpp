@@ -71,9 +71,10 @@ TEST(Reporter, testRemoteReporter)
     std::mutex mutex;
     auto logger = logging::nullLogger();
     auto metrics = metrics::Metrics::makeNullMetrics();
+    constexpr auto kFixedQueueSize = 10;
     RemoteReporter reporter(
         std::chrono::milliseconds(1),
-        10,
+        kFixedQueueSize,
         std::unique_ptr<Transport>(new FakeTransport(spans, mutex)),
         *logger,
         *metrics);
@@ -88,11 +89,11 @@ TEST(Reporter, testRemoteReporter)
     constexpr auto kNumReports = 100;
     for (auto i = 0; i < kNumReports; ++i) {
         reporter.report(span);
-    }
-    std::this_thread::sleep_for(std::chrono::milliseconds(5));
-    {
-        std::lock_guard<std::mutex> lock(mutex);
-        ASSERT_EQ(kNumReports, spans.size());
+        if ((i + 1) % kFixedQueueSize) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(2));
+            std::lock_guard<std::mutex> lock(mutex);
+            ASSERT_EQ(i + 1, spans.size());
+        }
     }
     reporter.close();
 }
