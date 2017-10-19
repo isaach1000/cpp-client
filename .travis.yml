@@ -3,15 +3,20 @@ sudo: false
 dist: trusty
 compiler:
   - g++
-os:
-  - linux
 
-addons:
-  apt:
-    sources:
-      - ubuntu-toolchain-r-test
-    packages:
-      - lcov
+matrix:
+  include:
+    os:
+      - linux
+    addons:
+      apt:
+        sources:
+          - ubuntu-toolchain-r-test
+        packages:
+          - g++-6
+          - lcov
+    env:
+      - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
 
 branches:
   only:
