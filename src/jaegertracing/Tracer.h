@@ -88,6 +88,8 @@ class Tracer : public opentracing::Tracer,
             new Tracer(serviceName, sampler, reporter, logger, metrics));
     }
 
+    ~Tracer() { Close(); }
+
     std::unique_ptr<opentracing::Span>
     StartSpanWithOptions(string_view operationName,
                          const opentracing::StartSpanOptions& options) const
