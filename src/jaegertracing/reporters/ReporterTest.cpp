@@ -59,8 +59,8 @@ const Span span(std::weak_ptr<Tracer>(),
                 "",
                 Span::Clock::now(),
                 Span::Clock::duration(),
-                {},
-                {},
+                std::vector<Tag>(),
+                std::vector<Reference>(),
                 false);
 
 }  // anonymous namespace

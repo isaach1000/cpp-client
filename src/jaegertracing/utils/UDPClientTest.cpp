@@ -45,7 +45,8 @@ TEST(UDPClient, testZipkinMessage)
 
     started.get_future().wait();
     UDPClient udpClient(serverAddr, 0);
-    ASSERT_THROW(udpClient.emitZipkinBatch({}), std::logic_error);
+    using ZipkinBatch = std::vector<twitter::zipkin::thrift::Span>;
+    ASSERT_THROW(udpClient.emitZipkinBatch(ZipkinBatch()), std::logic_error);
     serverThread.join();
 }
 

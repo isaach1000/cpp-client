@@ -24,9 +24,9 @@ namespace metrics {
 TEST(NullStatsFactory, test)
 {
     NullStatsFactory factory;
-    factory.createGauge("", {})->update(1);
-    factory.createTimer("", {})->record(1);
-    factory.createCounter("", {})->inc(1);
+    factory.createGauge("")->update(1);
+    factory.createTimer("")->record(1);
+    factory.createCounter("")->inc(1);
 }
 
 }  // namespace metrics

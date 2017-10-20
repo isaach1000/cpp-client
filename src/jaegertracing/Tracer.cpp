@@ -20,6 +20,8 @@
 
 namespace jaegertracing {
 
+using StrMap = SpanContext::StrMap;
+
 std::unique_ptr<opentracing::Span>
 Tracer::StartSpanWithOptions(string_view operationName,
                              const opentracing::StartSpanOptions& options) const
@@ -75,14 +77,14 @@ Tracer::StartSpanWithOptions(string_view operationName,
                     samplerTags = samplingStatus.tags();
                 }
             }
-            ctx = SpanContext(traceID, spanID, parentID, flags, {});
+            ctx = SpanContext(traceID, spanID, parentID, flags, StrMap());
         }
         else {
             const auto traceID = parent.traceID();
             const auto spanID = randomID();
             const auto parentID = parent.spanID();
             const auto flags = parent.flags();
-            ctx = SpanContext(traceID, spanID, parentID, flags, {});
+            ctx = SpanContext(traceID, spanID, parentID, flags, StrMap());
         }
 
         if (hasParent && !parent.baggage().empty()) {

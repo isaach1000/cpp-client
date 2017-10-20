@@ -43,7 +43,7 @@ TEST_F(MetricsTest, testCounter)
     constexpr auto counterValue = static_cast<int64_t>(3);
     constexpr auto metricName = "jaeger.test-counter";
     StatsFactoryImpl factory(_metricsReporter);
-    auto counter = factory.createCounter(metricName, {});
+    auto counter = factory.createCounter(metricName);
     counter->inc(counterValue);
     const auto& counters = _metricsReporter.counters();
     ASSERT_EQ(1, counters.size());
@@ -57,7 +57,7 @@ TEST_F(MetricsTest, testGauge)
     constexpr auto gaugeValue = static_cast<int64_t>(3);
     constexpr auto metricName = "jaeger.test-gauge";
     StatsFactoryImpl factory(_metricsReporter);
-    auto gauge = factory.createGauge(metricName, {});
+    auto gauge = factory.createGauge(metricName);
     gauge->update(gaugeValue);
     const auto& gauges = _metricsReporter.gauges();
     ASSERT_EQ(1, gauges.size());
@@ -71,7 +71,7 @@ TEST_F(MetricsTest, testTimer)
     constexpr auto timeValue = static_cast<int64_t>(5);
     constexpr auto metricName = "jaeger.test-timer";
     StatsFactoryImpl factory(_metricsReporter);
-    auto timer = factory.createTimer(metricName, {});
+    auto timer = factory.createTimer(metricName);
     timer->record(timeValue);
     const auto& timers = _metricsReporter.timers();
     ASSERT_EQ(1, timers.size());
@@ -92,7 +92,7 @@ TEST_F(MetricsTest, testReset)
 
     constexpr auto time = static_cast<int64_t>(1);
     constexpr auto timerName = "jaeger.test-timer";
-    _metricsReporter.recordTimer(timerName, time, {});
+    _metricsReporter.recordTimer(timerName, time);
     const auto& timers = _metricsReporter.timers();
     ASSERT_EQ(1, timers.size());
 
