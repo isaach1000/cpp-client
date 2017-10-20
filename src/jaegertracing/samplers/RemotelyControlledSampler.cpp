@@ -107,10 +107,15 @@ RemotelyControlledSampler::isSampled(const TraceID& id,
 
 void RemotelyControlledSampler::close()
 {
-    std::unique_lock<std::mutex> lock(_mutex);
-    _running = false;
-    lock.unlock();
-    _shutdownCV.notify_one();
+    {
+        std::unique_lock<std::mutex> lock(_mutex);
+        if (!_running) {
+            return;
+        }
+        _running = false;
+        lock.unlock();
+        _shutdownCV.notify_one();
+    }
     _thread.join();
 }
 
