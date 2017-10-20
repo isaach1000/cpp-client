@@ -144,6 +144,7 @@ if(BUILD_TESTING)
         src/jaegertracing/utils/UDPClientTest.cpp
         src/jaegertracing/utils/RateLimiterTest.cpp
         src/jaegertracing/reporters/ReporterTest.cpp
+        src/jaegertracing/SpanTest.cpp
         src/jaegertracing/SpanContextTest.cpp
         src/jaegertracing/propagation/PropagatorTest.cpp
         src/jaegertracing/metrics/NullStatsFactoryTest.cpp
