@@ -4,8 +4,8 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 
 include(HunterGate)
 HunterGate(
-    URL "https://github.com/ruslo/hunter/archive/v0.19.125.tar.gz"
-    SHA1 "371aef6239eff8639fe2cd94afef0f4d9f733302"
+    URL "https://github.com/ruslo/hunter/archive/v0.19.127.tar.gz"
+    SHA1 "d685a47797ab9fd724b910c67505765cf1fe402a"
     FILEPATH "${CMAKE_SOURCE_DIR}/cmake/HunterConfig.cmake"
 )
 
