@@ -106,7 +106,7 @@ class Config {
                 { std::shared_ptr<RemoteReporter>(std::move(remoteReporter)),
                   std::make_shared<LoggingReporter>(logger) }));
         }
-        return remoteReporter;
+        return std::unique_ptr<Reporter>(std::move(remoteReporter));
     }
 
     int queueSize() const { return _queueSize; }
