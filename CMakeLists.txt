@@ -60,26 +60,74 @@ if(BUILD_TESTING)
     endif()
 endif()
 
-set(SUBDIRS baggage
-            metrics
-            net
-            net/http
-            propagation
-            platform
-            reporters
-            samplers
-            utils)
-
-file(GLOB SRC "src/jaegertracing/*.cpp")
-foreach(SUBDIR IN LISTS SUBDIRS)
-    file(GLOB SUBDIR_SRC "src/jaegertracing/${SUBDIR}/*.cpp")
-    list(FILTER SUBDIR_SRC EXCLUDE REGEX ".*Test\\.cpp")
-    list(APPEND SRC ${SUBDIR_SRC})
-endforeach()
-
 add_subdirectory("src/jaegertracing/thrift-gen")
-list(APPEND LIBS thriftgen thrift::thrift_static)
+list(APPEND LIBS jaegertracing_thriftgen thrift::thrift_static)
 
+set(SRC
+    src/jaegertracing/TraceID.cpp
+    src/jaegertracing/utils/RateLimiter.cpp
+    src/jaegertracing/utils/ErrorUtil.cpp
+    src/jaegertracing/utils/HexParsing.cpp
+    src/jaegertracing/utils/YAML.cpp
+    src/jaegertracing/utils/UDPClient.cpp
+    src/jaegertracing/reporters/InMemoryReporter.cpp
+    src/jaegertracing/reporters/Config.cpp
+    src/jaegertracing/reporters/NullReporter.cpp
+    src/jaegertracing/reporters/CompositeReporter.cpp
+    src/jaegertracing/reporters/LoggingReporter.cpp
+    src/jaegertracing/reporters/Reporter.cpp
+    src/jaegertracing/reporters/RemoteReporter.cpp
+    src/jaegertracing/LogRecord.cpp
+    src/jaegertracing/propagation/HeadersConfig.cpp
+    src/jaegertracing/propagation/Injector.cpp
+    src/jaegertracing/propagation/Propagator.cpp
+    src/jaegertracing/propagation/Extractor.cpp
+    src/jaegertracing/platform/Endian.cpp
+    src/jaegertracing/platform/Hostname.cpp
+    src/jaegertracing/UDPTransport.cpp
+    src/jaegertracing/metrics/Gauge.cpp
+    src/jaegertracing/metrics/Metrics.cpp
+    src/jaegertracing/metrics/NullStatsReporter.cpp
+    src/jaegertracing/metrics/StatsFactoryImpl.cpp
+    src/jaegertracing/metrics/StatsReporter.cpp
+    src/jaegertracing/metrics/StatsFactory.cpp
+    src/jaegertracing/metrics/NullGauge.cpp
+    src/jaegertracing/metrics/Metric.cpp
+    src/jaegertracing/metrics/NullStatsFactory.cpp
+    src/jaegertracing/metrics/NullCounter.cpp
+    src/jaegertracing/metrics/Timer.cpp
+    src/jaegertracing/metrics/InMemoryStatsReporter.cpp
+    src/jaegertracing/metrics/Counter.cpp
+    src/jaegertracing/metrics/NullTimer.cpp
+    src/jaegertracing/samplers/SamplingStatus.cpp
+    src/jaegertracing/samplers/RateLimitingSampler.cpp
+    src/jaegertracing/samplers/ConstSampler.cpp
+    src/jaegertracing/samplers/ProbabilisticSampler.cpp
+    src/jaegertracing/samplers/Config.cpp
+    src/jaegertracing/samplers/AdaptiveSampler.cpp
+    src/jaegertracing/samplers/GuaranteedThroughputProbabilisticSampler.cpp
+    src/jaegertracing/samplers/RemotelyControlledSampler.cpp
+    src/jaegertracing/samplers/Sampler.cpp
+    src/jaegertracing/Config.cpp
+    src/jaegertracing/net/IPAddress.cpp
+    src/jaegertracing/net/http/Header.cpp
+    src/jaegertracing/net/http/Response.cpp
+    src/jaegertracing/net/http/Request.cpp
+    src/jaegertracing/net/http/Method.cpp
+    src/jaegertracing/net/http/Error.cpp
+    src/jaegertracing/net/URI.cpp
+    src/jaegertracing/net/Socket.cpp
+    src/jaegertracing/Reference.cpp
+    src/jaegertracing/SpanContext.cpp
+    src/jaegertracing/Span.cpp
+    src/jaegertracing/Tag.cpp
+    src/jaegertracing/Logging.cpp
+    src/jaegertracing/baggage/RestrictionsConfig.cpp
+    src/jaegertracing/baggage/Restriction.cpp
+    src/jaegertracing/baggage/RestrictionManager.cpp
+    src/jaegertracing/baggage/BaggageSetter.cpp
+    src/jaegertracing/Tracer.cpp
+    src/jaegertracing/Transport.cpp)
 add_library(jaegertracing ${SRC})
 set(JAEGERTRACING_WITH_YAML_CPP ${WITH_YAML_CPP})
 configure_file(src/jaegertracing/Constants.h.in
@@ -92,13 +140,27 @@ target_link_libraries(jaegertracing ${LIBS})
 
 if(BUILD_TESTING)
     add_subdirectory("${CMAKE_SOURCE_DIR}/src/jaegertracing/testutils")
-    file(GLOB TEST_SRC "src/jaegertracing/*Test.cpp"
-                       "src/jaegertracing/testutils/*Test.cpp")
-    foreach(SUBDIR IN LISTS SUBDIRS)
-        file(GLOB SUBDIR_TEST_SRC "src/jaegertracing/${SUBDIR}/*Test.cpp")
-        list(APPEND TEST_SRC ${SUBDIR_TEST_SRC})
-    endforeach()
-
+    set(TEST_SRC
+        src/jaegertracing/utils/UDPClientTest.cpp
+        src/jaegertracing/utils/RateLimiterTest.cpp
+        src/jaegertracing/reporters/ReporterTest.cpp
+        src/jaegertracing/SpanContextTest.cpp
+        src/jaegertracing/propagation/PropagatorTest.cpp
+        src/jaegertracing/metrics/NullStatsFactoryTest.cpp
+        src/jaegertracing/metrics/MetricsTest.cpp
+        src/jaegertracing/samplers/SamplerTest.cpp
+        src/jaegertracing/net/SocketTest.cpp
+        src/jaegertracing/net/http/MethodTest.cpp
+        src/jaegertracing/net/http/HeaderTest.cpp
+        src/jaegertracing/net/http/ResponseTest.cpp
+        src/jaegertracing/net/IPAddressTest.cpp
+        src/jaegertracing/net/URITest.cpp
+        src/jaegertracing/TracerTest.cpp
+        src/jaegertracing/TraceIDTest.cpp
+        src/jaegertracing/testutils/TUDPTransportTest.cpp
+        src/jaegertracing/testutils/MockAgentTest.cpp
+        src/jaegertracing/ConfigTest.cpp
+        src/jaegertracing/TagTest.cpp)
     add_executable(UnitTest ${TEST_SRC})
     target_link_libraries(UnitTest testutils GTest::main jaegertracing ${LIBS})
     add_test(NAME UnitTest

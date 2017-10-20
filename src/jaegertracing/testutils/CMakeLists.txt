@@ -1,5 +1,8 @@
-file(GLOB SRC "*.cpp")
-list(FILTER SRC EXCLUDE REGEX ".*Test\\.cpp")
+set(SRC
+MockAgent.cpp
+SamplingManager.cpp
+TUDPTransport.cpp)
+
 add_library(testutils ${SRC})
 target_include_directories(testutils PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>)
