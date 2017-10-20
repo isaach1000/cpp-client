@@ -34,23 +34,11 @@ class StatsFactory {
 
     virtual ~StatsFactory() = default;
 
-    template <typename NameType>
-    std::unique_ptr<Counter> createCounter(NameType&& name)
-    {
-        return createCounter(std::forward<NameType>(name), TagMap());
-    }
+    std::unique_ptr<Counter> createCounter(const std::string& name);
 
-    template <typename NameType>
-    std::unique_ptr<Timer> createTimer(NameType&& name)
-    {
-        return createTimer(std::forward<NameType>(name), TagMap());
-    }
+    std::unique_ptr<Timer> createTimer(const std::string& name);
 
-    template <typename NameType>
-    std::unique_ptr<Gauge> createGauge(NameType&& name)
-    {
-        return createGauge(std::forward<NameType>(name), TagMap());
-    }
+    std::unique_ptr<Gauge> createGauge(const std::string& name);
 
     virtual std::unique_ptr<Counter>
     createCounter(const std::string& name, const TagMap& tags) = 0;

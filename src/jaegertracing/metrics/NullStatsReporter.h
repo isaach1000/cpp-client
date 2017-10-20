@@ -27,6 +27,10 @@ namespace metrics {
 
 class NullStatsReporter : public StatsReporter {
   public:
+    using StatsReporter::incCounter;
+    using StatsReporter::recordTimer;
+    using StatsReporter::updateGauge;
+
     ~NullStatsReporter() = default;
 
     void

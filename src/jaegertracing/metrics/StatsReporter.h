@@ -25,22 +25,39 @@ namespace metrics {
 
 class StatsReporter {
   public:
+    using TagMap = std::unordered_map<std::string, std::string>;
+
     virtual ~StatsReporter() = default;
+
+    void incCounter(const std::string& name, int64_t delta)
+    {
+        incCounter(name, delta, TagMap());
+    }
+
+    void recordTimer(const std::string& name, int64_t delta)
+    {
+        recordTimer(name, delta, TagMap());
+    }
+
+    void updateGauge(const std::string& name, int64_t delta)
+    {
+        updateGauge(name, delta, TagMap());
+    }
 
     virtual void
     incCounter(const std::string& name,
                int64_t delta,
-               const std::unordered_map<std::string, std::string>& tags) = 0;
+               const TagMap& tags) = 0;
 
     virtual void
     recordTimer(const std::string& name,
                 int64_t time,
-                const std::unordered_map<std::string, std::string>& tags) = 0;
+                const TagMap& tags) = 0;
 
     virtual void
     updateGauge(const std::string& name,
                 int64_t amount,
-                const std::unordered_map<std::string, std::string>& tags) = 0;
+                const TagMap& tags) = 0;
 };
 
 }  // namespace metrics

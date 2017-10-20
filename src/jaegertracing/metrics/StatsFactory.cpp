@@ -15,3 +15,28 @@
  */
 
 #include "jaegertracing/metrics/StatsFactory.h"
+
+#include "jaegertracing/metrics/Counter.h"
+#include "jaegertracing/metrics/Gauge.h"
+#include "jaegertracing/metrics/Timer.h"
+
+namespace jaegertracing {
+namespace metrics {
+
+std::unique_ptr<Counter> StatsFactory::createCounter(const std::string& name)
+{
+    return createCounter(name, TagMap());
+}
+
+std::unique_ptr<Timer> StatsFactory::createTimer(const std::string& name)
+{
+    return createTimer(name, TagMap());
+}
+
+std::unique_ptr<Gauge> StatsFactory::createGauge(const std::string& name)
+{
+    return createGauge(name, TagMap());
+}
+
+}  // namespace metrics
+}  // namespace jaegertracing

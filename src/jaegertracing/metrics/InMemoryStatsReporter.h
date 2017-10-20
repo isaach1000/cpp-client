@@ -29,22 +29,26 @@ class InMemoryStatsReporter : public StatsReporter {
   public:
     using ValueMap = std::unordered_map<std::string, int64_t>;
 
+    using StatsReporter::incCounter;
+    using StatsReporter::recordTimer;
+    using StatsReporter::updateGauge;
+
     virtual ~InMemoryStatsReporter() = default;
 
     void incCounter(
         const std::string& name,
         int64_t delta,
-        const std::unordered_map<std::string, std::string>& tags) override;
+        const TagMap& tags) override;
 
     void recordTimer(
         const std::string& name,
         int64_t time,
-        const std::unordered_map<std::string, std::string>& tags) override;
+        const TagMap& tags) override;
 
     void updateGauge(
         const std::string& name,
         int64_t time,
-        const std::unordered_map<std::string, std::string>& tags) override;
+        const TagMap& tags) override;
 
     void reset();
 

@@ -35,6 +35,10 @@ class Timer;
 
 class NullStatsFactory : public StatsFactory {
   public:
+    using StatsFactory::createCounter;
+    using StatsFactory::createTimer;
+    using StatsFactory::createGauge;
+
     std::unique_ptr<Counter>
     createCounter(const std::string&,
                   const std::unordered_map<std::string, std::string>&) override
