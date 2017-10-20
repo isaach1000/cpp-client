@@ -17,6 +17,7 @@
 #include "jaegertracing/net/URI.h"
 
 #include <cassert>
+#include <cstring>
 #include <iomanip>
 #include <iostream>
 #include <regex>
