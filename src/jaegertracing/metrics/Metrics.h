@@ -64,14 +64,14 @@ class Metrics {
               "jaeger.spans", { { "group", "sampling" }, { "sampled", "y" } }))
         , _spansNotSampled(factory.createCounter(
               "jaeger.spans", { { "group", "sampling" }, { "sampled", "n" } }))
-        , _decodingErrors(factory.createCounter("jaeger.decoding-errors", {}))
+        , _decodingErrors(factory.createCounter("jaeger.decoding-errors"))
         , _reporterSuccess(factory.createCounter("jaeger.reporter-spans",
                                                  { { "state", "success" } }))
         , _reporterFailure(factory.createCounter("jaeger.reporter-spans",
                                                  { { "state", "failure" } }))
         , _reporterDropped(factory.createCounter("jaeger.reporter-spans",
                                                  { { "state", "dropped" } }))
-        , _reporterQueueLength(factory.createGauge("jaeger.reporter-queue", {}))
+        , _reporterQueueLength(factory.createGauge("jaeger.reporter-queue"))
         , _samplerRetrieved(factory.createCounter("jaeger.sampler",
                                                   { { "state", "retrieved" } }))
         , _samplerUpdated(factory.createCounter("jaeger.sampler",
@@ -89,7 +89,7 @@ class Metrics {
                                                       { { "result", "ok" } }))
         , _baggageUpdateFailure(factory.createCounter("jaeger.baggage-update",
                                                       { { "result", "err" } }))
-        , _baggageTruncate(factory.createCounter("jaeger.baggage-truncate", {}))
+        , _baggageTruncate(factory.createCounter("jaeger.baggage-truncate"))
         , _baggageRestrictionsUpdateSuccess(factory.createCounter(
               "jaeger.baggage-restrictions-update", { { "result", "ok" } }))
         , _baggageRestrictionsUpdateFailure(factory.createCounter(

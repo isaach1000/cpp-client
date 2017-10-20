@@ -30,19 +30,36 @@ class Timer;
 
 class StatsFactory {
   public:
+    using TagMap = std::unordered_map<std::string, std::string>;
+
     virtual ~StatsFactory() = default;
 
+    template <typename NameType>
+    std::unique_ptr<Counter> createCounter(NameType&& name)
+    {
+        return createCounter(std::forward<NameType>(name), TagMap());
+    }
+
+    template <typename NameType>
+    std::unique_ptr<Timer> createTimer(NameType&& name)
+    {
+        return createTimer(std::forward<NameType>(name), TagMap());
+    }
+
+    template <typename NameType>
+    std::unique_ptr<Gauge> createGauge(NameType&& name)
+    {
+        return createGauge(std::forward<NameType>(name), TagMap());
+    }
+
     virtual std::unique_ptr<Counter>
-    createCounter(const std::string& name,
-                  const std::unordered_map<std::string, std::string>& tags) = 0;
+    createCounter(const std::string& name, const TagMap& tags) = 0;
 
     virtual std::unique_ptr<Timer>
-    createTimer(const std::string& name,
-                const std::unordered_map<std::string, std::string>& tags) = 0;
+    createTimer(const std::string& name, const TagMap& tags) = 0;
 
     virtual std::unique_ptr<Gauge>
-    createGauge(const std::string& name,
-                const std::unordered_map<std::string, std::string>& tags) = 0;
+    createGauge(const std::string& name, const TagMap& tags) = 0;
 };
 
 }  // namespace metrics
