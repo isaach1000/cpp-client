@@ -26,7 +26,6 @@ EOF
         ..
     make -j3
     mv libjaegertracing_plugin.so /libjaegertracing_plugin.so
-    ./DynamicallyLoadTracerTest /libjaegertracing_plugin.so
 }
 
 main
